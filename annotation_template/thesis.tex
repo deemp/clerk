@@ -1,0 +1,113 @@
+\documentclass[oneside]{report}
+
+%%%%% ADDED TO SUPPORT TT BOLD FACES %%%%
+\DeclareFontShape{OT1}{cmtt}{bx}{n}{<5><6><7><8><9><10><10.95><12><14.4><17.28><20.74><24.88>cmttb10}{}
+\renewcommand{\ttdefault}{pcr}
+%%%%% END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+\usepackage{atbegshi,picture}
+
+
+\usepackage[T1,T2A]{fontenc} 
+\usepackage[utf8]{inputenc}
+\usepackage[main=russian,english]{babel}
+\usepackage{csquotes}
+\usepackage[style=authoryear-icomp,bibencoding=utf8,backend=biber,style=ieee]{biblatex}
+\usepackage{blindtext}
+
+% \bibliographystyle{IEEEtran}
+\bibliography{IEEEabrv,ref}
+
+\usepackage{pdfpages}
+\newenvironment{bottompar}{\par\vspace*{\fill}}{\clearpage}
+
+% \usepackage{cite}
+\usepackage{amsmath,amsfonts}
+
+\usepackage{amsthm}
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\theoremstyle{remark}
+\newtheorem*{remark}{Remark}
+\theoremstyle{remark}
+\newtheorem*{example}{Example}
+
+
+
+\usepackage{graphicx}
+\graphicspath{{figs/}} %path to images
+\usepackage{array}
+\usepackage{multirow,array}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{hyperref}
+\usepackage{paralist}
+\usepackage{listings}
+\usepackage{zed-csp}
+\usepackage{fancyheadings}
+\usepackage{color,colortbl}
+\usepackage{booktabs}
+\usepackage{epsfig} % for postscript graphics files
+
+\usepackage{upgreek} 
+\usepackage{bm}
+\usepackage{hyperref}
+\usepackage{setspace}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{longtable}
+\usepackage[font=singlespacing, labelfont=bf]{caption}
+\usepackage{epsfig} % for postscript graphics files
+
+\usepackage{floatrow}
+\usepackage{subcaption}
+
+
+\pagestyle{fancyplain}
+
+% remember section title
+\renewcommand{\chaptermark}[1]%
+	{\markboth{\chaptername~\thechapter~--~#1}{}}
+
+% subsection number and title
+\renewcommand{\sectionmark}[1]%
+	{\markright{\thesection\ #1}}
+
+\rhead[\fancyplain{}{\bf\leftmark}]%
+      {\fancyplain{}{\bf\thepage}}
+\lhead[\fancyplain{}{\bf\thepage}]%
+      {\fancyplain{}{\bf\rightmark}}
+\cfoot{} %bfseries
+
+
+\newcommand{\dedication}[1]
+   {\thispagestyle{empty}
+     
+   \begin{flushleft}\raggedleft #1\end{flushleft}
+}
+
+\begin{document}\sloppy
+
+\includepdf[pages=-]{title_annotation.pdf}
+\AtBeginShipout{\AtBeginShipoutUpperLeft{%
+  \put(\dimexpr\paperwidth-1cm\relax,-1.5cm){\makebox[0pt][r]{\includegraphics[width=3cm]{figs/inno}}}%
+}}
+
+\newpage
+\include{chapters/abstract}
+\setcounter{page}{3}
+
+\include{chapters/chapter1}
+\include{chapters/chapter2}
+\include{chapters/chapter3}
+\include{chapters/chapter4}
+\include{chapters/chapter5}
+
+
+\printbibliography
+\addcontentsline{toc}{chapter}{Список литературы}
+\end{document}
+
