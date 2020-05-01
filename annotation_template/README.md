@@ -1,5 +1,5 @@
 # FAQ
-There is a full $\LaTeX$ template for your annotation work.
+There is a full *LaTeX* template for your annotation work.
 It can be imported to Overleaf or used offline.
 Please start with **replacing the stub title to the real one**.
 
