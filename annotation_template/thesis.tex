@@ -5,17 +5,14 @@
 \renewcommand{\ttdefault}{pcr}
 %%%%% END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 \usepackage{atbegshi,picture}
-
-
 \usepackage[T1,T2A]{fontenc} 
 \usepackage[utf8]{inputenc}
 \usepackage[main=russian,english]{babel}
+\usepackage[backend=biber,style=apa,autocite=inline]{biblatex}
+\bibliography{ref.bib}
 \usepackage{csquotes}
-\usepackage[style=authoryear-icomp,bibencoding=utf8,backend=biber,style=ieee]{biblatex}
 \usepackage{blindtext}
 
-% \bibliographystyle{IEEEtran}
-\bibliography{IEEEabrv,ref}
 
 \usepackage{pdfpages}
 \newenvironment{bottompar}{\par\vspace*{\fill}}{\clearpage}
@@ -43,11 +40,11 @@
 \usepackage{multirow,array}
 \usepackage{caption}
 \usepackage{subcaption}
-\usepackage{hyperref}
+\usepackage[unicode]{hyperref}
 \usepackage{paralist}
 \usepackage{listings}
 \usepackage{zed-csp}
-\usepackage{fancyheadings}
+\usepackage{fancyhdr}
 \usepackage{color,colortbl}
 \usepackage{booktabs}
 \usepackage{epsfig} % for postscript graphics files
@@ -63,8 +60,6 @@
 \usepackage{epsfig} % for postscript graphics files
 
 \usepackage{floatrow}
-\usepackage{subcaption}
-
 
 \pagestyle{fancyplain}
 
@@ -107,7 +102,6 @@
 \include{chapters/chapter5}
 
 
-\printbibliography
-\addcontentsline{toc}{chapter}{Список литературы}
+\printbibliography[title={Список литературы}]
 \end{document}
 

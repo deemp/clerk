@@ -11,11 +11,18 @@
 
 
 \usepackage[english]{babel}
+\usepackage[backend=biber,style=apa,autocite=inline]{biblatex}
+\bibliography{ref.bib}
+\DefineBibliographyStrings{english}{%
+  bibliography = {References},}
 \usepackage{blindtext}
 \usepackage{pdfpages}
 \newenvironment{bottompar}{\par\vspace*{\fill}}{\clearpage}
-
-\usepackage{cite}
+% % if APA style is needed
+% %\usepackage[utf8x]{inputenc}
+% %\usepackage{apacite}
+% % if IEEE style
+% \usepackage{cite}
 \usepackage{amsmath,amsfonts}
 
 \usepackage{amsthm}
@@ -43,7 +50,8 @@
 \usepackage{paralist}
 \usepackage{listings}
 \usepackage{zed-csp}
-\usepackage{fancyheadings}
+\usepackage{fancyhdr}
+\usepackage{csquotes}
 \usepackage{color}
 
 \usepackage{upgreek} 
@@ -92,27 +100,18 @@
    \begin{flushleft}\raggedleft #1\end{flushleft}
 }
 
-\begin{document}\sloppy
+\begin{document}
 
 \includepdf[pages=-]{title.pdf}
-\newpage
-\dedication{(optional) dedication.}
-\newpage
-\setcounter{page}{5}
-
-\newpage
-\thispagestyle{empty}
-\mbox{}
-
-\newpage
-
 \tableofcontents
 \listoftables
 \listoffigures
 
+
 \newpage
 \include{chapters/abstract}
-
+% Depend on above part
+\setcounter{page}{6}
 \include{chapters/chapter1}
 \include{chapters/chapter2}
 \include{chapters/chapter3}
@@ -122,8 +121,7 @@
 
 
 %% REFERENCES
-\bibliographystyle{ieeetr}
-\bibliography{ref}
+\printbibliography[heading=bibintoc]
 \include{chapters/appex}
 \end{document}
 
