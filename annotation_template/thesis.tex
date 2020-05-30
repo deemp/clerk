@@ -1,4 +1,13 @@
-\documentclass[oneside]{report}
+\documentclass[oneside,final,14pt,a4paper]{extreport}
+
+\usepackage{vmargin}
+\setpapersize{A4}
+\setmarginsrb{2.5cm}{2cm}{2cm}{2cm}{0pt}{10mm}{0pt}{13mm}
+\usepackage{setspace}
+\sloppy
+\setstretch{1.5}
+\usepackage{indentfirst}
+\parindent=1.25cm
 
 %%%%% ADDED TO SUPPORT TT BOLD FACES %%%%
 \DeclareFontShape{OT1}{cmtt}{bx}{n}{<5><6><7><8><9><10><10.95><12><14.4><17.28><20.74><24.88>cmttb10}{}
@@ -84,7 +93,7 @@
    \begin{flushleft}\raggedleft #1\end{flushleft}
 }
 
-\begin{document}\sloppy
+\begin{document}
 
 \includepdf[pages=-]{title_annotation.pdf}
 \AtBeginShipout{\AtBeginShipoutUpperLeft{%

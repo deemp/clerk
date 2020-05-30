@@ -1,4 +1,15 @@
-\documentclass[twoside]{report}
+% \documentclass[oneside]{report}
+\documentclass[oneside,final,14pt,a4paper]{extreport}
+\usepackage[T2A]{fontenc}
+
+\usepackage{vmargin}
+\setpapersize{A4}
+\setmarginsrb{2.5cm}{2cm}{2cm}{2cm}{0pt}{10mm}{0pt}{13mm}
+\usepackage{setspace}
+\sloppy
+\setstretch{1.5}
+\usepackage{indentfirst}
+\parindent=1.25cm
 
 %%%%% ADDED TO SUPPORT TT BOLD FACES %%%%
 \DeclareFontShape{OT1}{cmtt}{bx}{n}{<5><6><7><8><9><10><10.95><12><14.4><17.28><20.74><24.88>cmttb10}{}
@@ -18,11 +29,6 @@
 \usepackage{blindtext}
 \usepackage{pdfpages}
 \newenvironment{bottompar}{\par\vspace*{\fill}}{\clearpage}
-% % if APA style is needed
-% %\usepackage[utf8x]{inputenc}
-% %\usepackage{apacite}
-% % if IEEE style
-% \usepackage{cite}
 \usepackage{amsmath,amsfonts}
 
 \usepackage{amsthm}
@@ -121,7 +127,7 @@
 
 
 %% REFERENCES
-\printbibliography[heading=bibintoc]
+\printbibliography[heading=bibintoc,title={Bibliography cited}]
 \include{chapters/appex}
 \end{document}
 
