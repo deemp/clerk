@@ -2,7 +2,7 @@
 
 ## Thesis defence documents
 
-First of all, please, read [Thesis Guidelines](https://tfs.university.innopolis.ru/tfs/Edu/_git/doe-docs?path=%2FBS_ThesisGuideLines.pdf&version=GBmaster) document carefully.
+First of all, please, read [Thesis Guidelines](https://tfs.university.innopolis.ru/tfs/Edu/_git/doe-docs?path=%2FThesisGuideLine.pdf&version=GBmaster&_a=contentsr) document carefully.
 This document holds major instructions on how to prepare for thesis defence.
 
 ### Contents
