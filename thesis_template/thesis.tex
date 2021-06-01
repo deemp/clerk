@@ -1,6 +1,8 @@
 % \documentclass[oneside]{report}
 \documentclass[oneside,final,14pt,a4paper]{extreport}
+% \documentclass[journal,onecolumn,a4paper,12pt]{IEEEtran}
 \usepackage[T2A]{fontenc}
+
 
 \usepackage{vmargin}
 \setpapersize{A4}
@@ -68,7 +70,8 @@
 \usepackage{multirow}
 \usepackage{longtable}
 \usepackage[font=singlespacing, labelfont=bf]{caption}
-
+\counterwithout{table}{chapter}
+\renewcommand{\thetable}{\Roman{table}}
 %Hints
 \newcommand\pic[1]{(Fig. \ref{#1})} %Ref on figure
 \newcommand\tab[1]{(Tab. \ref{#1})} %Ref on table

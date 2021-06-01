@@ -67,7 +67,8 @@
 \usepackage{longtable}
 \usepackage[font=singlespacing, labelfont=bf]{caption}
 \usepackage{epsfig} % for postscript graphics files
-
+\counterwithout{table}{chapter}
+\renewcommand{\thetable}{\Roman{table}}
 \usepackage{floatrow}
 
 \pagestyle{fancyplain}
