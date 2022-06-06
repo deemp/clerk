@@ -1,0 +1,68 @@
+\chapter{Literature Review}
+\label{chap:lr}
+\chaptermark{Second Chapter Heading}
+
+
+\Blindtext[2]
+
+\section{Another Section}
+\Blindtext[1]
+\newpage
+With the widespread of computing systems, information processing, and net working, the practice of replacing paper documentation to electronic documentation has become more and more common. Electronic documentation within the workplace has several advantages over the traditional one, such as being easy to share, copy and edit the document. However, these advantages also present a problem. A malefactor, having access to the system, can easily copy and leak the document, without leaving any trace. Such actions are virtually undetectable in most systems, so, the malefactor goes unpunished. In this thesis, we propose one solution to the problem: digital watermarking. 
+
+Every electronic document within the protected system is marked with an invisible digital watermark, containing information about the user, accessing this particular document. Therefore, in case the protected company discovers the leaked document, they will be able to identify the machine of the malicious person and time when the document was leaked. This will allow inflicting punishment on the malefactor, recovering the costs of the leak, and potentially preventing future ones. 
+
+\begin{longtable}{c|c}
+\caption[This is the title I want to appear in the List of Tables]{Simulation Parameters} \label{table:secsimulation_params} \\
+\hline
+A & B  \\
+\hline
+\endfirsthead
+\multicolumn{2}{@{}l}{} \\
+\hline
+A & B \\
+\hline
+\endhead
+\hline
+ \textbf{Parameter} & \textbf{Value}\\
+ \hline
+ Number of vehicles & $|\mathcal{V}|$\\
+ \hline
+ Number of RSUs & $|\mathcal{U}|$\\
+ \hline
+ RSU coverage radius & 150 m\\
+ \hline
+ V2V communication radius & 30 m\\
+ \hline
+ Smart vehicle antenna height & 1.5 m\\
+ \hline
+ RSU antenna height & 25 m\\
+ \hline
+ Smart vehicle maximum speed & $v_{max}$ m/s\\
+ \hline
+ Smart vehicle minimum speed & $v_{min}$ m/s\\
+ \hline
+ Common smart vehicle cache capacities & $[50, 100, 150, 200, 250]$ mb\\
+ \hline
+ Common RSU cache capacities & $[5000,1000,1500,2000,2500]$ mb\\
+ \hline
+ Common backhaul rates & $[75, 100, 150]$ mb/s\\
+ \hline
+\end{longtable}
+
+\begin{figure}[hbt]
+\centering
+\includegraphics[]{figs/inno.png}
+\caption{One kernel at $x_s$ (\emph{dotted kernel}) or two kernels at
+$x_i$ and $x_j$ (\textit{left and right}) lead to the same summed estimate
+at $x_s$. This shows a figure consisting of different types of
+lines. Elements of the figure described in the caption should be set in
+italics, in parentheses, as shown in this sample caption.}
+\label{fig:secex}
+\end{figure}
+
+This description implies several essential properties of the task at hand:
+\begin{enumerate}
+    \item Watermark must contain all necessary information, but still, be placeable and recognizable even on smaller images. The produced watermark must be compact but have the possibility to store enough information. 
+    \item To prevent easy tampering, the watermark must be invisible to the naked eye (and, preferably, to basic image parsing tools). If malefactor does not know about the existence of watermark, they might not even try to remove it and disable it. 
+\end{enumerate}
