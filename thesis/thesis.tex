@@ -3,7 +3,6 @@
 % \documentclass[journal,onecolumn,a4paper,12pt]{IEEEtran}
 \usepackage[T2A]{fontenc}
 
-
 \usepackage{vmargin}
 \setpapersize{A4}
 \setmarginsrb{2.5cm}{2cm}{2cm}{2cm}{0pt}{10mm}{0pt}{13mm}
@@ -82,11 +81,17 @@
 \newcommand\tab[1]{(Tab. \ref{#1})} %Ref on table
 
 \setlength{\headheight}{32.0976pt}
-\usepackage{enumitem}
+\usepackage[inline]{enumitem}
 \newlist{inlinelist}{enumerate*}{1}
 \setlist*[inlinelist,1]{%
   label=(\arabic*),
 }
+
+\usepackage{cleveref}
+\crefname{table}{table}{tables}
+\Crefname{table}{Table}{Tables}
+\crefname{figure}{figure}{figures}
+\Crefname{figure}{Figure}{Figures}
 
 \setcounter{secnumdepth}{4}
 \captionsetup[table]{labelfont={normalfont}, name={TABLE}, labelsep={newline}}
@@ -97,11 +102,11 @@
 \captionsetup[figure]{labelfont={normalfont}, name={Fig.}, labelsep=period}
 \counterwithout{figure}{chapter}
 
-\titleformat{\section}[hang]{\fontsize{20}{24}\selectfont\filcenter}{\Roman{section}}{1em}{}
-\titleformat{\subsection}[hang]{\itshape}{\Alph{subsection}.}{1em}{}[]
-\titleformat{\subsubsection}[runin]{\itshape}{\arabic{subsubsection})}{1em}{}[$:$]
+\titleformat{\section}[hang]{\fontsize{22}{10}\selectfont\filcenter\bfseries\raggedright}{\arabic{chapter}.\arabic{section}}{1em}{}
+\titleformat{\subsection}[hang]{\fontsize{18}{10}\selectfont\filcenter\bfseries\raggedright}{\arabic{chapter}.\arabic{section}.\arabic{subsection}}{1em}{}[]
+\titleformat{\subsubsection}[runin]{\fontsize{16}{10}\selectfont\filcenter\bfseries\raggedright}{\arabic{chapter}.\arabic{section}.\arabic{subsection}.\arabic{subsubsection})}{1em}{}[$:$]
 \titlespacing{\subsubsection}{1em}{1em}{1em}
-\titleformat{\paragraph}[runin]{\itshape}{\alph{paragraph})}{1em}{}[$:$\quad]
+\titleformat{\paragraph}[runin]{}{\arabic{paragraph})}{1em}{}[$:$\quad]
 \titlespacing{\paragraph}{2em}{1em}{1em}
 
 \pagestyle{fancyplain}
@@ -135,10 +140,10 @@
 %\listoffigures
 
 
-\newpage
+% \newpage
 %\include{chapters/abstract}
 % Depend on above part
-\setcounter{page}{6}
+% \setcounter{page}{6}
 % \include{chapters/chapter1}
 \include{chapters/chapter2}
 %\include{chapters/chapter3}
