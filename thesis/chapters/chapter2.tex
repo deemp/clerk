@@ -2,10 +2,10 @@
 \label{chap:lr}
 \chaptermark{Second Chapter Heading}
 
-Objective: Design and implement a type-safe eDSL (embedded domain specific language) and a framework for spreadsheet generation in Haskell.
+Objective: Design and implement a type-safe eDSL (embedded domain specific language) and a framework for declarative spreadsheet generation in Haskell.
 
 \section{Chapter overview}
-This chapter presents the literature review process and a survey of previous works on eDSL design and functional programming approaches to spreadsheets generation. \Cref{sec:research_questions} lists the literature review questions. Next, \cref{sec:searchProcess} summarizes the initial literature search process and its results. \Cref{sec:relevance} presents a set of relevance criteria. Finally, \cref{sec:selectedLiterature} overviews the answers to the literature review questions presented in \cref{sec:research_questions}.
+This chapter presents the literature review process and a survey of previous works on eDSL design and functional programming approaches to spreadsheets generation. \Cref{sec:research_questions} lists the literature review questions. Next, \Cref{sec:searchProcess} summarizes the initial literature search process and its results. \Cref{sec:relevance} presents a set of relevance criteria. Finally, \Cref{sec:selectedLiterature} overviews the answers to the literature review questions presented in \Cref{sec:research_questions}.
 
 \section{Literature review questions} \label {sec:research_questions}
 The literature review aims at answering the following questions:
@@ -89,30 +89,44 @@ It was decided that each relevant work should:
 
 \subsection{Works on spreadsheet generation}
 
+There exist several works on spreadsheet generation via Haskell.
+Wakeling \cite{wakeling_spreadsheet_2007} made a Haskell backend for Microsoft Excel. His approach was to write Haskell functions in a separate file, enter them as comments into a spreadsheet, and make a Haskell interpreter HUGS convert them into numeric values. The author admitted that the shortcomings of this interface were slowness of calculations and lack of error reporting. Additionally, there was no way to write formulas in a spreadsheet-native expression language. Later, Zaborsky created a Haskell library Xlsx \cite{github_xlsx} for reading, imperative construction, and writing of spreadsheets in Office Open XML xlsx format. The weakness of this library is that it did not provide a DSL to express formulas in a form other than plain text. Next, Thomasson \cite{github_hcalc} made a simple DSL for spreadsheets generation. The main drawbacks of his program were that its outputs were not suitable for existing spreadsheet systems. Also, the author used fixed cell references which made spreadsheet layouts inflexible. One of the later works was the ComonadSheet \cite{github_comonadsheet} library. It featured support for relative and absolute cell references and infinite cell streams. Nevertheless, it shared the problem of fixed cell references with Thomasson's work. Further, Kudasov \cite{youtube_kudasov} suggested the notion of tables and their monadic composition. This approach allows to represent tables and their headers as trees and provide a Haskell eDSL for a spreadsheet description. Although the author did not elaborate on cell reference tracking and formulas expression, his ideas lay the foundation of this thesis.
+
 \subsection{Haskell features in existing eDSLs}
 
 \begin{longtable}{|l|l|}
-    \caption[]{Haskell features in existing eDSLs} \label{table:features}                                                                                                                     \\
+    \caption[]{Haskell features in existing eDSLs} \label{table:haskellFeatures}                                                                                                        \\
     \hline
-    \centeredHeader{Feature}       & \centeredHeader{eDSL paper}                                                                                                                              \\
+    \centeredHeader{Feature}       & \centeredHeader{eDSL paper}                                                                                                                        \\
     \hline
     \endfirsthead
     \hline
-    \centeredHeader{Search engine} & \centeredHeader{Search queries}                                                                                                                          \\
+    \centeredHeader{Search engine} & \centeredHeader{Search queries}                                                                                                                    \\
     \hline
     \endhead
     Template Haskell
-                                   & \cite{bernauer_eiger_2022}, \cite{garcia-garland_attribute_2019}, \cite{bedo_bioshake_2019}, \cite{viera_staged_2018}, \cite{grebe_rewriting_2017}       \\
+                                   & \cite{bernauer_eiger_2022}, \cite{garcia-garland_attribute_2019}, \cite{bedo_bioshake_2019}, \cite{viera_staged_2018}, \cite{grebe_rewriting_2017} \\
     \hline
     Monads
-                                   & \cite{bernauer_eiger_2022}, \cite{valliappan_towards_2020}, \cite{viera_staged_2018}, \cite{ekblad_high-performance_2016}, \cite{thiemann_embedded_2005} \\
+                                   & \cite{bernauer_eiger_2022}, \cite{viera_staged_2018},
+    \cite{valliappan_towards_2020},  \cite{ekblad_high-performance_2016}, \cite{thiemann_embedded_2005}                                                                                 \\
     \hline
     Type families
-                                   & \cite{evans_circuitflow_2021}                                                                                                                           \\
+                                   & \cite{ekblad_high-performance_2016}, \cite{evans_circuitflow_2021}                                                                                 \\
     \hline
     Custom operators
-                                   & \cite{mizzi_artagnan_2018}                                                                                                                \\
+                                   & \cite{mizzi_artagnan_2018}                                                                                                                         \\
     \hline
 \end{longtable}
 
-\subsection{DSL design techniques}
+\subsection{DSL design techniques} \label{sec:dslDesignTechniques}
+
+Bernauer and Eisenberg \cite{bernauer_eiger_2022} use runtime instance lookup for data deserialization. This is achieved by collecting all class instances of a type into a monoid and putting them into a map indexed with type names. Also, the authors claim that it is permittable in their case to violate the monad laws, though a more correct approach would be to use the recent \texttt{ApplicativeDo} GHC extension. They argue that this extension will provide users with convenient \texttt{do}-notaion and increase the implementation efficiency.
+
+Ekblad \cite{ekblad_high-performance_2016} suggests using closed type families. This allows for writing high-level code in a Haskell eDSL and guarantees type-safe conversion into an intermediate language. Furthermore, he notes that to make generated code efficient it is necessary to make inefficient constructs irrepresentable in an eDSL. Another possible approach mentioned in the article is function inlining. However, this approach may lead to a problem of having too many local variables at once.
+
+Evans et al.\cite{evans_circuitflow_2021} mention Indexed Monadic Catamorphism, a technique for recursion elimination from foldings of datatypes. To make catamorphisms modular, they further encode folding algebra as a type class. Also, they introduce custom operators to make the code more readable.
+
+\section{Conclusion}
+
+Overall, there were not discovered any works that fully addressed the problem of type-safe declarative spreadsheet generation using Haskell. That is why, this thesis will build upon the work by Kudasov \cite{youtube_kudasov} and apply the DSL design techniques mentioned in \Cref{sec:dslDesignTechniques}.
