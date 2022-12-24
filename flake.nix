@@ -72,7 +72,6 @@
           commands = mkCommands "tools" tools;
         };
 
-      # Nix-provided libraries for stack
       stack-shell = { ghcVersion }:
 
         pkgs.haskell.lib.buildStackProject {
@@ -81,8 +80,7 @@
           ghc = pkgs.haskell.compiler.${ghcVersion};
 
           buildInputs = [
-            pkgs.lzma
-            pkgs.hello
+            pkgs.zlib
           ];
         };
     });

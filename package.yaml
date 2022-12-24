@@ -1,10 +1,10 @@
-name:                haskell
+name:                clerk
 version:             0.1.0.0
-github:              "value/haskell"
+github:              "deemp/clerk"
 license:             BSD3
-author:              "value"
-maintainer:          "value"
-copyright:           "value"
+author:              "Danila Danko, Nickolay Kudasov"
+maintainer:          "Danila Danko"
+copyright:           "Danila Danko, Nickolay Kudasov"
 
 extra-source-files:
 - README.md
@@ -17,12 +17,44 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/value/haskell#readme>
+description:         Please see the README on GitHub at <https://github.com/deemp/clerk#readme>
+
+default-extensions:
+- BlockArguments
+- DataKinds
+- DeriveFunctor
+- DuplicateRecordFields
+- FlexibleContexts
+- FlexibleInstances
+- GADTs
+- GeneralizedNewtypeDeriving
+- ImportQualifiedPost
+- ImpredicativeTypes
+- InstanceSigs
+- KindSignatures
+- LambdaCase
+- NamedFieldPuns
+- OverloadedRecordDot
+- OverloadedStrings
+- RecordWildCards
+- ScopedTypeVariables
+- TupleSections
+- TypeApplications
+- TypeSynonymInstances
+- UndecidableInstances
+- DuplicateRecordFields
 
 dependencies:
 - base >= 4.7 && < 5
-- lzma
-- process
+- mtl
+- transformers
+- text
+- xlsx
+- bytestring
+- lens
+- time
+- containers
+- data-default
 
 ghc-options:
 - -Wall
@@ -39,18 +71,18 @@ library:
   source-dirs: src
 
 executables:
-  haskell-exe:
+  example-exe:
     main:                Main.hs
-    source-dirs:         app
+    source-dirs:         example
     ghc-options:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - haskell
+    - clerk
 
 tests:
-  haskell-test:
+  clerk-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
@@ -58,4 +90,4 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - haskell
+    - clerk
