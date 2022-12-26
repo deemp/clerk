@@ -38,8 +38,7 @@
       lima = my-lima.packages.${system}.default;
       inherit (my-devshell.functions.${system}) mkCommands;
       inherit (haskell-tools.functions.${system}) toolsGHC;
-      hsShellTools = haskell-tools.toolSets.${system}.shellTools;
-      inherit (toolsGHC "92") stack hls ghc;
+      inherit (toolsGHC "92") stack hls ghc implicit-hie ghcid;
 
       writeSettings = writeSettingsJSON {
         inherit (settingsNix) haskell todo-tree files editor gitlens
@@ -47,8 +46,8 @@
       };
 
       codiumTools = [
-        hsShellTools.implicit-hie
-        hsShellTools.ghcid
+        implicit-hie
+        ghcid
         stack
         writeSettings
         ghc
@@ -85,6 +84,10 @@
 
           buildInputs = [
             pkgs.zlib
+            pkgs.expat
+            pkgs.bzip2
+            pkgs.xdg-utils
+            pkgs.firefox
           ];
         };
     });

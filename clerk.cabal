@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       Clerk
+      Example
   other-modules:
       Paths_clerk
   hs-source-dirs:
@@ -58,97 +59,6 @@ library
   build-depends:
       base >=4.7 && <5
     , bytestring
-    , containers
-    , data-default
-    , lens
-    , mtl
-    , text
-    , time
-    , transformers
-    , xlsx
-  default-language: Haskell2010
-
-executable example-exe
-  main-is: Main.hs
-  other-modules:
-      Paths_clerk
-  hs-source-dirs:
-      example
-  default-extensions:
-      BlockArguments
-      DataKinds
-      DeriveFunctor
-      DuplicateRecordFields
-      FlexibleContexts
-      FlexibleInstances
-      GADTs
-      GeneralizedNewtypeDeriving
-      ImportQualifiedPost
-      ImpredicativeTypes
-      InstanceSigs
-      KindSignatures
-      LambdaCase
-      NamedFieldPuns
-      OverloadedRecordDot
-      OverloadedStrings
-      RecordWildCards
-      ScopedTypeVariables
-      TupleSections
-      TypeApplications
-      TypeSynonymInstances
-      UndecidableInstances
-      DuplicateRecordFields
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      base >=4.7 && <5
-    , bytestring
-    , clerk
-    , containers
-    , data-default
-    , lens
-    , mtl
-    , text
-    , time
-    , transformers
-    , xlsx
-  default-language: Haskell2010
-
-test-suite clerk-test
-  type: exitcode-stdio-1.0
-  main-is: Spec.hs
-  other-modules:
-      Paths_clerk
-  hs-source-dirs:
-      test
-  default-extensions:
-      BlockArguments
-      DataKinds
-      DeriveFunctor
-      DuplicateRecordFields
-      FlexibleContexts
-      FlexibleInstances
-      GADTs
-      GeneralizedNewtypeDeriving
-      ImportQualifiedPost
-      ImpredicativeTypes
-      InstanceSigs
-      KindSignatures
-      LambdaCase
-      NamedFieldPuns
-      OverloadedRecordDot
-      OverloadedStrings
-      RecordWildCards
-      ScopedTypeVariables
-      TupleSections
-      TypeApplications
-      TypeSynonymInstances
-      UndecidableInstances
-      DuplicateRecordFields
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      base >=4.7 && <5
-    , bytestring
-    , clerk
     , containers
     , data-default
     , lens
