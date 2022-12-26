@@ -68,3 +68,48 @@ library
     , transformers
     , xlsx
   default-language: Haskell2010
+
+executable clerk
+  main-is: Main.hs
+  other-modules:
+      Paths_clerk
+  hs-source-dirs:
+      app
+  default-extensions:
+      BlockArguments
+      DataKinds
+      DeriveFunctor
+      DuplicateRecordFields
+      FlexibleContexts
+      FlexibleInstances
+      GADTs
+      GeneralizedNewtypeDeriving
+      ImportQualifiedPost
+      ImpredicativeTypes
+      InstanceSigs
+      KindSignatures
+      LambdaCase
+      NamedFieldPuns
+      OverloadedRecordDot
+      OverloadedStrings
+      RecordWildCards
+      ScopedTypeVariables
+      TupleSections
+      TypeApplications
+      TypeSynonymInstances
+      UndecidableInstances
+      DuplicateRecordFields
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  build-depends:
+      base >=4.7 && <5
+    , bytestring
+    , clerk
+    , containers
+    , data-default
+    , lens
+    , mtl
+    , text
+    , time
+    , transformers
+    , xlsx
+  default-language: Haskell2010

@@ -69,3 +69,10 @@ ghc-options:
 
 library:
   source-dirs: src
+
+executables:
+  clerk:
+    main: Main.hs
+    source-dirs: app
+    dependencies:
+      clerk

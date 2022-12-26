@@ -16,7 +16,7 @@ Let's see how we can construct such a sheet.
 
 First, we import the necessary stuff.
 
-> module Example where
+> module Example (main) where
 > import Clerk
 > import Codec.Xlsx qualified as X
 > import Codec.Xlsx.Formatted qualified as X
@@ -219,6 +219,12 @@ Now, we can write the result and get the spreadsheet images that you've seen at 
 > main :: IO ()
 > main = writeEx
 
-With formulas enabled:
+Run
+
+< stack run
+
+to get `example-1.xlsx`.
+
+With formulas enabled, `example-1.xlsx` looks like this:
 
 ![demo](README/demoFormulas.png)

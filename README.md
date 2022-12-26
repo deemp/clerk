@@ -6,7 +6,9 @@ It extends upon the [work](https://youtu.be/1xGoa-zEOrQ) of Kudasov by making th
 
 ## Features
 
-`clerk` supports
+`clerk` produces a styled spreadsheet with some data and formulas on it. These formulas will be calculated by the target spreadsheet system.
+
+The library supports
 
 - typed cell references - `Cell Double`
 - type-safe arithmetic operations - `(a :: Cell Double) + (b :: Cell Double)`
@@ -35,7 +37,7 @@ Let's see how we can construct such a sheet.
 First, we import the necessary stuff.
 
 ```haskell
-module Example where
+module Example (main) where
 import Clerk
 import Codec.Xlsx qualified as X
 import Codec.Xlsx.Formatted qualified as X
@@ -269,7 +271,15 @@ main :: IO ()
 main = writeEx
 ```
 
-With formulas enabled:
+Run
+
+```console
+stack run
+```
+
+to get `example-1.xlsx`.
+
+With formulas enabled, `example-1.xlsx` looks like this:
 
 ![demo](README/demoFormulas.png)
 

@@ -6,7 +6,9 @@ It extends upon the [work](https://youtu.be/1xGoa-zEOrQ) of Kudasov by making th
 
 ## Features
 
-`clerk` supports
+`clerk` produces a styled spreadsheet with some data and formulas on it. These formulas will be calculated by the target spreadsheet system.
+
+The library supports
 
 - typed cell references - `Cell Double`
 - type-safe arithmetic operations - `(a :: Cell Double) + (b :: Cell Double)`
