@@ -9,8 +9,37 @@ on:
   push:
   workflow_dispatch:
 
+env:
+  action: |
+    git pull --rebase --autostash
+    nix run .#{0}
+    git commit -a -m "action: {1}" && git push || echo ""
+
 jobs:
+  update-readme:
+    name: Update README.md
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Checkout workflows repo
+        uses: actions/checkout@v3
+        with:
+          path: .actions
+          repository: deemp/workflows
+      - uses: ./.actions/.github/actions/prepare-nix
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: config git
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+      - name: Update README.md
+        env:
+          command: updateReadme
+          msg: update readme
+        run: ${{ format(env.action, env.command, env.msg) }}
   ci:
     name: CI
+    needs: update-readme
     uses: deemp/workflows/.github/workflows/nix-ci.yaml@main
     secrets: inherit

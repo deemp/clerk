@@ -46,7 +46,7 @@
       };
 
       scripts = mkShellApps {
-        writeReadme = {
+        updateReadme = {
           text = ''
             ${mkBin lima} toMd src/Example.lhs
             cat README/Intro.md > doc.md
