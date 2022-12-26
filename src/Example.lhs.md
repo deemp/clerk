@@ -217,7 +217,6 @@ valuesBuilder cv = do
     column_ (nf2decimal <| colorMixed) (const pressure')
 ```
 
-
 ## `SheetBuilder`
 
 The `SheetBuilder` is used to place builders onto a sheet and glue them together

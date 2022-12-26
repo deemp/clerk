@@ -189,7 +189,6 @@ A builder for volume & pressure
 >     let pressure' = ex cv.gas |*| ex cv.nMoles |*| ex cv.temperature |/| ex volume'
 >     column_ (nf2decimal <| colorMixed) (const pressure')
 
-
  ## `SheetBuilder`
 
 The `SheetBuilder` is used to place builders onto a sheet and glue them together
