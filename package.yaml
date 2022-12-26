@@ -5,6 +5,7 @@ license:             BSD3
 author:              "Danila Danko, Nickolay Kudasov"
 maintainer:          "Danila Danko"
 copyright:           "Danila Danko, Nickolay Kudasov"
+category:            "spreadsheet"
 
 extra-source-files:
 - README.md

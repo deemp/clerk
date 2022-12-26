@@ -7,6 +7,7 @@ cabal-version: 1.12
 name:           clerk
 version:        0.1.0.0
 description:    Please see the README on GitHub at <https://github.com/deemp/clerk#readme>
+category:       spreadsheet
 homepage:       https://github.com/deemp/clerk#readme
 bug-reports:    https://github.com/deemp/clerk/issues
 author:         Danila Danko, Nickolay Kudasov
