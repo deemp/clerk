@@ -1,104 +1,294 @@
-# Haskell
+# clerk
 
-`VSCodium` with extensions and executables for `Haskell`
+`clerk` is a library for declarative spreadsheet generation using a Haskell eDSL.
 
-## Prerequisites
+It extends upon the [work](https://youtu.be/1xGoa-zEOrQ) of Kudasov by making the tables' layout more flexible.
+
+## Features
+
+`clerk` supports
+
+- typed cell references - `Cell Double`
+- type-safe arithmetic operations - `(a :: Cell Double) + (b :: Cell Double)`
+- range references - `A1:B2`
+- formulas - `SUM(A1:A3)`
+- conditional styles, formatting, column widths
+
+The example below demonstrates these features.
+
+## Example
+
+This is a demo program that uses `clerk` to produce an `xlsx` file that looks as follows:
+
+![demo](README/demoValues.png)
+
+Alternatively, with formulas enabled:
+
+![demo](README/demoFormulas.png)
+
+This file has a sheet with several tables. These are tables for
+constants' header, volume & pressure header, volume & pressure values, and a table per a constant's value.
+Let's see how we can construct such a sheet.
+
+### Imports
+
+First, we import the necessary stuff.
+
+```haskell
+module Example where
+import Clerk
+import Codec.Xlsx qualified as X
+import Codec.Xlsx.Formatted qualified as X
+import Control.Lens ((%~), (&), (?~))
+import Data.ByteString.Lazy qualified as L
+import Data.Text qualified as T
+import Data.Time.Clock.POSIX (getPOSIXTime)
+import Control.Monad (void)
+```
+
+### Inputs
+
+Following that, we declare a number of data types that we'll use to store the input values.
+
+A type for constants' headers.
+
+```haskell
+data ConstantsHeader = ConstantsHeader
+    { hConstant :: String
+    , hSymbol :: String
+    , hValue :: String
+    , hUnits :: String
+    }
+
+constantsHeader :: ConstantsHeader
+constantsHeader =
+    ConstantsHeader
+        { hConstant = "constant"
+        , hSymbol = "symbol"
+        , hValue = "value"
+        , hUnits = "units"
+        }
+```
+
+A type for constants' data.
+
+```haskell
+data ConstantsData a = ConstantsData
+    { name :: String
+    , symbol :: String
+    , value :: a
+    , units :: String
+    }
+```
+
+Additionally, we declare a helper type that will store all constants together.
+
+```haskell
+data ConstantsInput = ConstantsInput
+    { gas :: ConstantsData Double
+    , nMoles :: ConstantsData Double
+    , temperature :: ConstantsData Double
+    }
+
+constants :: ConstantsInput
+constants =
+    ConstantsInput
+        { gas = ConstantsData "GAS CONSTANT" "R" 0.08206 "L.atm/mol.K"
+        , nMoles = ConstantsData "NUMBER OF MOLES" "n" 1 "moles"
+        , temperature = ConstantsData "TEMPERATURE(K)" "T" 273.2 "K"
+        }
+```
+
+A type for the Volume & Pressure header.
+
+```haskell
+data ValuesHeader = ValuesHeader
+    { hVolume :: String
+    , hPressure :: String
+    }
+
+valuesHeader :: ValuesHeader
+valuesHeader =
+    ValuesHeader
+        { hVolume = "VOLUME (L)"
+        , hPressure = "PRESSURE (atm)"
+        }
+```
+
+The last type is for volume inputs. We just generate them
+
+```haskell
+newtype Volume = Volume
+    { volume :: Double
+    }
+
+volumeData :: [Volume]
+volumeData = take 10 $ Volume <$> [1 ..]
+```
+
+### Styles
+
+Following the headers and data types, we define the styles. Let's start with colors.
+We select several color codes and store them into `colors`
+
+```haskell
+data Colors = Colors
+    { lightBlue :: T.Text
+    , lightGreen :: T.Text
+    , blue :: T.Text
+    , green :: T.Text
+    }
+
+colors :: Colors
+colors =
+    Colors
+        { lightGreen = "90CCFFCC"
+        , lightBlue = "90CCFFFF"
+        , blue = "FF99CCFF"
+        , green = "FF00FF00"
+        }
+```
+
+Next, we convert them to `FormatCell` function
+
+```haskell
+colorBlue :: FormatCell
+colorBlue = mkColorStyle colors.blue
+
+colorLightBlue :: FormatCell
+colorLightBlue = mkColorStyle colors.lightBlue
+
+colorGreen :: FormatCell
+colorGreen = mkColorStyle colors.green
+
+colorMixed :: FormatCell
+colorMixed coords idx = mkColorStyle (if even idx then colors.lightGreen else colors.lightBlue) coords idx
+```
+
+Additionally, we compose a transform for the number format
+
+```haskell
+-- | allow 2 decimal digits
+nf2decimal :: FCTransform
+nf2decimal fc = fc & X.formattedFormat %~ (\ff -> ff & X.formatNumberFormat ?~ X.StdNumberFormat X.Nf2Decimal)
+```
+
+And a transform for centering the cell contents
+
+```haskell
+alignCenter :: FCTransform
+alignCenter = horizontalAlignment X.CellHorizontalAlignmentCenter
+```
+
+### `Builder`s
+
+Now, we are able to compose the `Builder`s for tables.
+
+A builder for the constants header.
+
+```haskell
+constantsHeaderBuilder :: Builder ConstantsHeader CellData (Coords, Coords)
+constantsHeaderBuilder = do
+    tl <- columnWidth 20 (alignCenter <| colorBlue) hConstant
+    columnWidth_ 8 (alignCenter <| colorBlue) hSymbol
+    column_ (alignCenter <| colorBlue) hValue
+    tr <- column (alignCenter <| colorBlue) hUnits
+    return (unCell tl, unCell tr)
+```
+
+A builder for a constant. We'll use this builder for each constant separately
+as each constant produces cells of a specific type.
+
+```haskell
+constantBuilder :: forall a. ToCellData a => Builder (ConstantsData a) CellData (Coords, Cell a)
+constantBuilder = do
+    topLeft <- column colorLightBlue name
+    column_ colorLightBlue symbol
+    value <- column (nf2decimal <| colorLightBlue) value
+    column_ colorLightBlue units
+    return (unCell topLeft, value)
+```
+
+A builder for values' header
+
+```haskell
+valuesHeaderBuilder :: Builder ValuesHeader CellData Coords
+valuesHeaderBuilder = do
+    tl <- column colorGreen hVolume
+    columnWidth_ 16 colorGreen hPressure
+    return (unCell tl)
+
+data ConstantsValues = ConstantsValues
+    { gas :: Cell Double
+    , nMoles :: Cell Double
+    , temperature :: Cell Double
+    }
+```
+
+A builder for volume & pressure
+
+```haskell
+valuesBuilder :: ConstantsValues -> Builder Volume CellData ()
+valuesBuilder cv = do
+    volume' <- column colorMixed volume
+    let pressure' = ex cv.gas |*| ex cv.nMoles |*| ex cv.temperature |/| ex volume'
+    column_ (nf2decimal <| colorMixed) (const pressure')
+```
+
+### `SheetBuilder`
+
+The `SheetBuilder` is used to place builders onto a sheet and glue them together
+
+```haskell
+full :: SheetBuilder ()
+full = do
+    (constantsHeaderTL, constantsHeaderTR) <- placeInput (Coords 2 2) constantsHeader constantsHeaderBuilder
+    (gasTL, gas) <- placeInput (overRow (+ 2) constantsHeaderTL) constants.gas constantBuilder
+    (nMolesTL, nMoles) <- placeInput (overRow (+ 1) gasTL) constants.nMoles constantBuilder
+    temperature <- snd <$> placeInput (overRow (+ 1) nMolesTL) constants.temperature constantBuilder
+    valuesHeaderTL <- placeInput (overCol (+ 2) constantsHeaderTR) valuesHeader valuesHeaderBuilder
+    placeInputs_ (overRow (+ 2) valuesHeaderTL) volumeData (valuesBuilder $ ConstantsValues{..})
+```
+
+### Result
+
+Now, we can write the result and get the spreadsheet images that you've seen at the top of this tutorial.
+
+```haskell
+writeWorksheet :: SheetBuilder a -> String -> IO ()
+writeWorksheet tb name = do
+    ct <- getPOSIXTime
+    let
+        xlsx = composeXlsx [("List 1", void tb)]
+    L.writeFile ("example-" <> name <> ".xlsx") $ X.fromXlsx ct xlsx
+
+writeEx :: IO ()
+writeEx = writeWorksheet full "1"
+
+main :: IO ()
+main = writeEx
+```
+
+With formulas enabled:
+
+![demo](README/demoFormulas.png)
+
+## Contribute
+
+### Prerequisites
+
+As this project uses `Nix` for dev environment, study the following prerequisites to set up the project
 
 - [Prerequisites](https://github.com/deemp/flakes#prerequisites)
+- `Haskell` project [template](https://github.com/deemp/flakes/tree/main/templates/codium/haskell#readme)
 - [Haskell](https://github.com/deemp/flakes/blob/main/README/Haskell.md)
 
-## Quick start
+Next, run
 
-1. Install Nix - see [how](https://github.com/deemp/flakes/blob/main/README/InstallNix.md).
-
-1. In a new terminal, run `VSCodium` from a devshell:
-
-```console
-nix flake new my-project -t github:deemp/flakes#codium-haskell
-cd my-project
-git init && git add . && git commit -m "init"
-nix develop
+```sh
+nix develop nix-dev/
 write-settings-json
 codium .
 ```
 
-1. Open a `Haskell` file `app/Main.hs` and hover over a function.
-
-1. Wait until `Haskell Language Server` (`HLS`) starts giving you type info.
-
-## Stack + Nix integration
-
-### Background
-
-Suppose you'd like `Nix` to supply a C library [liblzma](https://tukaani.org/xz/) to `stack` using [this integration](https://docs.haskellstack.org/en/stable/nix_integration/).
-You'd create a `stack-shell` (more on that below) in `flake.nix` and provide there a `Nix` package `pkgs.lzma`.
-Then, `stack` will create an isolated environment, where this library is present, and run your program in this environment.
-In such an environment, your program won't have an access to other libraries and programs like `rm` or `git`.
-But what if your program needs to call the `rm` command?
-In this case, your `stack-shell` should contain the relevant package, `pkgs.coreutils`.
-This package will be turned into executables. Then, `rm` and some other commands will become available in that isolated environment.
-
-### This project
-
-This sample `Haskell` project demonstrates `Stack` + `Nix` integration.
-
-It has a Haskell `lzma` package as a dependency (see [package.yaml](./package.yaml)). This package depends on a `C` library `liblzma`.
-`Nix` delivers this library as a package `pkgs.lzma` in `stack-shell`.
-
-There's also a `pkgs.hello` package in `stack-shell`.
-This allows `someFunc` from `src/Lib.hs` to call the `hello` as a shell command.
-
-```console
-stack run
-```
-
-This `hello` executable will also be available in `ghci` as a shell command:
-
-```console
-stack ghci
-ghci> :?
-...
-:!<command> run the shell command <command>
-...
-ghci> :! hello
-Hello, world!
-```
-
-Furthermore, as `ghcid` (see [ghcid](#ghcid)) uses a `stack ghci` command, you can run `ghcid` as follows:
-
-```console
-ghcid
-```
-
-Additionally, `ghcid` will run the code in magic comments (See `app/Main.hs`).
-
-### Setup
-
-Necessary components of `Stack` + `Nix` integration:
-
-- `flake-compat` in `inputs` of `flake.nix`
-  - This is to turn `stack-shell` in `flake.nix` into a valid [stack shell](https://docs.haskellstack.org/en/stable/nix_integration/#external-c-libraries-through-a-shellnix-file) in `stack.nix`
-  - [repo](https://github.com/edolstra/flake-compat)
-- Nix [enabled](https://docs.haskellstack.org/en/stable/nix_integration/#configuration-options) in `stack.yaml`
-- `stack.nix`
-  - The file should have the same name as the value of `shell-file` in `stack.yaml`
-- `stack-shell` with necessary derivations in `flake.nix`
-  - The name `stack-shell` is chosen arbitrarily
-  - The name should be the same as the one used in `stack.nix`
-
-## Tools
-
-### ghcid
-
-[ghcid](https://github.com/ndmitchell/ghcid) is a `Very low feature GHCi based IDE`.
-It can be used to rerun a function in a given file on changes in a given directory.
-This template provides a sample configuration for this tool in the `.ghcid` file.
-
-### GHC
-
-This template uses `GHC 9.2.4`. You can switch to `GHC 9.0.2`:
-
-- in `flake.nix`, change `"92"` to `"90"`
-- in `stack.yaml`, change `resolver` to [lts-19.33](https://www.stackage.org/lts-19.33) or a later one from `stackage`
-
-After that, if you're working in `VSCodium`, you should repeat the [Quick Start](#quick-start)
+and open a `Haskell` file. `HLS` should soon start giving you hints.

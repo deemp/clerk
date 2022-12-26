@@ -1,4 +1,5 @@
 {
     "no-bare-urls" : false,
-    "line-length": false
+    "line-length": false,
+    "first-line-heading": false
 }

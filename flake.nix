@@ -31,7 +31,7 @@
     let
       pkgs = nixpkgs.legacyPackages.${system};
       inherit (my-codium.functions.${system}) writeSettingsJSON mkCodium;
-      inherit (drv-tools.functions.${system}) mkBinName withAttrs;
+      inherit (drv-tools.functions.${system}) mkBinName withAttrs mkShellApps mkBin;
       inherit (my-codium.configs.${system}) extensions settingsNix;
       inherit (flakes-tools.functions.${system}) mkFlakesTools;
       devshell = my-devshell.devshell.${system};
@@ -45,12 +45,26 @@
           git nix-ide workbench markdown-all-in-one markdown-language-features;
       };
 
+      scripts = mkShellApps {
+        writeReadme = {
+          text = ''
+            ${mkBin lima} toMd src/Example.lhs
+            cat README/Intro.md > doc.md
+            printf "\n" >> doc.md
+            cat src/Example.lhs.md >> doc.md
+            printf "\n" >> doc.md
+            cat README/Conclusion.md >> doc.md
+            rm src/Example.lhs.md
+            mv doc.md README.md
+          '';
+          runtimeInputs = [ lima ];
+          description = "Write README.md";
+        };
+      };
+
       codiumTools = [
-        implicit-hie
-        ghcid
         stack
         writeSettings
-        ghc
         lima
       ];
 
@@ -59,14 +73,14 @@
         runtimeDependencies = codiumTools ++ [ hls ];
       };
 
-      tools = codiumTools ++ [ codium ];
+      tools = codiumTools ++ [ codium ] ++ (builtins.attrValues scripts);
       flakesTools = mkFlakesTools [ "." ];
     in
     {
       packages = {
         default = codium;
         inherit (flakesTools) updateLocks pushToCachix;
-      };
+      } // scripts;
 
       devShells.default = devshell.mkShell
         {
