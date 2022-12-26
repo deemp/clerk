@@ -9,6 +9,7 @@
     haskell-tools.url = "github:deemp/flakes?dir=language-tools/haskell";
     my-devshell.url = "github:deemp/flakes?dir=devshell";
     flakes-tools.url = "github:deemp/flakes?dir=flakes-tools";
+    my-lima.url = "github:deemp/flakes?dir=lima";
     flake-compat = {
       url = "github:edolstra/flake-compat";
       flake = false;
@@ -23,6 +24,7 @@
     , drv-tools
     , haskell-tools
     , my-devshell
+    , my-lima
     , ...
     }:
     flake-utils.lib.eachDefaultSystem (system:
@@ -33,6 +35,7 @@
       inherit (my-codium.configs.${system}) extensions settingsNix;
       inherit (flakes-tools.functions.${system}) mkFlakesTools;
       devshell = my-devshell.devshell.${system};
+      lima = my-lima.packages.${system}.default;
       inherit (my-devshell.functions.${system}) mkCommands;
       inherit (haskell-tools.functions.${system}) toolsGHC;
       hsShellTools = haskell-tools.toolSets.${system}.shellTools;
@@ -49,6 +52,7 @@
         stack
         writeSettings
         ghc
+        lima
       ];
 
       codium = mkCodium {
