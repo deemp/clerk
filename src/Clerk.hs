@@ -40,7 +40,7 @@ import Control.Monad.State (
   modify,
   void,
  )
-import Control.Monad.Trans.Writer (runWriter)
+import Control.Monad.Trans.Writer (execWriter, runWriter)
 import Control.Monad.Writer (MonadWriter (..), Writer)
 import Data.Char (toUpper)
 import Data.Default (Default (..))
@@ -52,8 +52,7 @@ import Data.Text qualified as T
 
 -- Coords
 
--- TODO Extend addresses
--- Allow sheet addresses
+-- TODO Allow sheet addresses
 
 -- | Coords of a cell
 data Coords = Coords {row :: Int, col :: Int}
@@ -274,6 +273,9 @@ defaultTransformResult = composeTransformResult renderTemplate
 newtype SheetBuilder a = SheetBuilder {unSheetBuilder :: Writer Transform a}
   deriving (Functor, Applicative, Monad, MonadWriter Transform)
 
+class Functor a => Discardable a where
+  discard :: a b -> a ()
+
 placeInputs :: ToCellData output => Coords -> [input] -> Builder input output a -> SheetBuilder a
 placeInputs offset inputs b = do
   let transformResult = defaultTransformResult offset inputs b
@@ -289,14 +291,15 @@ placeInputs_ coords inputs b = void (placeInputs coords inputs b)
 placeInput_ :: ToCellData output => Coords -> input -> Builder input output a -> SheetBuilder ()
 placeInput_ coords input = placeInputs_ coords [input]
 
-composeXlsx :: [(T.Text, Transform)] -> X.Xlsx
-composeXlsx tf = workBook'
+composeXlsx :: [(T.Text, SheetBuilder ())] -> X.Xlsx
+composeXlsx sheetBuilders = workBook'
  where
-  workBook = X.formatWorkbook ((\(name, tf') -> (name, tf'.fmTransform X.def)) <$> tf) X.def
+  getTransform x = execWriter $ unSheetBuilder x
+  workBook = X.formatWorkbook ((\(name, tf') -> (name, (getTransform tf').fmTransform X.def)) <$> sheetBuilders) X.def
   workBook' =
     workBook
       & X.xlSheets
-        %~ \sheets -> zipWith (\x (name, ws) -> (name, x.wsTransform ws)) (snd <$> tf) sheets
+        %~ \sheets -> zipWith (\x (name, ws) -> (name, (getTransform x).wsTransform ws)) (snd <$> sheetBuilders) sheets
 
 {- Lib. Formulas -}
 
