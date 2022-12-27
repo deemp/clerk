@@ -40,8 +40,8 @@
       lima = my-lima.packages.${system}.default;
       inherit (my-devshell.functions.${system}) mkCommands;
       inherit (haskell-tools.functions.${system}) toolsGHC;
-      inherit (workflows.functions.${system}) writeWorkflow run nixCI_;
-      inherit (workflows.configs.${system}) steps;
+      inherit (workflows.functions.${system}) writeWorkflow run nixCI_ stepsIf expr;
+      inherit (workflows.configs.${system}) steps names os;
       inherit (toolsGHC "92") stack hls ghc implicit-hie ghcid;
 
       writeSettings = writeSettingsJSON {
@@ -84,6 +84,7 @@
         {
           name = "Update README.md";
           run = run.runExecutableAndCommit "updateReadme" "Update README.md";
+          "if" = "${names.matrix.os} == '${os.ubuntu-20}'";
         }
       ];
     in

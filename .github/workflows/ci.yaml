@@ -21,7 +21,8 @@ jobs:
           git pull --rebase --autostash
           nix run .#updateLocks
           git commit -a -m "action: Update flake locks" && git push || echo ""
-      - name: Update README.md
+      - if: matrix.os == 'ubuntu-20.04'
+        name: Update README.md
         run: |
           git pull --rebase --autostash
           nix run .#updateReadme
