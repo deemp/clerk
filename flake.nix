@@ -10,6 +10,7 @@
     my-devshell.url = "github:deemp/flakes?dir=devshell";
     flakes-tools.url = "github:deemp/flakes?dir=flakes-tools";
     my-lima.url = "github:deemp/flakes?dir=lima";
+    workflows.url = "github:deemp/flakes?dir=workflows";
     flake-compat = {
       url = "github:edolstra/flake-compat";
       flake = false;
@@ -25,6 +26,7 @@
     , haskell-tools
     , my-devshell
     , my-lima
+    , workflows
     , ...
     }:
     flake-utils.lib.eachDefaultSystem (system:
@@ -38,6 +40,8 @@
       lima = my-lima.packages.${system}.default;
       inherit (my-devshell.functions.${system}) mkCommands;
       inherit (haskell-tools.functions.${system}) toolsGHC;
+      inherit (workflows.functions.${system}) writeWorkflow run nixCI_;
+      inherit (workflows.configs.${system}) steps;
       inherit (toolsGHC "92") stack hls ghc implicit-hie ghcid;
 
       writeSettings = writeSettingsJSON {
@@ -75,11 +79,19 @@
 
       tools = codiumTools ++ [ codium ] ++ (builtins.attrValues scripts);
       flakesTools = mkFlakesTools [ "." ];
+
+      nixCI = nixCI_ [
+        {
+          name = "Update README.md";
+          run = run.runExecutableAndCommit "updateReadme" "Update README.md";
+        }
+      ];
     in
     {
       packages = {
         default = codium;
         inherit (flakesTools) updateLocks pushToCachix;
+        writeWorkflows = writeWorkflow "ci" nixCI;
       } // scripts;
 
       devShells.default = devshell.mkShell
