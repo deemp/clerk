@@ -32,6 +32,7 @@
     flake-utils.lib.eachDefaultSystem (system:
     let
       pkgs = nixpkgs.legacyPackages.${system};
+      inherit (builtins) foldl';
       inherit (my-codium.functions.${system}) writeSettingsJSON mkCodium;
       inherit (drv-tools.functions.${system}) mkBinName withAttrs mkShellApps mkBin;
       inherit (my-codium.configs.${system}) extensions settingsNix;
@@ -40,9 +41,41 @@
       lima = my-lima.packages.${system}.default;
       inherit (my-devshell.functions.${system}) mkCommands;
       inherit (haskell-tools.functions.${system}) toolsGHC;
-      inherit (workflows.functions.${system}) writeWorkflow run nixCI_ stepsIf expr;
-      inherit (workflows.configs.${system}) steps names os;
-      inherit (toolsGHC "92") stack hls ghc implicit-hie ghcid;
+      inherit (workflows.functions.${system}) writeWorkflow run nixCI_ stepsIf expr mkAccessors genId;
+      inherit (workflows.configs.${system}) steps os oss;
+      inherit (toolsGHC "92") stack hls cabal;
+
+      appPackages = [
+        pkgs.zlib
+        pkgs.expat
+        pkgs.bzip2
+      ];
+
+      ghcVersions = [ "865Binary" "88" "810" "90" "92" "94" ];
+      ghcs = map (x: "ghc${x}") ghcVersions;
+
+      buildScripts = mkShellApps (
+        foldl'
+          (acc: ghc: acc // (
+            let
+              name = "cabal-ghc${ghc}";
+              builder = (toolsGHC ghc).cabal appPackages;
+            in
+            {
+              "${name}" = {
+                inherit name;
+                text = ''
+                  ${mkBin builder} build
+                '';
+                runtimeInputs = [ builder ];
+              };
+            }
+          ))
+          { }
+          ghcVersions
+      );
+
+      names = withAttrs (workflows.configs.${system}).names (mkAccessors ({ matrix = genId "ghc"; }));
 
       writeSettings = writeSettingsJSON {
         inherit (settingsNix) haskell todo-tree files editor gitlens
@@ -70,6 +103,7 @@
         stack
         writeSettings
         lima
+        cabal
       ];
 
       codium = mkCodium {
@@ -80,20 +114,38 @@
       tools = codiumTools ++ [ codium ] ++ (builtins.attrValues scripts);
       flakesTools = mkFlakesTools [ "." ];
 
-      nixCI = nixCI_ [
+      nixCI = withAttrs
+        (
+          nixCI_ [
+            {
+              name = "Update README.md";
+              run = run.runExecutableAndCommit "updateReadme" "Update README.md";
+              "if" = "${names.matrix.os} == '${os.ubuntu-20}'";
+            }
+          ])
         {
-          name = "Update README.md";
-          run = run.runExecutableAndCommit "updateReadme" "Update README.md";
-          "if" = "${names.matrix.os} == '${os.ubuntu-20}'";
-        }
-      ];
+          jobs = {
+            build = {
+              name = "Build";
+              strategy.matrix = {
+                os = oss;
+                ghc = ghcs;
+              };
+              runs-on = expr names.matrix.os;
+              steps = [
+
+              ];
+            };
+          };
+        };
+
     in
     {
       packages = {
         default = codium;
         inherit (flakesTools) updateLocks pushToCachix;
         writeWorkflows = writeWorkflow "ci" nixCI;
-      } // scripts;
+      } // scripts // buildScripts;
 
       devShells.default = devshell.mkShell
         {
@@ -109,13 +161,7 @@
 
           ghc = pkgs.haskell.compiler.${ghcVersion};
 
-          buildInputs = [
-            pkgs.zlib
-            pkgs.expat
-            pkgs.bzip2
-            pkgs.xdg-utils
-            pkgs.firefox
-          ];
+          buildInputs = appPackages;
         };
     });
 

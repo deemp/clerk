@@ -3,3 +3,4 @@
 .direnv
 .vscode
 example-*
+dist-newstyle
