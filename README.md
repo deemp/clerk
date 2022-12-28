@@ -22,11 +22,11 @@ The example below demonstrates these features.
 
 This is a demo program that uses `clerk` to produce an `xlsx` file that looks as follows:
 
-![demo](README/demoValues.png)
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/demoValues.png" width = "70%">
 
 Alternatively, with formulas enabled:
 
-![demo](README/demoFormulas.png)
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/demoFormulas.png" width = "70%">
 
 This file has a sheet with several tables. These are tables for
 constants' header, volume & pressure header, volume & pressure values, and a table per a constant's value.
@@ -188,6 +188,8 @@ Now, we are able to compose the `Builder`s for tables.
 
 A builder for the constants header.
 
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/constantsHeader.png" width = "70%">
+
 ```haskell
 constantsHeaderBuilder :: Builder ConstantsHeader CellData (Coords, Coords)
 constantsHeaderBuilder = do
@@ -201,6 +203,8 @@ constantsHeaderBuilder = do
 A builder for a constant. We'll use this builder for each constant separately
 as each constant produces cells of a specific type.
 
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/constants.png" width = "70%">
+
 ```haskell
 constantBuilder :: forall a. ToCellData a => Builder (ConstantsData a) CellData (Coords, Cell a)
 constantBuilder = do
@@ -212,6 +216,8 @@ constantBuilder = do
 ```
 
 A builder for values' header
+
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/valuesHeader.png" width = "70%">
 
 ```haskell
 valuesHeaderBuilder :: Builder ValuesHeader CellData Coords
@@ -227,7 +233,9 @@ data ConstantsValues = ConstantsValues
     }
 ```
 
-A builder for volume & pressure
+A builder for volume & pressure (formulas enabled)
+
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/valuesFormulas.png" width = "70%">
 
 ```haskell
 valuesBuilder :: ConstantsValues -> Builder Volume CellData ()
@@ -281,7 +289,7 @@ to get `example-1.xlsx`.
 
 With formulas enabled, `example-1.xlsx` looks like this:
 
-![demo](README/demoFormulas.png)
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/demoFormulas.png" width = "70%">
 
 ## Contribute
 
