@@ -50,7 +50,7 @@
       };
 
       scripts = mkShellApps {
-        updateReadme = {
+        writeReadme = {
           text = ''
             ${mkBin lima} toMd src/Example.lhs
             cat README/Intro.md > doc.md
@@ -82,8 +82,8 @@
 
       nixCI = nixCI_ [
         {
-          name = "Update README.md";
-          run = run.runExecutableAndCommit "updateReadme" "Update README.md";
+          name = "Write README.md";
+          run = run.runExecutableAndCommit scripts.writeReadme.pname "Write README.md";
           "if" = "${names.matrix.os} == '${os.ubuntu-20}'";
         }
       ];

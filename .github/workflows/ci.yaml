@@ -22,11 +22,11 @@ jobs:
           nix run .#updateLocks
           git commit -a -m "action: Update flake locks" && git push || echo ""
       - if: matrix.os == 'ubuntu-20.04'
-        name: Update README.md
+        name: Write README.md
         run: |
           git pull --rebase --autostash
-          nix run .#updateReadme
-          git commit -a -m "action: Update README.md" && git push || echo ""
+          nix run .#writeReadme
+          git commit -a -m "action: Write README.md" && git push || echo ""
       - name: Log in to Cachix
         uses: cachix/cachix-action@v12
         with:
