@@ -34,28 +34,21 @@ library
   hs-source-dirs:
       src
   default-extensions:
-      BlockArguments
       DataKinds
       DeriveFunctor
-      DuplicateRecordFields
       FlexibleContexts
       FlexibleInstances
-      GADTs
-      GeneralizedNewtypeDeriving
-      ImportQualifiedPost
-      ImpredicativeTypes
-      InstanceSigs
-      KindSignatures
-      LambdaCase
-      NamedFieldPuns
-      OverloadedRecordDot
       OverloadedStrings
+      OverloadedRecordDot
+      GeneralizedNewtypeDeriving
+      RankNTypes
+      ImportQualifiedPost
+      InstanceSigs
+      NamedFieldPuns
       RecordWildCards
-      ScopedTypeVariables
       TupleSections
-      TypeApplications
+      MonoLocalBinds
       TypeSynonymInstances
-      UndecidableInstances
       DuplicateRecordFields
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
@@ -78,28 +71,21 @@ executable clerk
   hs-source-dirs:
       app
   default-extensions:
-      BlockArguments
       DataKinds
       DeriveFunctor
-      DuplicateRecordFields
       FlexibleContexts
       FlexibleInstances
-      GADTs
-      GeneralizedNewtypeDeriving
-      ImportQualifiedPost
-      ImpredicativeTypes
-      InstanceSigs
-      KindSignatures
-      LambdaCase
-      NamedFieldPuns
-      OverloadedRecordDot
       OverloadedStrings
+      OverloadedRecordDot
+      GeneralizedNewtypeDeriving
+      RankNTypes
+      ImportQualifiedPost
+      InstanceSigs
+      NamedFieldPuns
       RecordWildCards
-      ScopedTypeVariables
       TupleSections
-      TypeApplications
+      MonoLocalBinds
       TypeSynonymInstances
-      UndecidableInstances
       DuplicateRecordFields
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:

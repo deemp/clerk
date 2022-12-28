@@ -155,7 +155,7 @@ A builder for the constants header.
 >     tl <- columnWidth 20 (alignCenter <| colorBlue) hConstant
 >     columnWidth_ 8 (alignCenter <| colorBlue) hSymbol
 >     column_ (alignCenter <| colorBlue) hValue
->     tr <- column (alignCenter <| colorBlue) hUnits
+>     tr <- columnWidth 13 (alignCenter <| colorBlue) hUnits
 >     return (unCell tl, unCell tr)
 
 A builder for a constant. We'll use this builder for each constant separately
@@ -177,7 +177,7 @@ A builder for values' header.
 
 > valuesHeaderBuilder :: Builder ValuesHeader CellData Coords
 > valuesHeaderBuilder = do
->     tl <- column colorGreen hVolume
+>     tl <- columnWidth 12 colorGreen hVolume
 >     columnWidth_ 16 colorGreen hPressure
 >     return (unCell tl)
 

@@ -16,15 +16,22 @@ module Clerk (
   column_,
   composeXlsx,
   ex,
+  ex',
   horizontalAlignment,
   mkColorStyle,
   overCol,
   overRow,
   placeInput,
   placeInputs_,
+  (|+|),
+  (|-|),
   (|*|),
-  (<|),
   (|/|),
+  (|:|),
+  (|^|),
+  (|$|),
+  (<|),
+  Expr(..)
 ) where
 
 import Codec.Xlsx qualified as X
@@ -47,7 +54,7 @@ import Data.Default (Default (..))
 import Data.Foldable (Foldable (..))
 import Data.List (intercalate)
 import Data.Map.Strict qualified as Map (Map, insert)
-import Data.Maybe (maybeToList)
+import Data.Maybe (isJust, maybeToList)
 import Data.Text qualified as T
 
 -- Coords
@@ -241,7 +248,7 @@ columnWidthCell width format mkOutput = do
             }
   tell (Template [CellTemplate{format, mkOutput, columnsProperties}])
   cell <- gets Cell
-  modify (\x -> x{col = x.col + 1})
+  modify (\x -> x{col = (x.col) + 1})
   return cell
 
 columnWidth :: ToCellData output => Double -> FormatCell -> (input -> output) -> Builder input CellData (Cell a)
@@ -267,7 +274,7 @@ defaultTransformResult :: ToCellData output => Coords -> [input] -> Builder inpu
 defaultTransformResult = composeTransformResult renderTemplate
 
 -- TODO
--- Keep current sheet info
+-- Store current sheet info for formulas
 
 -- | Top monad to compose the results of Builders
 newtype SheetBuilder a = SheetBuilder {unSheetBuilder :: Writer Transform a}
@@ -296,14 +303,13 @@ composeXlsx sheetBuilders = workBook'
  where
   getTransform x = execWriter $ unSheetBuilder x
   workBook = X.formatWorkbook ((\(name, tf') -> (name, (getTransform tf').fmTransform X.def)) <$> sheetBuilders) X.def
+  filterWidths ws = ws & X.wsColumnsProperties %~ filter (isJust . X.cpWidth)
   workBook' =
     workBook
       & X.xlSheets
-        %~ \sheets -> zipWith (\x (name, ws) -> (name, (getTransform x).wsTransform ws)) (snd <$> sheetBuilders) sheets
+        %~ \sheets -> zipWith (\x (name, ws) -> (name, (getTransform x).wsTransform ws & filterWidths)) (snd <$> sheetBuilders) sheets
 
 {- Lib. Formulas -}
-
-data Arith a
 
 -- | Formula expressions
 data Expr t

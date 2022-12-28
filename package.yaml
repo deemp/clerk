@@ -22,28 +22,21 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/deemp/clerk#readme>
 
 default-extensions:
-- BlockArguments
 - DataKinds
 - DeriveFunctor
-- DuplicateRecordFields
 - FlexibleContexts
 - FlexibleInstances
-- GADTs
-- GeneralizedNewtypeDeriving
-- ImportQualifiedPost
-- ImpredicativeTypes
-- InstanceSigs
-- KindSignatures
-- LambdaCase
-- NamedFieldPuns
-- OverloadedRecordDot
 - OverloadedStrings
+- OverloadedRecordDot
+- GeneralizedNewtypeDeriving
+- RankNTypes
+- ImportQualifiedPost
+- InstanceSigs
+- NamedFieldPuns
 - RecordWildCards
-- ScopedTypeVariables
 - TupleSections
-- TypeApplications
+- MonoLocalBinds
 - TypeSynonymInstances
-- UndecidableInstances
 - DuplicateRecordFields
 
 dependencies:

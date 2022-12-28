@@ -12,11 +12,11 @@ The library supports
 
 - typed cell references - `Cell Double`
 - type-safe arithmetic operations - `(a :: Cell Double) + (b :: Cell Double)`
-- range references - `A1:B2`
-- formulas - `SUM(A1:A3)`
+- range references - `a |:| b` -> `A1:B1`
+- formulas - `(e :: Expr Double) = "SUM" |$| [(a |:| b)]` -> `SUM(A1:B1)`
 - conditional styles, formatting, column widths
 
-The example below demonstrates these features.
+The example below demonstrates some of these features.
 
 ## Example
 
@@ -29,7 +29,7 @@ Alternatively, with formulas enabled:
 <img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/demoFormulas.png" width = "80%">
 
 This file has a sheet with several tables. These are tables for
-constants' header, volume & pressure header, volume & pressure values, and a table per a constant's value.
+constants' header, a table per a constant's value (three of them), volume & pressure header, volume & pressure values.
 Let's see how we can construct such a sheet.
 
 ### Imports
@@ -196,7 +196,7 @@ constantsHeaderBuilder = do
     tl <- columnWidth 20 (alignCenter <| colorBlue) hConstant
     columnWidth_ 8 (alignCenter <| colorBlue) hSymbol
     column_ (alignCenter <| colorBlue) hValue
-    tr <- column (alignCenter <| colorBlue) hUnits
+    tr <- columnWidth 13 (alignCenter <| colorBlue) hUnits
     return (unCell tl, unCell tr)
 ```
 
@@ -222,7 +222,7 @@ A builder for values' header.
 ```haskell
 valuesHeaderBuilder :: Builder ValuesHeader CellData Coords
 valuesHeaderBuilder = do
-    tl <- column colorGreen hVolume
+    tl <- columnWidth 12 colorGreen hVolume
     columnWidth_ 16 colorGreen hPressure
     return (unCell tl)
 ```

@@ -12,8 +12,8 @@ The library supports
 
 - typed cell references - `Cell Double`
 - type-safe arithmetic operations - `(a :: Cell Double) + (b :: Cell Double)`
-- range references - `A1:B2`
-- formulas - `SUM(A1:A3)`
+- range references - `a |:| b` -> `A1:B1`
+- formulas - `(e :: Expr Double) = "SUM" |$| [(a |:| b)]` -> `SUM(A1:B1)`
 - conditional styles, formatting, column widths
 
-The example below demonstrates these features.
+The example below demonstrates some of these features.
