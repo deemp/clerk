@@ -227,6 +227,10 @@ valuesHeaderBuilder = do
     return (unCell tl)
 ```
 
+A builder for volume & pressure (formulas enabled)
+
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/valuesFormulas.png" width = "50%">
+
 To pass values in a structured way, we make a helper type.
 
 ```haskell
@@ -237,9 +241,7 @@ data ConstantsValues = ConstantsValues
     }
 ```
 
-A builder for volume & pressure (formulas enabled)
-
-<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/valuesFormulas.png" width = "50%">
+Next, we define a function to produce a builder.
 
 ```haskell
 valuesBuilder :: ConstantsValues -> Builder Volume CellData ()

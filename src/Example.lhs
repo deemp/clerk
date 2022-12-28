@@ -181,6 +181,10 @@ A builder for values' header.
 >     columnWidth_ 16 colorGreen hPressure
 >     return (unCell tl)
 
+A builder for volume & pressure (formulas enabled)
+
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/valuesFormulas.png" width = "50%">
+
 To pass values in a structured way, we make a helper type.
 
 > data ConstantsValues = ConstantsValues
@@ -189,9 +193,7 @@ To pass values in a structured way, we make a helper type.
 >     , temperature :: Cell Double
 >     }
 
-A builder for volume & pressure (formulas enabled)
-
-<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/valuesFormulas.png" width = "50%">
+Next, we define a function to produce a builder.
 
 > valuesBuilder :: ConstantsValues -> Builder Volume CellData ()
 > valuesBuilder cv = do
