@@ -6,6 +6,7 @@ author:              "Danila Danko, Nickolay Kudasov"
 maintainer:          "Danila Danko"
 copyright:           "Danila Danko, Nickolay Kudasov"
 category:            "spreadsheet"
+synopsis:            "Declaratively describe spreadsheets and generate xlsx"
 
 extra-source-files:
 - README.md
