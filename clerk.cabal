@@ -58,16 +58,16 @@ library
       DuplicateRecordFields
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      base >=4.7 && <5
-    , bytestring
-    , containers
-    , data-default
-    , lens
-    , mtl
-    , text
-    , time
-    , transformers
-    , xlsx
+      base >=4.9.0.0 && <5.0
+    , bytestring >=0.10.8.0
+    , containers >=0.5.0.0
+    , data-default >=0.7.1.1
+    , lens >=3.8 && <5.3
+    , mtl >=2.1
+    , text >=0.11.3.1
+    , time >=1.4.0.1
+    , transformers >=0.3.0.0
+    , xlsx >=1.1.0.1
   default-language: Haskell2010
 
 executable clerk
@@ -102,15 +102,15 @@ executable clerk
       DuplicateRecordFields
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      base >=4.7 && <5
-    , bytestring
+      base >=4.9.0.0 && <5.0
+    , bytestring >=0.10.8.0
     , clerk
-    , containers
-    , data-default
-    , lens
-    , mtl
-    , text
-    , time
-    , transformers
-    , xlsx
+    , containers >=0.5.0.0
+    , data-default >=0.7.1.1
+    , lens >=3.8 && <5.3
+    , mtl >=2.1
+    , text >=0.11.3.1
+    , time >=1.4.0.1
+    , transformers >=0.3.0.0
+    , xlsx >=1.1.0.1
   default-language: Haskell2010
