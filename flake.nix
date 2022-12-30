@@ -74,6 +74,7 @@
         cabal
         writeSettings
         lima
+        hpack
       ];
 
       codium = mkCodium {
@@ -81,7 +82,7 @@
         runtimeDependencies = codiumTools ++ [ hls ];
       };
 
-      tools = codiumTools ++ [ codium pkgs.hpack ] ++ (builtins.attrValues scripts);
+      tools = codiumTools ++ [ codium ] ++ (builtins.attrValues scripts);
       flakesTools = mkFlakesTools [ "." ];
 
       nixCI = nixCI_ [
@@ -105,8 +106,6 @@
         hp.shellFor {
           packages = ps: [ ps.clerk ];
           nativeBuildInputs = [
-            cabal
-            hpack
             pkgs.zlib
             pkgs.expat
             pkgs.bzip2
