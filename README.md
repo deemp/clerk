@@ -34,10 +34,10 @@ Let's see how we can construct such a sheet.
 
 ### Imports
 
-First, we import the necessary stuff.
+First, we import the necessary stuff. 
 
 ```haskell
-module Example (main) where
+module Main (main) where
 import Clerk
 import Codec.Xlsx qualified as X
 import Codec.Xlsx.Formatted qualified as X
@@ -288,10 +288,12 @@ main = writeEx
 Run
 
 ```console
-stack run
+cd example
+nix develop
+cabal run
 ```
 
-to get `example-1.xlsx`.
+to get `example/example-1.xlsx`.
 
 With formulas enabled, `example-1.xlsx` looks like this:
 
