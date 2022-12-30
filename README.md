@@ -34,7 +34,7 @@ Let's see how we can construct such a sheet.
 
 ### Imports
 
-First, we import the necessary stuff. 
+First, we import the necessary stuff.
 
 ```haskell
 module Main (main) where
