@@ -2,6 +2,4 @@
 *~
 .direnv
 .vscode
-example-*
 dist-newstyle
-.~lock*

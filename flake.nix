@@ -42,7 +42,9 @@
       inherit (haskell-tools.functions.${system}) toolsGHC;
       inherit (workflows.functions.${system}) writeWorkflow run nixCI_ stepsIf expr;
       inherit (workflows.configs.${system}) steps names os;
-      inherit (toolsGHC "92") stack hls ghc implicit-hie ghcid;
+
+      ghcVersion = "92";
+      inherit (toolsGHC ghcVersion) stack hls cabal ghcid hpack;
 
       writeSettings = writeSettingsJSON {
         inherit (settingsNix) haskell todo-tree files editor gitlens
@@ -51,23 +53,25 @@
 
       scripts = mkShellApps {
         writeReadme = {
-          text = ''
-            ${mkBin lima} toMd src/Example.lhs
-            cat README/Intro.md > doc.md
-            printf "\n" >> doc.md
-            cat src/Example.lhs.md >> doc.md
-            printf "\n" >> doc.md
-            cat README/Conclusion.md >> doc.md
-            rm src/Example.lhs.md
-            mv doc.md README.md
-          '';
+          text =
+            let lhs = "example/app/Main.lhs"; in
+            ''
+              ${mkBin lima} toMd ${lhs}
+              cat README/Intro.md > doc.md
+              printf "\n" >> doc.md
+              cat ${lhs}.md >> doc.md
+              printf "\n" >> doc.md
+              cat README/Conclusion.md >> doc.md
+              rm ${lhs}.md
+              mv doc.md README.md
+            '';
           runtimeInputs = [ lima ];
           description = "Write README.md";
         };
       };
 
       codiumTools = [
-        stack
+        cabal
         writeSettings
         lima
       ];
@@ -77,7 +81,7 @@
         runtimeDependencies = codiumTools ++ [ hls ];
       };
 
-      tools = codiumTools ++ [ codium ] ++ (builtins.attrValues scripts);
+      tools = codiumTools ++ [ codium pkgs.hpack ] ++ (builtins.attrValues scripts);
       flakesTools = mkFlakesTools [ "." ];
 
       nixCI = nixCI_ [
@@ -87,6 +91,35 @@
           "if" = "${names.matrix.os} == '${os.ubuntu-20}'";
         }
       ];
+
+      inherit (builtins) concatLists attrValues;
+      inherit (pkgs.haskell.lib) doJailbreak dontCheck;
+      hp = pkgs.haskell.packages."ghc${ghcVersion}".override {
+        overrides = self: super: {
+          clerk = self.callCabal2nix "clerk" ./. { };
+          xlsx = dontCheck (doJailbreak super.xlsx);
+        };
+      };
+
+      cabalShell =
+        hp.shellFor {
+          packages = ps: [ ps.clerk ];
+          nativeBuildInputs = [
+            cabal
+            hpack
+            pkgs.zlib
+            pkgs.expat
+            pkgs.bzip2
+          ];
+          withHoogle = true;
+          shellHook = ''
+            nix develop .#tools
+          '';
+        };
+      # TODO add flags
+
+      # "$everything": -haddock
+      # "$locals": -Wall
     in
     {
       packages = {
@@ -95,27 +128,15 @@
         writeWorkflows = writeWorkflow "ci" nixCI;
       } // scripts;
 
-      devShells.default = devshell.mkShell
+      devShells =
         {
-          packages = tools;
-          bash.extra = ''printf "Hello, world!\n"'';
-          commands = mkCommands "tools" tools;
-        };
-
-      stack-shell = { ghcVersion }:
-
-        pkgs.haskell.lib.buildStackProject {
-          name = "stack-shell";
-
-          ghc = pkgs.haskell.compiler.${ghcVersion};
-
-          buildInputs = [
-            pkgs.zlib
-            pkgs.expat
-            pkgs.bzip2
-            pkgs.xdg-utils
-            pkgs.firefox
-          ];
+          default = cabalShell;
+          tools = devshell.mkShell
+            {
+              packages = tools;
+              bash.extra = '''';
+              commands = mkCommands "tools" tools;
+            };
         };
     });
 

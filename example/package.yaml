@@ -1,12 +1,10 @@
-name:                clerk
-version:             0.1.0.1
-github:              "deemp/clerk"
+name:                nix-managed
+version:             0.1.0.0
+github:              "value/nix-managed"
 license:             BSD3
-author:              "Danila Danko, Nickolay Kudasov"
-maintainer:          "Danila Danko"
-copyright:           "Danila Danko, Nickolay Kudasov"
-category:            "spreadsheet"
-synopsis:            "Declaratively describe spreadsheets and generate xlsx"
+author:              "value"
+maintainer:          "value"
+copyright:           "value"
 
 extra-source-files:
 - README.md
@@ -19,7 +17,19 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/deemp/clerk#readme>
+description:         Please see the README on GitHub at <https://github.com/value/nix-managed#readme>
+
+dependencies:
+- base >= 4.9.0.0 && < 5.0
+- mtl >= 2.1
+- transformers >= 0.3.0.0
+- text >= 0.11.3.1
+- xlsx >= 1.1.0.1
+- bytestring >= 0.10.8.0
+- lens >= 3.8 && < 5.3
+- time >= 1.4.0.1
+- containers >= 0.5.0.0
+- data-default >= 0.7.1.1
 
 default-extensions:
 - DataKinds
@@ -39,18 +49,6 @@ default-extensions:
 - TypeSynonymInstances
 - DuplicateRecordFields
 
-dependencies:
-- base >= 4.9.0.0 && < 5.0
-- mtl >= 2.1
-- transformers >= 0.3.0.0
-- text >= 0.11.3.1
-- xlsx >= 1.1.0.1
-- bytestring >= 0.10.8.0
-- lens >= 3.8 && < 5.3
-- time >= 1.4.0.1
-- containers >= 0.5.0.0
-- data-default >= 0.7.1.1
-
 ghc-options:
 - -Wall
 - -Wcompat
@@ -62,5 +60,17 @@ ghc-options:
 - -Wpartial-fields
 - -Wredundant-constraints
 
+
 library:
-  source-dirs: src
+  source-dirs: ../src
+
+executables:
+  nix-managed:
+    main:                Main.lhs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - nix-managed
