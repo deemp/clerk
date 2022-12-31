@@ -4,11 +4,11 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           nix-managed
+name:           clerk-example
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/value/nix-managed#readme>
-homepage:       https://github.com/value/nix-managed#readme
-bug-reports:    https://github.com/value/nix-managed/issues
+description:    Please see the README on GitHub at <https://github.com/value/clerk-example#readme>
+homepage:       https://github.com/value/clerk-example#readme
+bug-reports:    https://github.com/value/clerk-example/issues
 author:         value
 maintainer:     value
 copyright:      value
@@ -21,13 +21,13 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/value/nix-managed
+  location: https://github.com/value/clerk-example
 
 library
   exposed-modules:
       Clerk
   other-modules:
-      Paths_nix_managed
+      Paths_clerk_example
   hs-source-dirs:
       ../src
   default-extensions:
@@ -61,10 +61,10 @@ library
     , xlsx >=1.1.0.1
   default-language: Haskell2010
 
-executable nix-managed
+executable clerk-example
   main-is: Main.lhs
   other-modules:
-      Paths_nix_managed
+      Paths_clerk_example
   hs-source-dirs:
       app
   default-extensions:
@@ -88,11 +88,11 @@ executable nix-managed
   build-depends:
       base >=4.9.0.0 && <5.0
     , bytestring >=0.10.8.0
+    , clerk-example
     , containers >=0.5.0.0
     , data-default >=0.7.1.1
     , lens >=3.8 && <5.3
     , mtl >=2.1
-    , nix-managed
     , text >=0.11.3.1
     , time >=1.4.0.1
     , transformers >=0.3.0.0

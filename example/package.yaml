@@ -1,6 +1,6 @@
-name:                nix-managed
+name:                clerk-example
 version:             0.1.0.0
-github:              "value/nix-managed"
+github:              "value/clerk-example"
 license:             BSD3
 author:              "value"
 maintainer:          "value"
@@ -17,7 +17,7 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/value/nix-managed#readme>
+description:         Please see the README on GitHub at <https://github.com/value/clerk-example#readme>
 
 dependencies:
 - base >= 4.9.0.0 && < 5.0
@@ -65,7 +65,7 @@ library:
   source-dirs: ../src
 
 executables:
-  nix-managed:
+  clerk-example:
     main:                Main.lhs
     source-dirs:         app
     ghc-options:
@@ -73,4 +73,4 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - nix-managed
+    - clerk-example

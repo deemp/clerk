@@ -31,48 +31,31 @@
       inherit (my-codium.configs.${system}) extensions settingsNix;
       inherit (flakes-tools.functions.${system}) mkFlakesTools;
       inherit (devshell.functions.${system}) mkCommands mkShell;
-      inherit (haskell-tools.functions.${system}) toolsGHC;
+      inherit (haskell-tools.functions.${system}) haskellTools;
 
       # set ghc version
-      ghcVersion_ = "92";
-      inherit (toolsGHC ghcVersion_)
-        hls cabal staticExecutable
-        implicit-hie ghcid callCabal hpack;
+      ghcVersion = "92";
+      clerk-example = "clerk-example";
 
-      # my app
-      myPackageName = "nix-managed";
-
-      # --- non-haskell deps ---
-      myPackageDeps = [
-        pkgs.zlib
-        pkgs.expat
-        pkgs.bzip2
-      ];
-
-
-      # --- cabal shell ---
-      inherit (builtins) concatLists attrValues;
-
-      # haskell packages with overrides
-      # see https://gutier.io/post/development-fixing-broken-haskell-packages-nixpkgs/
-      hp = pkgs.haskell.packages."ghc${ghcVersion_}".override {
+      override = {
         overrides = self: super: {
-          myPackage = callCabal myPackageName ./. { };
+          clerk-example = pkgs.haskell.lib.overrideCabal
+            (super.callCabal2nix clerk-example ./. { })
+            (_: {
+              librarySystemDepends = [
+                pkgs.zlib
+                pkgs.expat
+                pkgs.bzip2
+              ];
+            });
         };
       };
 
-      cabalShell =
-        hp.shellFor {
-          packages = ps: [ ps.myPackage ];
-          nativeBuildInputs = myPackageDeps;
-          withHoogle = true;
-          # get other tools with names
-          shellHook = ''
-            nix develop .#tools
-          '';
-        };
+      inherit (haskellTools ghcVersion override (ps: [ ps.clerk-example ]) [ ])
+        hls hpack cabal
+        ;
 
-      codiumTools = [ hpack ghcid cabal ];
+      codiumTools = [ hpack cabal ];
 
       # VSCodium with dev tools
       codium = mkCodium {
@@ -98,7 +81,7 @@
       defaultShell = mkShell
         {
           packages = tools;
-          bash.extra = "";
+          bash.extra = "cabal build";
           commands = mkCommands "tools" tools;
         };
       # TODO add flags
@@ -112,13 +95,7 @@
       };
 
       devShells = {
-        # --- devshell with dev tools ---
-        # runs nix-packaged app
-        default = cabalShell;
-
-        # --- shell for cabal ---
-        # runs cabal
-        tools = defaultShell;
+        default = defaultShell;
       };
     });
 
