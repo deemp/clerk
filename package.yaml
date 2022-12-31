@@ -27,7 +27,6 @@ default-extensions:
 - FlexibleContexts
 - FlexibleInstances
 - OverloadedStrings
-- OverloadedRecordDot
 - GeneralizedNewtypeDeriving
 - RankNTypes
 - ImportQualifiedPost

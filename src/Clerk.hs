@@ -31,7 +31,7 @@ module Clerk (
   (|^|),
   (|$|),
   (<|),
-  Expr(..)
+  Expr (..),
 ) where
 
 import Codec.Xlsx qualified as X
@@ -242,13 +242,13 @@ columnWidthCell width format mkOutput = do
   let columnsProperties =
         Just $
           (unColumnsProperties def)
-            { X.cpMin = coords.col
-            , X.cpMax = coords.col
+            { X.cpMin = coords & col
+            , X.cpMax = coords & col
             , X.cpWidth = width
             }
   tell (Template [CellTemplate{format, mkOutput, columnsProperties}])
   cell <- gets Cell
-  modify (\x -> x{col = (x.col) + 1})
+  modify (\x -> x{col = (x & col) + 1})
   return cell
 
 columnWidth :: ToCellData output => Double -> FormatCell -> (input -> output) -> Builder input CellData (Cell a)
@@ -302,12 +302,12 @@ composeXlsx :: [(T.Text, SheetBuilder ())] -> X.Xlsx
 composeXlsx sheetBuilders = workBook'
  where
   getTransform x = execWriter $ unSheetBuilder x
-  workBook = X.formatWorkbook ((\(name, tf') -> (name, (getTransform tf').fmTransform X.def)) <$> sheetBuilders) X.def
+  workBook = X.formatWorkbook ((\(name, tf') -> (name, (getTransform tf' & fmTransform) X.def)) <$> sheetBuilders) X.def
   filterWidths ws = ws & X.wsColumnsProperties %~ filter (isJust . X.cpWidth)
   workBook' =
     workBook
       & X.xlSheets
-        %~ \sheets -> zipWith (\x (name, ws) -> (name, (getTransform x).wsTransform ws & filterWidths)) (snd <$> sheetBuilders) sheets
+        %~ \sheets -> zipWith (\x (name, ws) -> (name, (getTransform x & wsTransform) ws & filterWidths)) (snd <$> sheetBuilders) sheets
 
 {- Lib. Formulas -}
 
@@ -416,10 +416,10 @@ instance Show (Expr t) where
 newtype Cell a = Cell {unCell :: Coords} deriving (Functor)
 
 cellCol :: Cell a -> Int
-cellCol (Cell c) = c.col
+cellCol (Cell c) = c & col
 
 cellRow :: Cell a -> Int
-cellRow (Cell c) = c.row
+cellRow (Cell c) = c & row
 
 overCol :: (Int -> Int) -> Coords -> Coords
 overCol f (Coords row col) = Coords row (f col)

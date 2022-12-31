@@ -36,15 +36,30 @@
       inherit (drv-tools.functions.${system}) mkBinName withAttrs mkShellApps mkBin;
       inherit (my-codium.configs.${system}) extensions settingsNix;
       inherit (flakes-tools.functions.${system}) mkFlakesTools;
-      devshell = my-devshell.devshell.${system};
       lima = my-lima.packages.${system}.default;
-      inherit (my-devshell.functions.${system}) mkCommands;
-      inherit (haskell-tools.functions.${system}) toolsGHC;
+      inherit (my-devshell.functions.${system}) mkCommands mkShell;
       inherit (workflows.functions.${system}) writeWorkflow run nixCI_ stepsIf expr;
       inherit (workflows.configs.${system}) steps names os;
 
-      ghcVersion = "92";
-      inherit (toolsGHC ghcVersion) stack hls cabal ghcid hpack;
+      ghcVersion = "8107";
+      override =
+        let inherit (pkgs.haskell.lib) doJailbreak dontCheck; in
+        {
+          overrides = self: super: {
+            clerk = pkgs.haskell.lib.overrideCabal (super.callCabal2nix "clerk" ./. { })
+              (_: {
+                librarySystemDepends = [
+                  pkgs.zlib
+                  pkgs.expat
+                  pkgs.bzip2
+                ];
+              });
+            xlsx = dontCheck (doJailbreak super.xlsx);
+          };
+        };
+      inherit (haskell-tools.functions.${system}) haskellTools;
+      inherit (haskellTools ghcVersion override (ps: [ ps.clerk ]) [ ])
+        stack hls cabal ghcid hpack;
 
       writeSettings = writeSettingsJSON {
         inherit (settingsNix) haskell todo-tree files editor gitlens
@@ -93,28 +108,6 @@
         }
       ];
 
-      inherit (builtins) concatLists attrValues;
-      inherit (pkgs.haskell.lib) doJailbreak dontCheck;
-      hp = pkgs.haskell.packages."ghc${ghcVersion}".override {
-        overrides = self: super: {
-          clerk = self.callCabal2nix "clerk" ./. { };
-          xlsx = dontCheck (doJailbreak super.xlsx);
-        };
-      };
-
-      cabalShell =
-        hp.shellFor {
-          packages = ps: [ ps.clerk ];
-          nativeBuildInputs = [
-            pkgs.zlib
-            pkgs.expat
-            pkgs.bzip2
-          ];
-          withHoogle = true;
-          shellHook = ''
-            nix develop .#tools
-          '';
-        };
       # TODO add flags
 
       # "$everything": -haddock
@@ -129,11 +122,12 @@
 
       devShells =
         {
-          default = cabalShell;
-          tools = devshell.mkShell
+          default = mkShell
             {
               packages = tools;
-              bash.extra = '''';
+              bash.extra = ''
+                cabal build
+              '';
               commands = mkCommands "tools" tools;
             };
         };

@@ -38,7 +38,6 @@ library
       FlexibleContexts
       FlexibleInstances
       OverloadedStrings
-      OverloadedRecordDot
       GeneralizedNewtypeDeriving
       RankNTypes
       ImportQualifiedPost
