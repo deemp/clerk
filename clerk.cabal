@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           clerk
-version:        0.1.0.1
+version:        0.1.0.2
 synopsis:       Declaratively describe spreadsheets and generate xlsx
 description:    Please see the README on GitHub at <https://github.com/deemp/clerk#readme>
 category:       spreadsheet
