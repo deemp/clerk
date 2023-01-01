@@ -32,14 +32,17 @@
     flake-utils.lib.eachDefaultSystem (system:
     let
       pkgs = nixpkgs.legacyPackages.${system};
+      inherit (pkgs.lib.attrsets) genAttrs mapAttrs';
       inherit (my-codium.functions.${system}) writeSettingsJSON mkCodium;
-      inherit (drv-tools.functions.${system}) mkBinName withAttrs mkShellApps mkBin;
+      inherit (drv-tools.functions.${system}) mkBinName withAttrs mkShellApps mkBin mkShellApp;
       inherit (my-codium.configs.${system}) extensions settingsNix;
       inherit (flakes-tools.functions.${system}) mkFlakesTools;
       lima = my-lima.packages.${system}.default;
       inherit (my-devshell.functions.${system}) mkCommands mkShell;
-      inherit (workflows.functions.${system}) writeWorkflow run nixCI_ stepsIf expr;
-      inherit (workflows.configs.${system}) steps names os;
+      inherit (workflows.functions.${system})
+        writeWorkflow run nixCI_ stepsIf expr
+        mkAccessors genAttrsId;
+      inherit (workflows.configs.${system}) steps os;
 
       ghcVersion = "8107";
       override =
@@ -100,13 +103,61 @@
       tools = codiumTools ++ [ codium ] ++ (builtins.attrValues scripts);
       flakesTools = mkFlakesTools [ "." ];
 
-      nixCI = nixCI_ [
-        {
-          name = "Write README.md";
-          run = run.runExecutableAndCommit scripts.writeReadme.pname "Write README.md";
-          "if" = "${names.matrix.os} == '${os.ubuntu-20}'";
-        }
-      ];
+      ghcVersions = [ "884" "8107" "902" "924" "925" ];
+
+      buildPref = "buildWithGHC";
+      buildScripts = mapAttrs'
+        (
+          name: value: { name = "${buildPref}${name}"; inherit value; }
+        )
+        (genAttrs ghcVersions (ghcVersion_:
+          let inherit (haskellTools ghcVersion_ override (ps: [ ps.clerk ]) [ ]) cabal; in
+          mkShellApp {
+            name = "cabal-build";
+            text = "cabal build";
+            runtimeInputs = [ cabal ];
+          }));
+
+      names = mkAccessors {
+        matrix = genAttrsId [ "os" "ghc" ];
+      };
+
+      nixCI =
+        let
+          ci = nixCI_ [
+            {
+              name = "Write README.md";
+              run = run.runExecutableAndCommit scripts.writeReadme.pname "Write README.md";
+              "if" = "${names.matrix.os} == '${os.ubuntu-20}'";
+            }
+          ];
+          job1 = "1-nix-ci";
+          job2 = "2-build-with-ghc";
+        in
+        ci // {
+          jobs = {
+            "${job1}" = ci.jobs.nixCI;
+            "${job2}" = {
+              strategy.matrix.ghc = ghcVersions;
+              needs = job1;
+              runs-on = os.ubuntu-20;
+              steps = [
+                steps.checkout
+                steps.installNix
+                (
+                  let ghc = expr names.matrix.ghc; in
+                  {
+                    name = "Build with ghc${ghc}";
+                    run = ''
+                      nix run .#${buildPref}${ghc}
+                    '';
+                  }
+                )
+              ];
+            };
+          };
+        };
+      writeWorkflows = writeWorkflow "ci" nixCI;
 
       # TODO add flags
 
@@ -115,19 +166,16 @@
     in
     {
       packages = {
-        default = codium;
         inherit (flakesTools) updateLocks pushToCachix;
-        writeWorkflows = writeWorkflow "ci" nixCI;
-      } // scripts;
+        inherit codium writeWorkflows;
+      } // scripts // buildScripts;
 
       devShells =
         {
           default = mkShell
             {
               packages = tools;
-              bash.extra = ''
-                cabal build
-              '';
+              bash.extra = ''cabal build'';
               commands = mkCommands "tools" tools;
             };
         };
