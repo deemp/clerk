@@ -312,7 +312,7 @@ As this project uses `Nix` for dev environment, study the following prerequisite
 Next, run
 
 ```sh
-nix develop nix-dev/
+nix develop
 write-settings-json
 codium .
 ```
