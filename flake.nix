@@ -42,7 +42,7 @@
       inherit (workflows.functions.${system})
         writeWorkflow run nixCI_ stepsIf expr
         mkAccessors genAttrsId;
-      inherit (workflows.configs.${system}) steps os;
+      inherit (workflows.configs.${system}) steps os oss;
 
       ghcVersion = "8107";
       override =
@@ -133,17 +133,33 @@
           ];
           job1 = "_1_nix_ci";
           job2 = "_2_build_with_ghc";
+          job3 = "_3_push-to-cachix";
         in
         ci // {
           jobs = {
-            "${job1}" = ci.jobs.nixCI;
+            "${job1}" = {
+              name = "Nix CI";
+              runs-on = os.ubuntu-20;
+              steps =
+                [
+                  steps.checkout
+                  steps.installNix
+                  steps.configGitAsGHActions
+                  steps.updateLocksAndCommit
+                ];
+            };
             "${job2}" = {
+              name = "Build with GHCs";
               strategy.matrix.ghc = ghcVersions;
               needs = job1;
               runs-on = os.ubuntu-20;
               steps = [
                 steps.checkout
                 steps.installNix
+                {
+                  name = "Pull repo";
+                  run = "git pull --rebase --autostash";
+                }
                 (
                   let ghc = expr names.matrix.ghc; in
                   {
@@ -154,6 +170,19 @@
                   }
                 )
               ];
+            };
+            "${job3}" = {
+              name = "Push to cachix";
+              needs = job1;
+              strategy.matrix.os = oss;
+              runs-on = expr names.matrix.os;
+              steps =
+                [
+                  steps.checkout
+                  steps.installNix
+                  steps.logInToCachix
+                  steps.pushFlakesToCachix
+                ];
             };
           };
         };
