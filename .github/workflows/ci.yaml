@@ -1,6 +1,6 @@
 jobs:
   _1_nix_ci:
-    name: Nix CI
+    name: Update flake locks
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout this repo
@@ -20,7 +20,7 @@ jobs:
           nix run .#updateLocks
           git commit -a -m "action: Update flake locks" && git push || echo ""
   _2_build_with_ghc:
-    name: Build with GHCs
+    name: Build with GHC
     needs: _1_nix_ci
     runs-on: ubuntu-20.04
     steps:
