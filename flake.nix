@@ -40,9 +40,9 @@
       lima = my-lima.packages.${system}.default;
       inherit (my-devshell.functions.${system}) mkCommands mkShell;
       inherit (workflows.functions.${system})
-        writeWorkflow run nixCI_ stepsIf expr
+        writeWorkflow run stepsIf expr
         mkAccessors genAttrsId;
-      inherit (workflows.configs.${system}) steps os oss;
+      inherit (workflows.configs.${system}) steps os oss nixCI;
 
       ghcVersion = "8107";
       override =
@@ -122,23 +122,16 @@
         matrix = genAttrsId [ "os" "ghc" ];
       };
 
-      nixCI =
+      workflow =
         let
-          ci = nixCI_ [
-            {
-              name = "Write README.md";
-              run = run.runExecutableAndCommit scripts.writeReadme.pname "Write README.md";
-              "if" = "${names.matrix.os} == '${os.ubuntu-20}'";
-            }
-          ];
           job1 = "_1_nix_ci";
           job2 = "_2_build_with_ghc";
           job3 = "_3_push-to-cachix";
         in
-        ci // {
+        nixCI // {
           jobs = {
             "${job1}" = {
-              name = "Update flake locks";
+              name = "Update flake locks and README.md";
               runs-on = os.ubuntu-20;
               steps =
                 [
@@ -146,6 +139,11 @@
                   steps.installNix
                   steps.configGitAsGHActions
                   steps.updateLocksAndCommit
+                  {
+                    name = "Write README.md";
+                    run = run.runExecutableAndCommit scripts.writeReadme.pname "Write README.md";
+                    "if" = "${names.matrix.os} == '${os.ubuntu-20}'";
+                  }
                 ];
             };
             "${job2}" = {
@@ -186,7 +184,7 @@
             };
           };
         };
-      writeWorkflows = writeWorkflow "ci" nixCI;
+      writeWorkflows = writeWorkflow "ci" workflow;
 
       # TODO add flags
 

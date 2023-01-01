@@ -1,6 +1,6 @@
 jobs:
   _1_nix_ci:
-    name: Update flake locks
+    name: Update flake locks and README
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout this repo
@@ -19,6 +19,12 @@ jobs:
           git pull --rebase --autostash
           nix run .#updateLocks
           git commit -a -m "action: Update flake locks" && git push || echo ""
+      - if: matrix.os == 'ubuntu-20.04'
+        name: Write README.md
+        run: |
+          git pull --rebase --autostash
+          nix run .#writeReadme
+          git commit -a -m "action: Write README.md" && git push || echo ""
   _2_build_with_ghc:
     name: Build with GHC
     needs: _1_nix_ci
