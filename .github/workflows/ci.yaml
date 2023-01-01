@@ -1,5 +1,5 @@
 jobs:
-  1-nix-ci:
+  _1_nix_ci:
     name: Nix CI
     runs-on: ${{ matrix.os }}
     steps:
@@ -43,8 +43,8 @@ jobs:
           - macos-12
           - ubuntu-20.04
           - ubuntu-22.04
-  2-build-with-ghc:
-    needs: 1-nix-ci
+  _2_build_with_ghc:
+    needs: _1_nix_ci
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout this repo

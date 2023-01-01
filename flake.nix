@@ -131,8 +131,8 @@
               "if" = "${names.matrix.os} == '${os.ubuntu-20}'";
             }
           ];
-          job1 = "1-nix-ci";
-          job2 = "2-build-with-ghc";
+          job1 = "_1_nix_ci";
+          job2 = "_2_build_with_ghc";
         in
         ci // {
           jobs = {
