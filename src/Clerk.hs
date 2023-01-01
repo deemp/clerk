@@ -34,8 +34,8 @@ module Clerk (
   Expr (..),
 ) where
 
-import Codec.Xlsx qualified as X
-import Codec.Xlsx.Formatted qualified as X
+import qualified Codec.Xlsx as X
+import qualified Codec.Xlsx.Formatted as X
 import Control.Lens (Identity (runIdentity), (%~), (&), (?~))
 import Control.Lens.Operators ((.~))
 import Control.Monad.State (
@@ -53,9 +53,9 @@ import Data.Char (toUpper)
 import Data.Default (Default (..))
 import Data.Foldable (Foldable (..))
 import Data.List (intercalate)
-import Data.Map.Strict qualified as Map (Map, insert)
+import qualified Data.Map.Strict as Map (Map, insert)
 import Data.Maybe (isJust, maybeToList)
-import Data.Text qualified as T
+import qualified Data.Text as T
 
 -- Coords
 

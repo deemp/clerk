@@ -40,7 +40,6 @@ library
       OverloadedStrings
       GeneralizedNewtypeDeriving
       RankNTypes
-      ImportQualifiedPost
       InstanceSigs
       NamedFieldPuns
       RecordWildCards
