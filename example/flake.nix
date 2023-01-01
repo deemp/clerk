@@ -39,7 +39,7 @@
 
       override = {
         overrides = self: super: {
-          clerk-example = pkgs.haskell.lib.overrideCabal
+          "${clerk-example}" = pkgs.haskell.lib.overrideCabal
             (super.callCabal2nix clerk-example ./. { })
             (_: {
               librarySystemDepends = [
