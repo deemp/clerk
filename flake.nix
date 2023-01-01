@@ -138,7 +138,7 @@
         ci // {
           jobs = {
             "${job1}" = {
-              name = "Nix CI";
+              name = "Update flake locks";
               runs-on = os.ubuntu-20;
               steps =
                 [
@@ -149,7 +149,7 @@
                 ];
             };
             "${job2}" = {
-              name = "Build with GHCs";
+              name = "Build with GHC";
               strategy.matrix.ghc = ghcVersions;
               needs = job1;
               runs-on = os.ubuntu-20;
