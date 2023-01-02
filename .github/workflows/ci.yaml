@@ -1,6 +1,6 @@
 jobs:
   _1_nix_ci:
-    name: Update flake locks and README
+    name: Update flake locks and README.md
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout this repo
@@ -50,7 +50,7 @@ jobs:
           - "902"
           - "924"
           - "925"
-  _3_push-to-cachix:
+  _3_push_to_cachix:
     name: Push to cachix
     needs: _1_nix_ci
     runs-on: ${{ matrix.os }}

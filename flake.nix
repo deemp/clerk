@@ -126,7 +126,7 @@
         let
           job1 = "_1_nix_ci";
           job2 = "_2_build_with_ghc";
-          job3 = "_3_push-to-cachix";
+          job3 = "_3_push_to_cachix";
         in
         nixCI // {
           jobs = {
@@ -185,11 +185,6 @@
           };
         };
       writeWorkflows = writeWorkflow "ci" workflow;
-
-      # TODO add flags
-
-      # "$everything": -haddock
-      # "$locals": -Wall
     in
     {
       packages = {
