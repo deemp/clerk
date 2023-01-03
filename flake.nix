@@ -72,9 +72,9 @@
       scripts = mkShellApps {
         writeReadme = {
           text =
-            let lhs = "example/app/Main.lhs"; in
+            let lhs = "example/app/Main.hs"; in
             ''
-              ${mkBin lima} toMd ${lhs}
+              ${mkBin lima} hs2md ${lhs}
               cat README/Intro.md > doc.md
               printf "\n" >> doc.md
               cat ${lhs}.md >> doc.md
