@@ -1,7 +1,7 @@
 {-
 ## Example
 
-> Describe a spreadsheet that calculates the pressure data given some volume data and constants.
+The goal: describe and generate a spreadsheet that calculates the pressure data given some volume data and constants.
 
 The source code for this example is available in the [example](./example) directory.
 The program produces an `xlsx` file that looks as follows:

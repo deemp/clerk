@@ -17,7 +17,7 @@ The example below demonstrates most of these features.
 
 ## Example
 
-> Describe a spreadsheet that calculates the pressure data given some volume data and constants.
+The goal: describe and generate a spreadsheet that calculates the pressure data given some volume data and constants.
 
 The source code for this example is available in the [example](./example) directory.
 The program produces an `xlsx` file that looks as follows:
@@ -302,16 +302,16 @@ This project provides a dev environment via a `Nix` flake.
     cabal test docs
     ```
 
-1. (Optionally) Start `VSCodium` with `Haskell` extensions
+1. (Optionally) Start `VSCodium` with `Haskell` extensions.
 
-    1. Write settings and run `VSCodium`
+    1. Write settings and run `VSCodium`.
 
         ```console
         nix run .#writeSettings
         nix run .#codium .
         ```
 
-    1. Open a `Haskell` file. `HLS` should soon start giving you hints.
+    1. Open a `Haskell` file. `Haskell Language Server` should soon start giving you hints.
 
 1. Study these links if you'd like to learn more about the tools used in this flake:
 

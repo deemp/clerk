@@ -15,16 +15,16 @@ This project provides a dev environment via a `Nix` flake.
     cabal test docs
     ```
 
-1. (Optionally) Start `VSCodium` with `Haskell` extensions
+1. (Optionally) Start `VSCodium` with `Haskell` extensions.
 
-    1. Write settings and run `VSCodium`
+    1. Write settings and run `VSCodium`.
 
         ```console
         nix run .#writeSettings
         nix run .#codium .
         ```
 
-    1. Open a `Haskell` file. `HLS` should soon start giving you hints.
+    1. Open a `Haskell` file. `Haskell Language Server` should soon start giving you hints.
 
 1. Study these links if you'd like to learn more about the tools used in this flake:
 

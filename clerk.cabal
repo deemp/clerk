@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           clerk
-version:        0.1.0.2
+version:        0.1.0.3
 synopsis:       Declaratively describe spreadsheets
 description:    `clerk` provides a Haskell eDSL and a library for declaratively describing the spreadsheets. 
                 `clerk` is built on top of the [xlsx](https://hackage.haskell.org/package/xlsx) package 
