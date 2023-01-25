@@ -2,3 +2,9 @@ packages: ./
 
 package *
     ghc-options: -haddock
+
+source-repository-package
+    type: git
+    location: https://github.com/deemp/flakes
+    tag: 0df625b08b09ed55c80bc5e6a54fa6ee84df43a8
+    subdir: lima

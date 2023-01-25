@@ -21,33 +21,16 @@ description:         Please see the README on GitHub at <https://github.com/valu
 
 dependencies:
 - base >= 4.9.0.0 && < 5.0
-- mtl >= 2.1
-- transformers >= 0.3.0.0
-- text >= 0.11.3.1
-- xlsx >= 1.1.0.1
-- bytestring >= 0.10.8.0
-- lens >= 3.8 && < 5.3
-- time >= 1.4.0.1
-- containers >= 0.5.0.0
-- data-default >= 0.7.1.1
+- mtl
+- transformers
+- text
+- xlsx
+- bytestring
+- lens
+- time
+- containers
+- data-default
 
-default-extensions:
-- DataKinds
-- DeriveFunctor
-- FlexibleContexts
-- FlexibleInstances
-- OverloadedStrings
-- OverloadedRecordDot
-- GeneralizedNewtypeDeriving
-- RankNTypes
-- ImportQualifiedPost
-- InstanceSigs
-- NamedFieldPuns
-- RecordWildCards
-- TupleSections
-- MonoLocalBinds
-- TypeSynonymInstances
-- DuplicateRecordFields
 
 ghc-options:
 - -Wall

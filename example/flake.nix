@@ -8,12 +8,10 @@
     flake-utils.follows = "flake-utils_/flake-utils";
     haskell-tools.url = "github:deemp/flakes?dir=language-tools/haskell";
     devshell.url = "github:deemp/flakes?dir=devshell";
-    flakes-tools.url = "github:deemp/flakes?dir=flakes-tools";
   };
   outputs =
     { self
     , flake-utils
-    , flakes-tools
     , nixpkgs
     , my-codium
     , drv-tools
@@ -29,9 +27,8 @@
       inherit (drv-tools.functions.${system}) mkBin withAttrs withMan withDescription mkShellApp;
       inherit (drv-tools.configs.${system}) man;
       inherit (my-codium.configs.${system}) extensions settingsNix;
-      inherit (flakes-tools.functions.${system}) mkFlakesTools;
       inherit (devshell.functions.${system}) mkCommands mkShell;
-      inherit (haskell-tools.functions.${system}) haskellTools;
+      inherit (haskell-tools.functions.${system}) toolsGHC;
 
       # set ghc version
       ghcVersion = "92";
@@ -51,25 +48,18 @@
         };
       };
 
-      inherit (haskellTools ghcVersion override (ps: [ ps.clerk-example ]) [ ])
-        hls hpack cabal
-        ;
+      inherit (toolsGHC ghcVersion override (ps: [ ps.clerk-example ]) [ ]) hls hpack cabal;
 
-      codiumTools = [ hpack cabal ];
+      codiumTools = [ hpack cabal hls ];
+
+      tools = codiumTools;
 
       # VSCodium with dev tools
       codium = mkCodium {
         extensions = { inherit (extensions) nix haskell misc github markdown; };
-        runtimeDependencies = codiumTools ++ [ hls ];
+        runtimeDependencies = codiumTools;
       };
 
-      # --- all dev tools ---
-      tools = codiumTools ++ [ codium ];
-
-      # --- flakes tools ---
-      flakesTools = mkFlakesTools [ "." ];
-
-      # --- codium ---
       # what to write in settings.json
       writeSettings = writeSettingsJSON {
         inherit (settingsNix) haskell todo-tree files editor gitlens
@@ -81,17 +71,24 @@
       defaultShell = mkShell
         {
           packages = tools;
-          bash.extra = "cabal build";
-          commands = mkCommands "tools" tools;
+          bash.extra = "";
+          commands = (mkCommands "tools" tools) ++ [
+            {
+              name = "nix run .#codium .";
+              help = codium.meta.description;
+              category = "other commands";
+            }
+            {
+              name = "nix run .#writeSettings";
+              help = writeSettings.meta.description;
+              category = "other commands";
+            }
+          ];
         };
-      # TODO add flags
-      #         "$everything": -haddock
-      # "$locals": -Wall
-
     in
     {
       packages = {
-        inherit (flakesTools) updateLocks pushToCachix;
+        inherit writeSettings codium;
       };
 
       devShells = {

@@ -19,12 +19,11 @@ jobs:
           git pull --rebase --autostash
           nix run .#updateLocks
           git commit -a -m "action: Update flake locks" && git push || echo ""
-      - if: matrix.os == 'ubuntu-20.04'
-        name: Write README.md
+      - name: Write docs
         run: |
           git pull --rebase --autostash
-          nix run .#writeReadme
-          git commit -a -m "action: Write README.md" && git push || echo ""
+          nix run .#writeDocs
+          git commit -a -m "action: Write docs" && git push || echo ""
   _2_build_with_ghc:
     name: Build with GHC
     needs: _1_nix_ci
@@ -40,15 +39,12 @@ jobs:
       - name: Pull repo
         run: git pull --rebase --autostash
       - name: Build with ghc${{ matrix.ghc }}
-        run: |
-          nix run .#buildWithGHC${{ matrix.ghc }}
+        run: nix run .#buildWithGHC${{ matrix.ghc }}
     strategy:
       matrix:
         ghc:
-          - "884"
           - "8107"
           - "902"
-          - "924"
           - "925"
   _3_push_to_cachix:
     name: Push to cachix

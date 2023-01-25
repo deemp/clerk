@@ -1,19 +1,16 @@
 # clerk
 
-`clerk` is a library for declarative spreadsheet generation using a Haskell eDSL.
-
-It extends upon the [work](https://youtu.be/1xGoa-zEOrQ) of Kudasov by making the tables' layout more flexible.
+`clerk` provides a Haskell eDSL in a library for declarative spreadsheet generation. `clerk` is built on top of the [xlsx](https://hackage.haskell.org/package/xlsx) package and extends upon the [work](https://youtu.be/1xGoa-zEOrQ) of Nickolay Kudasov by making the tables' layout more flexible.
 
 ## Features
 
-`clerk` produces a styled spreadsheet with some data and formulas on it. These formulas will be calculated by the target spreadsheet system.
+`clerk` can be used to produce a styled spreadsheet with some data and formulas on it. These formulas are evaluated when the document is loaded into a target spreadsheet system.
 
-The library supports
+The library supports:
 
-- typed cell references - `Cell Double`
-- type-safe arithmetic operations - `(a :: Cell Double) + (b :: Cell Double)`
-- range references - `a |:| b` -> `A1:B1`
-- formulas - `(e :: Expr Double) = "SUM" |$| [(a |:| b)]` -> `SUM(A1:B1)`
-- conditional styles, formatting, column widths
+- Typed cell references. Example: `CellRef Double`.
+- Type-safe arithmetic operations with them. Example: `(a :: CellRef Double) + (b :: CellRef Double)` produces a `CellRef Double`.
+- Constructing expressions with given types. Example: `(e :: Expr Double) = "SUM" |$| [a |:| b]`, `e` translates to `SUM(A1:B1)` (actual value depends on the values of `a` and `b`).
+- Conditional styles, formatting, column widths.
 
-The example below demonstrates some of these features.
+The example below demonstrates most of these features.

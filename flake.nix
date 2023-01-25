@@ -9,8 +9,8 @@
     haskell-tools.url = "github:deemp/flakes?dir=language-tools/haskell";
     my-devshell.url = "github:deemp/flakes?dir=devshell";
     flakes-tools.url = "github:deemp/flakes?dir=flakes-tools";
-    my-lima.url = "github:deemp/flakes?dir=lima";
     workflows.url = "github:deemp/flakes?dir=workflows";
+    lima.url = "github:deemp/flakes?dir=lima";
     flake-compat = {
       url = "github:edolstra/flake-compat";
       flake = false;
@@ -25,8 +25,8 @@
     , drv-tools
     , haskell-tools
     , my-devshell
-    , my-lima
     , workflows
+    , lima
     , ...
     }:
     flake-utils.lib.eachDefaultSystem (system:
@@ -37,14 +37,13 @@
       inherit (drv-tools.functions.${system}) mkBinName withAttrs mkShellApps mkBin mkShellApp;
       inherit (my-codium.configs.${system}) extensions settingsNix;
       inherit (flakes-tools.functions.${system}) mkFlakesTools;
-      lima = my-lima.packages.${system}.default;
       inherit (my-devshell.functions.${system}) mkCommands mkShell;
       inherit (workflows.functions.${system})
         writeWorkflow run stepsIf expr
         mkAccessors genAttrsId;
       inherit (workflows.configs.${system}) steps os oss nixCI;
 
-      ghcVersion = "8107";
+      ghcVersion = "92";
       override =
         let inherit (pkgs.haskell.lib) doJailbreak dontCheck; in
         {
@@ -57,11 +56,11 @@
                   pkgs.bzip2
                 ];
               });
-            xlsx = dontCheck (doJailbreak super.xlsx);
+            lima = super.callCabal2nix "lima" "${lima.outPath}/lima" { };
           };
         };
-      inherit (haskell-tools.functions.${system}) haskellTools;
-      inherit (haskellTools ghcVersion override (ps: [ ps.clerk ]) [ ])
+      inherit (haskell-tools.functions.${system}) toolsGHC;
+      inherit (toolsGHC ghcVersion override (ps: [ ps.clerk ]) [ ])
         stack hls cabal ghcid hpack;
 
       writeSettings = writeSettingsJSON {
@@ -69,54 +68,41 @@
           git nix-ide workbench markdown-all-in-one markdown-language-features;
       };
 
-      scripts = mkShellApps {
-        writeReadme = {
-          text =
-            let lhs = "example/app/Main.hs"; in
-            ''
-              ${mkBin lima} hs2md ${lhs}
-              cat README/Intro.md > doc.md
-              printf "\n" >> doc.md
-              cat ${lhs}.md >> doc.md
-              printf "\n" >> doc.md
-              cat README/Conclusion.md >> doc.md
-              rm ${lhs}.md
-              mv doc.md README.md
-            '';
-          runtimeInputs = [ lima ];
-          description = "Write README.md";
-        };
-      };
-
-      codiumTools = [
+      tools = [
         cabal
-        writeSettings
-        lima
         hpack
+        hls
       ];
 
       codium = mkCodium {
         extensions = { inherit (extensions) nix haskell misc github markdown; };
-        runtimeDependencies = codiumTools ++ [ hls ];
+        runtimeDependencies = tools;
       };
 
-      tools = codiumTools ++ [ codium ] ++ (builtins.attrValues scripts);
-      flakesTools = mkFlakesTools [ "." ];
+      flakesTools = mkFlakesTools [ "." "example" ];
 
-      ghcVersions = [ "884" "8107" "902" "924" "925" ];
+      ghcVersions = [ "8107" "902" "925" ];
 
-      buildPref = "buildWithGHC";
-      buildScripts = mapAttrs'
-        (
-          name: value: { name = "${buildPref}${name}"; inherit value; }
-        )
-        (genAttrs ghcVersions (ghcVersion_:
-          let inherit (haskellTools ghcVersion_ override (ps: [ ps.clerk ]) [ ]) cabal; in
-          mkShellApp {
-            name = "cabal-build";
-            text = "cabal build";
+      buildPrefix = "buildWithGHC";
+      scripts = {
+        cabalBuild = mapAttrs'
+          (
+            name: value: { name = "${buildPrefix}${name}"; inherit value; }
+          )
+          (genAttrs ghcVersions (ghcVersion_:
+            let inherit (toolsGHC ghcVersion_ override (ps: [ ps.clerk ]) [ ]) cabal; in
+            mkShellApp {
+              name = "cabal-build";
+              text = "cabal build";
+              runtimeInputs = [ cabal ];
+            }));
+      } // (
+        mkShellApps {
+          writeDocs = {
+            text = ''cabal test docs'';
             runtimeInputs = [ cabal ];
-          }));
+          };
+        });
 
       names = mkAccessors {
         matrix = genAttrsId [ "os" "ghc" ];
@@ -140,9 +126,8 @@
                   steps.configGitAsGHActions
                   steps.updateLocksAndCommit
                   {
-                    name = "Write README.md";
-                    run = run.runExecutableAndCommit scripts.writeReadme.pname "Write README.md";
-                    "if" = "${names.matrix.os} == '${os.ubuntu-20}'";
+                    name = "Write docs";
+                    run = run.nixRunAndCommit scripts.writeDocs.pname "Write docs";
                   }
                 ];
             };
@@ -162,9 +147,7 @@
                   let ghc = expr names.matrix.ghc; in
                   {
                     name = "Build with ghc${ghc}";
-                    run = ''
-                      nix run .#${buildPref}${ghc}
-                    '';
+                    run = ''nix run .#${buildPrefix}${ghc}'';
                   }
                 )
               ];
@@ -185,20 +168,39 @@
           };
         };
       writeWorkflows = writeWorkflow "ci" workflow;
+
+      s = builtins.getFlake;
     in
     {
       packages = {
         inherit (flakesTools) updateLocks pushToCachix;
         inherit codium writeWorkflows;
-      } // scripts // buildScripts;
+        inherit (scripts) writeDocs;
+      } // scripts.cabalBuild;
 
       devShells =
         {
           default = mkShell
             {
               packages = tools;
-              bash.extra = ''cabal build'';
-              commands = mkCommands "tools" tools;
+              bash.extra = ''export LANG=C'';
+              commands = (mkCommands "tools" tools) ++ [
+                {
+                  name = "nix run .#codium .";
+                  help = codium.meta.description;
+                  category = "other commands";
+                }
+                {
+                  name = "nix run .#writeSettings";
+                  help = writeSettings.meta.description;
+                  category = "other commands";
+                }
+                {
+                  name = "nix run .#writeWorkflows";
+                  help = writeWorkflows.meta.description;
+                  category = "other commands";
+                }
+              ];
             };
         };
     });

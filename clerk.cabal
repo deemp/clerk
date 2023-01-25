@@ -1,13 +1,16 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.35.1.
 --
 -- see: https://github.com/sol/hpack
 
 name:           clerk
 version:        0.1.0.2
-synopsis:       Declaratively describe spreadsheets and generate xlsx
-description:    Please see the README on GitHub at <https://github.com/deemp/clerk#readme>
+synopsis:       Declaratively describe spreadsheets
+description:    `clerk` provides a Haskell eDSL and a library for declaratively describing the spreadsheets. 
+                `clerk` is built on top of the [xlsx](https://hackage.haskell.org/package/xlsx) package 
+                and extends upon the [work](https://youtu.be/1xGoa-zEOrQ) of Nickolay Kudasov.
+                See the [README](https://github.com/deemp/clerk#readme) for an example of `clerk` usage and further info.
 category:       spreadsheet
 homepage:       https://github.com/deemp/clerk#readme
 bug-reports:    https://github.com/deemp/clerk/issues
@@ -32,31 +35,38 @@ library
       Paths_clerk
   hs-source-dirs:
       src
-  default-extensions:
-      DataKinds
-      DeriveFunctor
-      FlexibleContexts
-      FlexibleInstances
-      OverloadedStrings
-      GeneralizedNewtypeDeriving
-      RankNTypes
-      InstanceSigs
-      NamedFieldPuns
-      RecordWildCards
-      TupleSections
-      MonoLocalBinds
-      TypeSynonymInstances
-      DuplicateRecordFields
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      base >=4.9.0.0 && <5.0
-    , bytestring >=0.10.8.0
-    , containers >=0.5.0.0
-    , data-default >=0.7.1.1
-    , lens >=3.8 && <5.3
-    , mtl >=2.1
-    , text >=0.11.3.1
-    , time >=1.4.0.1
-    , transformers >=0.3.0.0
-    , xlsx >=1.1.0.1
+      base >=4.9 && <5.0
+    , bytestring
+    , containers
+    , data-default
+    , lens
+    , mtl
+    , text
+    , time
+    , transformers
+    , xlsx
+  default-language: Haskell2010
+
+test-suite docs
+  type: exitcode-stdio-1.0
+  main-is: test/Docs.hs
+  other-modules:
+      Paths_clerk
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  build-tool-depends:
+      lima:lima ==0.1.*
+  build-depends:
+      base
+    , bytestring
+    , containers
+    , data-default
+    , lens
+    , mtl
+    , text
+    , time
+    , transformers
+    , typed-process
+    , xlsx
   default-language: Haskell2010
