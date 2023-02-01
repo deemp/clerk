@@ -41,6 +41,7 @@ library
     , bytestring
     , containers
     , data-default
+    , hlist
     , lens
     , mtl
     , text
@@ -58,15 +59,8 @@ test-suite docs
   build-tool-depends:
       lima:lima ==0.1.*
   build-depends:
-      base
-    , bytestring
-    , containers
-    , data-default
-    , lens
-    , mtl
+      base >=4.9 && <5.0
+    , string-interpolate
     , text
-    , time
-    , transformers
-    , typed-process
-    , xlsx
+    , turtle
   default-language: Haskell2010

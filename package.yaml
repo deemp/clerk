@@ -27,15 +27,7 @@ description: |
 
 dependencies:
   - base >= 4.9 && < 5.0
-  - mtl
-  - transformers
   - text
-  - xlsx
-  - bytestring
-  - lens
-  - time
-  - containers
-  - data-default
 
 ghc-options:
   - -Wall
@@ -52,9 +44,19 @@ tests:
   docs:
     main: test/Docs.hs
     dependencies:
-      - base
-      - typed-process
+      - turtle
+      - string-interpolate
     build-tools: lima:lima ^>= 0.1
 
 library:
   source-dirs: src
+  dependencies:
+    - mtl
+    - transformers
+    - xlsx
+    - bytestring
+    - lens
+    - time
+    - containers
+    - data-default
+    - hlist

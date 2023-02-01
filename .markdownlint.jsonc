@@ -2,5 +2,6 @@
     "no-bare-urls" : false,
     "line-length": false,
     "first-line-heading": false,
-    "no-inline-html": false
+    "no-inline-html": false,
+    "no-duplicate-header": false
 }

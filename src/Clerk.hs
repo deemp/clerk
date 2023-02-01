@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DerivingStrategies #-}
@@ -14,19 +15,22 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
 -- | @Clerk@ library
-
 module Clerk (
   -- * Coords
   -- $Coords
-  Coords (..),
+  Coords,
+  coords,
+  ToCoords (..),
+  FromCoords (..),
 
   -- * Cell references
   -- $CellRef
-  CellRef (..),
+  CellRef,
   getCol,
   getRow,
   overCol,
@@ -44,11 +48,14 @@ module Clerk (
   Transform,
   FCTransform,
   horizontalAlignment,
-  mkColorStyle,
+  mkColor,
+  blank,
+  ToARGB (..),
 
   -- * Templates
   -- $Templates
   RowBuilder (..),
+  RowBuilder',
   Template (..),
   -- runBuilder,
   -- evalBuilder,
@@ -92,7 +99,7 @@ module Clerk (
 
   -- * Cells
   -- $Cells
-  CellData,
+  CellData (CellEmpty),
   ToCellData (..),
 
   -- * Produce xlsx
@@ -135,6 +142,23 @@ import Data.Text qualified as T
 
 -- | Coords of a cell
 data Coords = Coords {row :: Int, col :: Int}
+
+coords :: Int -> Int -> Coords
+coords = Coords
+
+class ToCoords a where
+  toCoords :: a -> Coords
+
+class FromCoords a where
+  fromCoords :: Coords -> a
+
+instance ToCoords Coords where
+  toCoords :: Coords -> Coords
+  toCoords = id
+
+instance FromCoords Coords where
+  fromCoords :: Coords -> Coords
+  fromCoords = id
 
 instance Show Coords where
   show :: Coords -> String
@@ -193,24 +217,32 @@ toAlphaNumeric x = f "" (x - 1)
 -- >>>double = CellRef (Coords 2 5) :: CellRef Double
 -- >>>unsafeChangeCellRefType int |+| double
 -- A1+E2
-newtype CellRef a = CellRef {unCell :: Coords}
+newtype CellRef a = CellRef {unCellRef :: Coords}
   deriving newtype (Num)
 
--- | Get a column number from a 'CellRef'
-getCol :: CellRef a -> Int
-getCol (CellRef c) = c & col
+instance ToCoords (CellRef a) where
+  toCoords :: CellRef a -> Coords
+  toCoords = unCellRef
 
--- | Get a row number from a 'CellRef'
-getRow :: CellRef a -> Int
-getRow (CellRef c) = c & row
+instance FromCoords (CellRef a) where
+  fromCoords :: Coords -> CellRef a
+  fromCoords = CellRef
+
+-- | Get a column number
+getCol :: ToCoords a => a -> Int
+getCol = col . toCoords
+
+-- | Get a row number
+getRow :: ToCoords a => a -> Int
+getRow = row . toCoords
 
 -- | Apply a function over a column of a coordinate
-overCol :: (Int -> Int) -> Coords -> Coords
-overCol f (Coords row col) = Coords row (f col)
+overCol :: ToCoords a => (Int -> Int) -> a -> Coords
+overCol f (toCoords -> Coords row col) = Coords row (f col)
 
 -- | Apply a function over a row of a coordinate
-overRow :: (Int -> Int) -> Coords -> Coords
-overRow f (Coords row col) = Coords (f row) col
+overRow :: ToCoords a => (Int -> Int) -> a -> Coords
+overRow f (toCoords -> Coords row col) = Coords (f row) col
 
 -- | Change the type of a cell reference. Use with caution!
 --
@@ -226,7 +258,7 @@ unsafeChangeCellRefType (CellRef c) = CellRef c
 type InputIndex = Int
 
 -- | Format a single cell depending on its coordinates, index, and data
-type FormatCell = Coords -> InputIndex -> CellData -> X.FormattedCell
+type FormatCell = forall a. ToCoords a => a -> InputIndex -> CellData -> X.FormattedCell
 
 -- | Template of a cell with contents, style, column properties
 data CellTemplate input output = CellTemplate
@@ -259,11 +291,15 @@ instance Default Transform where
   def :: Transform
   def = mempty
 
+-- | something that can be turned into ARGB
+class ToARGB a where
+  toARGB :: a -> String
+
 -- | Make a 'FormatCell' for a single color
 --
 -- @show@ on the input should translate into an @ARGB@ color. See 'XS.Color'
-mkColorStyle :: Show a => a -> FormatCell
-mkColorStyle color _ _ cd =
+mkColor :: ToARGB a => a -> FormatCell
+mkColor color _ _ cd =
   X.def
     & X.formattedCell .~ dataCell cd
     & X.formattedFormat
@@ -273,7 +309,7 @@ mkColorStyle color _ _ cd =
                     & X.fillPattern
                       ?~ ( X.def
                             & ( X.fillPatternFgColor
-                                  ?~ (X.def & X.colorARGB ?~ T.pack (show color))
+                                  ?~ (X.def & X.colorARGB ?~ T.pack (toARGB color))
                               )
                             & ( X.fillPatternType
                                   ?~ X.PatternTypeSolid
@@ -282,12 +318,16 @@ mkColorStyle color _ _ cd =
                  )
          )
 
+-- | A 'FormatCell' that produces a cell with the given data
+blank :: FormatCell
+blank _ _ cd = X.def & X.formattedCell .~ dataCell cd
+
 -- | Transform of a formatted cell
 type FCTransform = X.FormattedCell -> X.FormattedCell
 
 -- | Apply 'FCTransform' to a 'FormatCell' to get a new 'FormatCell'
 (+>) :: FormatCell -> FCTransform -> FormatCell
-fc +> ft = \coords idx cd -> ft $ fc coords idx cd
+fc +> ft = \coords_ idx cd -> ft $ fc coords_ idx cd
 
 infixl 5 +>
 
@@ -314,6 +354,8 @@ newtype Template input output = Template [CellTemplate input output]
 -- | Allows to describe how to build a template for a row
 newtype RowBuilder input output a = RowBuilder {unBuilder :: StateT Coords (Writer (Template input output)) a}
   deriving (Functor, Applicative, Monad, MonadState Coords, MonadWriter (Template input output))
+
+type RowBuilder' input a = RowBuilder input CellData a
 
 -- | Run builder on given coordinates. Get a result and a template
 runBuilder :: RowBuilder input output a -> Coords -> (a, Template input output)
@@ -404,12 +446,12 @@ instance Default ColumnsProperties where
 -- | A column with a possibly given width and cell format. Returns a cell reference
 columnWidthCell :: forall a input output. Maybe Double -> FormatCell -> (input -> output) -> RowBuilder input output (CellRef a)
 columnWidthCell width fmtCell mkOutput = do
-  coords <- get
+  coords_ <- get
   let columnsProperties =
         Just $
           (unColumnsProperties def)
-            { X.cpMin = coords & col
-            , X.cpMax = coords & col
+            { X.cpMin = coords_ & col
+            , X.cpMax = coords_ & col
             , X.cpWidth = width
             }
   tell (Template [CellTemplate{fmtCell, mkOutput, columnsProperties}])
@@ -450,23 +492,23 @@ newtype SheetBuilder a = SheetBuilder {unSheetBuilder :: Writer Transform a}
   deriving (Functor, Applicative, Monad, MonadWriter Transform)
 
 -- | Starting at given coordinates, place rows of data made from a list of inputs according to a row builder. Return the result of the row builder.
-placeInputs :: ToCellData output => Coords -> [input] -> RowBuilder input output a -> SheetBuilder a
-placeInputs offset inputs b = do
-  let transformResult = defaultComposeTransformAndResult offset inputs b
+placeInputs :: (ToCellData output, ToCoords c) => c -> [input] -> RowBuilder input output a -> SheetBuilder a
+placeInputs (toCoords -> coords_) inputs b = do
+  let transformResult = defaultComposeTransformAndResult coords_ inputs b
   tell (fst transformResult)
   return (snd transformResult)
 
 -- | Starting at given coordinates, place a row of data made from a single input according to a row builder. Return the result of the row builder.
-placeInput :: ToCellData output => Coords -> input -> RowBuilder input output a -> SheetBuilder a
-placeInput coords input = placeInputs coords [input]
+placeInput :: (ToCellData output, ToCoords c) => c -> input -> RowBuilder input output a -> SheetBuilder a
+placeInput coords_ input = placeInputs coords_ [input]
 
 -- | Starting at given coordinates, place rows of data made from a list of inputs according to a row builder.
-placeInputs_ :: ToCellData output => Coords -> [input] -> RowBuilder input output a -> SheetBuilder ()
-placeInputs_ coords inputs b = void (placeInputs coords inputs b)
+placeInputs_ :: (ToCellData output, ToCoords c) => c -> [input] -> RowBuilder input output a -> SheetBuilder ()
+placeInputs_ coords_ inputs b = void (placeInputs coords_ inputs b)
 
 -- | Starting at given coordinates, place a row of data made from a single input according to a row builder.
-placeInput_ :: ToCellData output => Coords -> input -> RowBuilder input output a -> SheetBuilder ()
-placeInput_ coords input = placeInputs_ coords [input]
+placeInput_ :: (ToCellData output, ToCoords c) => c -> input -> RowBuilder input output a -> SheetBuilder ()
+placeInput_ coords_ input = placeInputs_ coords_ [input]
 
 {- FOURMOLU_DISABLE -}
 -- $Expressions
@@ -494,9 +536,6 @@ instance ToExpr (CellRef a) where
 instance ToExpr Coords where
   toExpr :: Coords -> Expr t
   toExpr c = ExprCell (CellRef c)
-
-toExprCell :: CellRef a -> Coords
-toExprCell (CellRef c1) = c1
 
 instance ToExpr (Expr a) where
   toExpr :: Expr a -> Expr b
@@ -583,6 +622,11 @@ data CellData
   = CellFormula X.CellFormula
   | CellValue X.CellValue
   | CellComment X.Comment
+  | CellEmpty
+
+instance Default CellData where
+  def :: CellData
+  def = CellEmpty
 
 -- | Convert some CellRef component into a cell
 dataCell :: CellData -> X.Cell
@@ -592,6 +636,7 @@ dataCell cd =
       CellValue d -> X.cellValue ?~ d
       CellFormula d -> X.cellFormula ?~ d
       CellComment d -> X.cellComment ?~ d
+      CellEmpty -> X.def
 
 -- | Something that can be turned into 'CellData'
 class ToCellData a where

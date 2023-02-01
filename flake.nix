@@ -49,19 +49,21 @@
         {
           overrides = self: super: {
             clerk = pkgs.haskell.lib.overrideCabal (super.callCabal2nix "clerk" ./. { })
-              (_: {
-                librarySystemDepends = [
+              (x: {
+                librarySystemDepends = (x.librarySystemDepends or [ ]) ++ [
                   pkgs.zlib
                   pkgs.expat
                   pkgs.bzip2
                 ];
+                testHaskellDepends = (x.testHaskellDepends or [ ]) ++ [
+                  (super.callCabal2nix "lima" "${lima.outPath}/lima" { })
+                ];
               });
-            lima = super.callCabal2nix "lima" "${lima.outPath}/lima" { };
           };
         };
       inherit (haskell-tools.functions.${system}) toolsGHC;
       inherit (toolsGHC ghcVersion override (ps: [ ps.clerk ]) [ ])
-        stack hls cabal ghcid hpack;
+        stack hls cabal ghcid hpack ghc;
 
       writeSettings = writeSettingsJSON {
         inherit (settingsNix) haskell todo-tree files editor gitlens
@@ -72,6 +74,7 @@
         cabal
         hpack
         hls
+        ghc
       ];
 
       codium = mkCodium {
@@ -86,22 +89,16 @@
       buildPrefix = "buildWithGHC";
       scripts = {
         cabalBuild = mapAttrs'
-          (
-            name: value: { name = "${buildPrefix}${name}"; inherit value; }
-          )
+          (name: value: { name = "${buildPrefix}${name}"; inherit value; })
           (genAttrs ghcVersions (ghcVersion_:
             let inherit (toolsGHC ghcVersion_ override (ps: [ ps.clerk ]) [ ]) cabal; in
             mkShellApp {
               name = "cabal-build";
-              text = "cabal build";
-              runtimeInputs = [ cabal ];
+              text = "${cabal}/bin/cabal build";
             }));
       } // (
         mkShellApps {
-          writeDocs = {
-            text = ''cabal test docs'';
-            runtimeInputs = [ cabal ];
-          };
+          writeDocs = { text = ''${cabal}/bin/cabal test''; };
         });
 
       names = mkAccessors {
@@ -188,17 +185,27 @@
                 {
                   name = "nix run .#codium .";
                   help = codium.meta.description;
-                  category = "other commands";
+                  category = "clerk";
                 }
                 {
                   name = "nix run .#writeSettings";
                   help = writeSettings.meta.description;
-                  category = "other commands";
+                  category = "clerk";
                 }
                 {
                   name = "nix run .#writeWorkflows";
                   help = writeWorkflows.meta.description;
-                  category = "other commands";
+                  category = "clerk";
+                }
+                {
+                  name = "cd example && nix run example#codium .";
+                  help = codium.meta.description;
+                  category = "example";
+                }
+                {
+                  name = "cd example && nix run .#writeSettings";
+                  help = writeSettings.meta.description;
+                  category = "example";
                 }
               ];
             };

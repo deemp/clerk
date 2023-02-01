@@ -1,16 +1,17 @@
+{- FOURMOLU_DISABLE -}
 {-
-## Example
+## Example 2
 
-The goal: describe and generate a spreadsheet that calculates the pressure data given some volume data and constants.
+**The goal**: describe and generate a spreadsheet that calculates the pressure data given some volume data and constants.
 
-The source code for this example is available in the [example](./example) directory.
+The source code for this example is available in the [Example2.hs](example/app/Example2.hs).
 The program produces an `xlsx` file that looks as follows:
 
-<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/demoValues.png" width = "80%">
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/demoValues.png" width = "80%">
 
 Alternatively, with formulas enabled:
 
-<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/demoFormulas.png" width = "80%">
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/demoFormulas.png" width = "80%">
 
 The below sections describe how such a spreadsheet can be constructed.
 
@@ -18,8 +19,9 @@ The below sections describe how such a spreadsheet can be constructed.
 
 We'll need several language extensions.
 -}
-{- FOURMOLU_DISABLE -}
-{-# LANGUAGE OverloadedRecordDot #-} -- access the fields of records like a.b
+
+-- to access the fields of records like a.b
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -33,8 +35,6 @@ We'll need several language extensions.
 
 And import the necessary stuff.
 -}
-
-module Main (main) where
 
 import Clerk
 import Codec.Xlsx qualified as X
@@ -51,13 +51,13 @@ import Data.Time.Clock.POSIX (getPOSIXTime)
 The tables that we'd like to construct are:
 
 - A table per a constant's value (three of them)
-- Volume & pressure table
-- Constants' header
-- Volume & pressure header
+- A volume & pressure table
+- A constants' header
+- A volume & pressure header
 
 #### Constants' values
 
-<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/constants.png" width = "50%">
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/constants.png" width = "50%">
 
 In our case, each constant has the same type of the numeric value - `Double`.
 However, it might be the case that in another set of constants, they'll have different types.
@@ -84,6 +84,10 @@ data Constants f = Constants
 
 type ConstantsInput = Constants ConstantData
 
+{-
+At last, here's our constants' data.
+-}
+
 constants :: ConstantsInput
 constants =
   Constants
@@ -97,25 +101,25 @@ Furthermore, we'd like to style the constants' tables, so let's prepare the styl
 -}
 
 data Colors = LightBlue | LightGreen | Blue | Green
-instance Show Colors where
-  show :: Colors -> String
-  show = \case
+instance ToARGB Colors where
+  toARGB :: Colors -> String
+  toARGB = \case
     LightBlue -> "90CCFFFF"
     LightGreen -> "90CCFFCC"
     Blue -> "FF99CCFF"
     Green -> "FF00FF00"
 
 blue :: FormatCell
-blue = mkColorStyle Blue
+blue = mkColor Blue
 
 lightBlue :: FormatCell
-lightBlue = mkColorStyle LightBlue
+lightBlue = mkColor LightBlue
 
 green :: FormatCell
-green = mkColorStyle Green
+green = mkColor Green
 
 mixed :: FormatCell
-mixed coords idx = mkColorStyle (if even idx then LightGreen else LightBlue) coords idx
+mixed coords_ idx = mkColor (if even idx then LightGreen else LightBlue) coords_ idx
 
 {-
 Additionally, we compose a transformation of a `FormatCell` for the number format
@@ -143,18 +147,18 @@ We get a pair of outputs:
 Later, the outputs of this and other `RowBuilder`s will be used to relate the positions of tables on a sheet.
 -}
 
-constantBuilder :: ToCellData a => RowBuilder (ConstantData a) CellData (Coords, CellRef a)
+constantBuilder :: ToCellData a => RowBuilder (ConstantData a) CellData (CellRef (), CellRef a)
 constantBuilder = do
   refTopLeft <- column lightBlue constantName
   column_ lightBlue constantSymbol
   refValue <- column (lightBlue +> use2decimalDigits) constantValue
   column_ lightBlue constantUnits
-  return (unCell refTopLeft, refValue)
+  return (refTopLeft, refValue)
 
 {-
 #### Volume & Pressure values
 
-<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/valuesFormulas.png" width = "50%">
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/valuesFormulas.png" width = "50%">
 
 To fill this table, we'll take the some data and combine it with the constants.
 -}
@@ -175,7 +179,7 @@ data ConstantsRefs = ConstantsRefs
   }
 
 {-
-Next, we define a function to produce a builder for volume and pressure.
+Next, we define a function to produce a builder for volume and pressure. We pass references to constants' values to this builder
 -}
 
 valuesBuilder :: ConstantsRefs -> RowBuilder Volume CellData ()
@@ -187,25 +191,25 @@ valuesBuilder ConstantsRefs{..} = do
 {-
 #### Constants' header
 
-<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/constantsHeader.png" width = "50%">
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/constantsHeader.png" width = "50%">
 
 We won't use records here. Instead, we'll put the names of the columns straight into the `RowBuilder`.
 
 The outputs will be the coordinates of the top left cell and the top right cell of this table.
 -}
 
-constantsHeaderBuilder :: RowBuilder () CellData (Coords, Coords)
+constantsHeaderBuilder :: RowBuilder () CellData (CellRef (), CellRef ())
 constantsHeaderBuilder = do
   refTopLeft <- columnWidth 20 (blue +> alignCenter) (const "constant")
   columnWidth_ 8 (blue +> alignCenter) (const "symbol")
   column_ (blue +> alignCenter) (const "value")
   refTopRight <- columnWidth 13 (blue +> alignCenter) (const "units")
-  return (unCell refTopLeft, unCell refTopRight)
+  return (refTopLeft, refTopRight)
 
 {-
 #### Volume & Pressure header
 
-<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/valuesHeader.png" width = "50%">
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/valuesHeader.png" width = "50%">
 
 For this header, we'll also put the names of columns straight inside the builder.
 -}
@@ -214,7 +218,7 @@ valuesHeaderBuilder :: RowBuilder () CellData Coords
 valuesHeaderBuilder = do
   tl <- columnWidth 12 green (const "VOLUME (L)")
   columnWidth_ 16 green (const "PRESSURE (atm)")
-  return (unCell tl)
+  return (toCoords tl)
 
 {-
 ### Sheet builder
@@ -224,9 +228,9 @@ Inside `SheetBuilder`, when a `RowBuilder` is placed onto a sheet, we can use th
 references that it produces in the subsequent expressions.
 -}
 
-full :: SheetBuilder ()
-full = do
-  (constantsHeaderTL, constantsHeaderTR) <- placeInput (Coords 2 2) () constantsHeaderBuilder
+sheet :: SheetBuilder ()
+sheet = do
+  (constantsHeaderTL, constantsHeaderTR) <- placeInput (coords 2 2) () constantsHeaderBuilder
   (gasTL, gas) <- placeInput (overRow (+ 2) constantsHeaderTL) constants.gasConstant constantBuilder
   (nMolesTL, nMoles) <- placeInput (overRow (+ 1) gasTL) constants.numberOfMoles constantBuilder
   temperature <- snd <$> placeInput (overRow (+ 1) nMolesTL) constants.temperature constantBuilder
@@ -236,7 +240,7 @@ full = do
 {-
 ### Result
 
-Finally, we can write the result and get the spreadsheet like the one that you've seen at the top of this tutorial.
+Finally, we can write the result and get the spreadsheet like the one at the top of this tutorial.
 -}
 
 writeWorksheet :: SheetBuilder a -> String -> IO ()
@@ -245,24 +249,17 @@ writeWorksheet tb name = do
   let xlsx = composeXlsx [(T.pack "List 1", void tb)]
   L.writeFile ("example-" <> name <> ".xlsx") $ X.fromXlsx ct xlsx
 
-writeEx :: IO ()
-writeEx = writeWorksheet full "1"
-
 main :: IO ()
-main = writeEx
+main = writeWorksheet sheet "2"
 
 {-
-Run
+To get `example/example-2.xlsx`, run:
 
 ```console
-cd example
-nix develop
-cabal run
+cd example && nix develop -c cabal run example-2
 ```
 
-to get `example/example-1.xlsx`.
+With formulas enabled, the sheet looks like this:
 
-With formulas enabled, `example-1.xlsx` looks like this:
-
-<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/demoFormulas.png" width = "80%">
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/demoFormulas.png" width = "80%">
 -}

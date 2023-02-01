@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.35.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -44,13 +44,30 @@ library
     , xlsx
   default-language: Haskell2010
 
-executable clerk-example
-  main-is: Main.hs
+executable example-1
+  main-is: app/Example1.hs
   other-modules:
       Paths_clerk_example
-  hs-source-dirs:
-      app
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  build-depends:
+      base >=4.9.0.0 && <5.0
+    , bytestring
+    , clerk-example
+    , containers
+    , data-default
+    , lens
+    , mtl
+    , text
+    , time
+    , transformers
+    , xlsx
+  default-language: Haskell2010
+
+executable example-2
+  main-is: app/Example2.hs
+  other-modules:
+      Paths_clerk_example
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.9.0.0 && <5.0
     , bytestring

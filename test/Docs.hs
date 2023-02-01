@@ -1,33 +1,40 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
-
-{- FOURMOLU_ENABLE -}
 
 module Main (main) where
 
 import Control.Monad (when)
+import Data.String.Interpolate (i)
+import Data.Text.IO qualified as Text
 import GHC.IO.Exception (ExitCode (..))
 import System.Exit (exitFailure, exitSuccess)
-import System.Process.Typed (runProcess, shell)
+import Turtle (Alternative (empty), Text, shellStrictWithErr)
 
 main :: IO ()
 main = do
-  print "Converting README"
-  s1 <-
-    runProcess $
-      shell $
-        unlines
-          [ "lima hs2md -f example/app/Main.hs"
-          , "touch README.tmp"
-          , "cat README/Intro.md >> README.tmp"
-          , "printf \"\n\" >> README.tmp"
-          , "cat example/app/Main.hs.md >> README.tmp && rm example/app/Main.hs.md"
-          , "printf \"\n\" >> README.tmp"
-          , "cat README/Outro.md >> README.tmp"
-          , "mv README.tmp README.md"
-          ]
-  when (s1 /= ExitSuccess) (print "Failed to generate README.md. Exiting ..." >> exitFailure)
+  Text.putStrLn "Converting README"
+  let appendNewline :: Text = [i|printf "\n" >> README.tmp|]
+  (exitCode, _, _) <-
+    shellStrictWithErr
+      [i|
+        lima hs2md -f example/app/Example1.hs -f example/app/Example2.hs
+        touch README.tmp
+        cat README/Intro.md >> README.tmp
+        #{appendNewline}
+        cat example/app/Example1.hs.md >> README.tmp && rm example/app/Example1.hs.md
+        #{appendNewline}
+        cat example/app/Example2.hs.md >> README.tmp && rm example/app/Example2.hs.md
+        #{appendNewline}
+        cat README/Outro.md >> README.tmp
+        mv README.tmp README.md
+      |]
+      empty
+  when (exitCode /= ExitSuccess) (Text.putStrLn "Failed to generate README.md. Exiting ..." >> exitFailure)
   exitSuccess
