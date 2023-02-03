@@ -4,9 +4,3 @@ package *
     ghc-options: -haddock
 
 tests: true
-
-source-repository-package
-    type: git
-    location: https://github.com/deemp/flakes
-    tag: 2e810c9c4dc2e553b94e2dbe3660d25f2c94a7d0
-    subdir: lima
