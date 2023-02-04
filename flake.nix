@@ -50,14 +50,14 @@
           overrides = self: super: {
             clerk = pkgs.haskell.lib.overrideCabal (super.callCabal2nix "clerk" ./. { })
               (x: {
-                librarySystemDepends = (x.librarySystemDepends or [ ]) ++ [
+                librarySystemDepends = [
                   pkgs.zlib
                   pkgs.expat
                   pkgs.bzip2
-                ];
-                testHaskellDepends = (x.testHaskellDepends or [ ]) ++ [
+                ] ++ (x.librarySystemDepends or [ ]);
+                testHaskellDepends = [
                   (super.callCabal2nix "lima" "${lima.outPath}/lima" { })
-                ];
+                ] ++ (x.testHaskellDepends or [ ]);
               });
           };
         };
