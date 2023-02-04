@@ -98,7 +98,12 @@
             }));
       } // (
         mkShellApps {
-          writeDocs = { text = ''${cabal}/bin/cabal test''; };
+          writeDocs = {
+            text = ''
+              cabal update
+              ${cabal}/bin/cabal test
+            '';
+          };
         });
 
       names = mkAccessors {
