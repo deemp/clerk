@@ -6,3 +6,4 @@ example-*
 dist-newstyle
 .~lock*
 result
+dist

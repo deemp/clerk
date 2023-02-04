@@ -94,15 +94,12 @@
             let inherit (toolsGHC ghcVersion_ override (ps: [ ps.clerk ]) [ ]) cabal; in
             mkShellApp {
               name = "cabal-build";
-              text = "${cabal}/bin/cabal build";
+              text = "${cabal}/bin/cabal v1-build";
             }));
       } // (
         mkShellApps {
           writeDocs = {
-            text = ''
-              cabal update
-              ${cabal}/bin/cabal test
-            '';
+            text = ''${cabal}/bin/cabal v1-test'';
           };
         });
 
