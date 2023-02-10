@@ -16,10 +16,13 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 {-# OPTIONS_GHC -Wno-unticked-promoted-constructors #-}
-{-# OPTIONS_GHC -Wno-unused-top-binds #-}
+
+-- {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
 -- | @Clerk@ library
 module Clerk (
@@ -37,7 +40,7 @@ module Clerk (
   getRow,
   overCol,
   overRow,
-  unsafeChangeRefType,
+  UnsafeChangeType (..),
 
   -- * Cell formatting
   -- $Formatting
@@ -56,21 +59,13 @@ module Clerk (
 
   -- * Templates
   -- $Templates
-  RowBuilder (..),
+  RowBuilder,
   RowBuilder',
-  Template (..),
-  -- runBuilder,
-  -- evalBuilder,
-  -- execBuilder,
-  -- RenderTemplate,
-  -- RenderBuilderInputs,
-  -- RenderBuilderInput,
-  -- renderBuilderInputs,
-  -- renderTemplate,
+  Template,
 
   -- * Columns
   -- $Columns
-  ColumnsProperties (..),
+  ColumnsProperties,
   columnWidthCell,
   columnWidth,
   columnWidth_,
@@ -79,7 +74,7 @@ module Clerk (
 
   -- * Sheet builder
   -- $SheetBuilder
-  SheetBuilder (..),
+  SheetBuilder,
   placeInputs,
   placeInputs_,
   placeInput,
@@ -87,8 +82,9 @@ module Clerk (
 
   -- * Expressions
   -- $Expressions
-  Expr (..),
-  ToExpr (..),
+  Expr,
+  Formula,
+  ToFormula (..),
   NumOperator,
   (.+),
   (.-),
@@ -96,12 +92,19 @@ module Clerk (
   (./),
   (.:),
   (.^),
-  (.$),
+  (.<),
+  (.>),
+  (.<=),
+  (.>=),
+  (.=),
+  (.<>),
   (.&),
+  fun,
+  FunName,
 
   -- * Cells
   -- $Cells
-  CellData (CellEmpty),
+  CellData,
   ToCellData (..),
 
   -- * Produce xlsx
@@ -113,23 +116,16 @@ import Codec.Xlsx qualified as X
 import Codec.Xlsx.Formatted qualified as X
 import Control.Lens (Identity (runIdentity), (%~), (&), (?~))
 import Control.Lens.Operators ((.~))
-import Control.Monad.State (
-  MonadState,
-  StateT (StateT),
-  evalStateT,
-  get,
-  gets,
-  modify,
-  void,
- )
+import Control.Monad.State (MonadState, StateT (StateT), evalStateT, get, gets, modify, void)
 import Control.Monad.Trans.Writer (execWriter, runWriter)
 import Control.Monad.Writer (MonadWriter (..), Writer)
-import Data.Char (toUpper)
 import Data.Default (Default (..))
 import Data.Foldable (Foldable (..))
+import Data.Kind (Type)
 import Data.List (intercalate)
 import Data.Map.Strict qualified as Map (Map, insert)
 import Data.Maybe (isJust, maybeToList)
+import Data.String (IsString (..))
 import Data.Text qualified as T
 
 -- TODO Allow sheet addresses
@@ -148,9 +144,11 @@ data Coords = Coords {row :: Int, col :: Int}
 coords :: Int -> Int -> Coords
 coords = Coords
 
+-- | Can extract coordinates from this
 class ToCoords a where
   toCoords :: a -> Coords
 
+-- | Can construct this from Coordinates
 class FromCoords a where
   fromCoords :: Coords -> a
 
@@ -198,10 +196,9 @@ toAlphaNumeric x = f "" (x - 1)
 ["A","Z","AA","AZ","BZ"]
 -}
 
--- {- FOURMOLU_DISABLE -}
-
+{- FOURMOLU_DISABLE -}
 -- $Ref
--- {\- FOURMOLU_ENABLE -\}
+{- FOURMOLU_ENABLE -}
 
 -- | A typed reference to a cell.
 --
@@ -210,15 +207,22 @@ toAlphaNumeric x = f "" (x - 1)
 -- The type prevents operations between cell references with incompatible types.
 --
 -- >>>str = Ref (Coords 1 1) :: Ref String
--- >>> str |+| str
--- No instance for (Num String) arising from a use of ‘|+|’
---
+-- >>> str .+ str
 -- When necessary, the user may change the cell reference type via 'unsafeChangeRefType'
---
+
 -- >>>int = Ref (Coords 1 1) :: Ref Int
 -- >>>double = Ref (Coords 2 5) :: Ref Double
--- >>>unsafeChangeRefType int |+| double
+-- >>>unsafeChangeType int .+ double
 -- A1+E2
+--
+-- >>>int .+ double
+-- Couldn't match type `Double' with `Int'
+-- Expected: Ref Int
+--   Actual: Ref Double
+-- In the second argument of `(.+)', namely `double'
+-- In the expression: int .+ double
+-- In an equation for `it_a1zosx': it_a1zosx = int .+ double
+
 newtype Ref a = Ref {unRef :: Coords}
   deriving newtype (Num)
 
@@ -246,11 +250,13 @@ overCol f (toCoords -> Coords row col) = Coords row (f col)
 overRow :: ToCoords a => (Int -> Int) -> a -> Coords
 overRow f (toCoords -> Coords row col) = Coords (f row) col
 
--- | Change the type of a cell reference. Use with caution!
---
--- The type variables in the @forall@ clause are swapped for the conveniece of type applications
-unsafeChangeRefType :: forall b a. Ref a -> Ref b
-unsafeChangeRefType (Ref c) = Ref c
+-- | Change the type of something. Use with caution!
+class UnsafeChangeType (a :: Type -> Type) where
+  unsafeChangeType :: forall c b. a b -> a c
+
+instance UnsafeChangeType Ref where
+  unsafeChangeType :: Ref b -> Ref c
+  unsafeChangeType (Ref c) = Ref c
 
 {- FOURMOLU_DISABLE -}
 -- $Formatting
@@ -373,7 +379,6 @@ execBuilder builder coord = fst $ runBuilder builder coord
 
 type RenderTemplate m input output = (Monad m, ToCellData output) => Coords -> InputIndex -> input -> Template input output -> m Transform
 type RenderBuilderInputs m input output a = (Monad m, ToCellData output) => RowBuilder input output a -> [input] -> m (Transform, a)
-type RenderBuilderInput m input output a = (Monad m, ToCellData output) => RowBuilder input output a -> input -> m (Transform, a)
 
 -- | Render a builder with given coords and inputs. Return the result calculated using the topmost row
 renderBuilderInputs :: (Monad m, ToCellData output) => Coords -> RenderTemplate m input output -> RenderBuilderInputs m input output a
@@ -516,11 +521,12 @@ placeInput_ coords_ input = placeInputs_ coords_ [input]
 -- $Expressions
 {- FOURMOLU_ENABLE -}
 
--- | Expression syntax
+-- | Expressions
 data Expr t
   = EBinOp BinaryOperator (Expr t) (Expr t)
   | EFunction String [Expr t]
   | ERef (Ref t)
+  | ERange (Ref t) (Ref t)
 
 data BinaryOperator
   = OpAdd
@@ -534,54 +540,44 @@ data BinaryOperator
   | OpGEQ
   | OpEQ
   | OpNEQ
-  | OpRange
 
--- | Something that can be turned into an expression
-class ToExpr v where
-  toExpr :: v -> Expr t
+-- | Formula
+newtype Formula t = Formula {unFormula :: Expr t}
+  deriving newtype (UnsafeChangeType, Show)
 
-instance ToExpr (Ref a) where
-  toExpr :: Ref a -> Expr t
-  toExpr (Ref c) = ERef (Ref c)
+-- | Something that can be turned into a formula
+class ToFormula a where
+  toFormula :: a -> Formula t
 
-instance ToExpr Coords where
-  toExpr :: Coords -> Expr t
-  toExpr c = ERef (Ref c)
+instance ToFormula (Ref a) where
+  toFormula :: Ref a -> Formula t
+  toFormula (Ref c) = Formula $ ERef (Ref c)
 
-instance ToExpr (Expr a) where
-  toExpr :: Expr a -> Expr b
-  toExpr (EBinOp OpAdd l r) = EBinOp OpAdd (toExpr l) (toExpr r)
-  toExpr (EBinOp OpSubtract l r) = EBinOp OpSubtract (toExpr l) (toExpr r)
-  toExpr (EBinOp OpMultiply l r) = EBinOp OpMultiply (toExpr l) (toExpr r)
-  toExpr (EBinOp OpDivide l r) = EBinOp OpDivide (toExpr l) (toExpr r)
-  toExpr (EBinOp OpPower l r) = EBinOp OpPower (toExpr l) (toExpr r)
-  toExpr (EBinOp OpGT l r) = EBinOp OpGT (toExpr l) (toExpr r)
-  toExpr (EBinOp OpLT l r) = EBinOp OpLT (toExpr l) (toExpr r)
-  toExpr (EBinOp OpGEQ l r) = EBinOp OpGEQ (toExpr l) (toExpr r)
-  toExpr (EBinOp OpLEQ l r) = EBinOp OpLEQ (toExpr l) (toExpr r)
-  toExpr (EBinOp OpEQ l r) = EBinOp OpEQ (toExpr l) (toExpr r)
-  toExpr (EBinOp OpNEQ l r) = EBinOp OpNEQ (toExpr l) (toExpr r)
-  toExpr (EBinOp OpRange l r) = EBinOp OpRange (toExpr l) (toExpr r)
-  toExpr (EFunction name args) = EFunction name (toExpr <$> args)
-  toExpr (ERef (Ref c)) = ERef (Ref c)
+instance ToFormula Coords where
+  toFormula :: Coords -> Formula t
+  toFormula c = Formula $ ERef (Ref c)
+
+instance ToFormula (Expr a) where
+  toFormula :: Expr a -> Formula b
+  toFormula = Formula . unsafeChangeType
 
 showOp2 :: (Show a, Show b) => String -> a -> b -> String
 showOp2 operator c1 c2 = show c1 <> operator <> show c2
 
-mkOp2 :: (ToExpr a, ToExpr b) => BinaryOperator -> a -> b -> Expr t
-mkOp2 f c1 c2 = EBinOp f (toExpr c1) (toExpr c2)
+mkOp2 :: (ToFormula a, ToFormula b) => BinaryOperator -> a -> b -> Formula t
+mkOp2 f c1 c2 = Formula $ EBinOp f (unFormula $ toFormula c1) (unFormula $ toFormula c2)
 
-mkNumOp2 :: (Num t, ToExpr a, ToExpr b) => BinaryOperator -> a -> b -> Expr t
+mkNumOp2 :: (Num t, ToFormula a, ToFormula b) => BinaryOperator -> a -> b -> Formula t
 mkNumOp2 = mkOp2
 
 -- | Construct a range expression
-(.:) :: forall c a b. Ref a -> Ref b -> Expr c
-(.:) = mkOp2 OpRange
+(.:) :: forall c a b. Ref a -> Ref b -> Formula c
+(.:) a b = Formula $ ERange (unsafeChangeType a) (unsafeChangeType b)
 
 infixr 5 .:
 
 -- | A type for numeric operators
-type NumOperator a b c = (Num a, ToExpr (b a), ToExpr (c a)) => b a -> c a -> Expr a
+type NumOperator a b c = (Num a, ToFormula (b a), ToFormula (c a)) => b a -> c a -> Formula a
 
 -- | Construct an addition expression like @A1 + B1@
 (.+) :: NumOperator a b c
@@ -613,10 +609,10 @@ infixl 6 .*
 
 infixr 8 .^
 
-type BoolOperator a b c = (Ord a, ToExpr (b a), ToExpr (c a)) => b a -> c a -> Expr Bool
+type BoolOperator a b c = (Ord a, ToFormula (b a), ToFormula (c a)) => b a -> c a -> Formula Bool
 
-mkBoolOp2 :: (Ord a, ToExpr (b a), ToExpr (c a)) => BinaryOperator -> b a -> c a -> Expr Bool
-mkBoolOp2 f c1 c2 = EBinOp f (toExpr c1) (toExpr c2)
+mkBoolOp2 :: (Ord a, ToFormula (b a), ToFormula (c a)) => BinaryOperator -> b a -> c a -> Formula Bool
+mkBoolOp2 f c1 c2 = Formula $ EBinOp f (unFormula $ toFormula c1) (unFormula $ toFormula c2)
 
 -- | Construct a @less-than@ expression like @A1 < B1@
 (.<) :: BoolOperator a b c
@@ -654,12 +650,6 @@ infix 4 .=
 
 infix 4 .<>
 
--- | Construct a function expression
-(.$) :: ToExpr a => String -> [a] -> Expr t
-(.$) n as = EFunction (toUpper <$> n) (toExpr <$> as)
-
-infix 0 .$
-
 instance Show (Expr t) where
   show :: Expr t -> String
   show (EBinOp OpAdd c1 c2) = showOp2 "+" c1 c2
@@ -667,7 +657,6 @@ instance Show (Expr t) where
   show (EBinOp OpMultiply c1 c2) = showOp2 "*" c1 c2
   show (EBinOp OpDivide c1 c2) = showOp2 "/" c1 c2
   show (EBinOp OpPower c1 c2) = showOp2 "^" c1 c2
-  show (EBinOp OpRange c1 c2) = showOp2 ":" c1 c2
   show (EBinOp OpLT c1 c2) = showOp2 "<" c1 c2
   show (EBinOp OpGT c1 c2) = showOp2 ">" c1 c2
   show (EBinOp OpLEQ c1 c2) = showOp2 "<=" c1 c2
@@ -675,7 +664,44 @@ instance Show (Expr t) where
   show (EBinOp OpEQ c1 c2) = showOp2 "=" c1 c2
   show (EBinOp OpNEQ c1 c2) = showOp2 "<>" c1 c2
   show (ERef (Ref e)) = show e
+  show (ERange (Ref c1) (Ref c2)) = show c1 ++ ":" ++ show c2
   show (EFunction n as) = n <> "(" <> intercalate "," (show <$> as) <> ")"
+
+instance UnsafeChangeType Expr where
+  unsafeChangeType :: Expr b -> Expr c
+  unsafeChangeType (EBinOp a b c) = EBinOp a (unsafeChangeType b) (unsafeChangeType c)
+  unsafeChangeType (ERef (Ref a)) = ERef (Ref a)
+  unsafeChangeType (EFunction n as) = EFunction n (unsafeChangeType <$> as)
+  unsafeChangeType (ERange l r) = ERange (unsafeChangeType l) (unsafeChangeType r)
+
+-- | Name of a function like @SUM@
+type FunName = String
+
+instance ToFormula (Formula a) where
+  toFormula :: Formula a -> Formula b
+  toFormula (Formula f) = Formula $ unsafeChangeType f
+
+class MakeFunction t where
+  makeFunction :: FunName -> [Formula s] -> t
+
+instance MakeFunction (Formula a) where
+  makeFunction :: FunName -> [Formula s] -> Formula a
+  makeFunction name args = Formula $ EFunction name (unsafeChangeType . unFormula . toFormula <$> args)
+
+instance (Foldable f, MakeFunction t, ToFormula a) => MakeFunction (f a -> t) where
+  makeFunction :: (Foldable f, MakeFunction t, ToFormula a) => FunName -> [Formula s] -> f a -> t
+  makeFunction name args xs = makeFunction name ((unsafeChangeType . toFormula <$> args) ++ foldMap ((: []) . unsafeChangeType . toFormula) xs)
+
+-- | Construct a function like @SUM(A1,B1)@
+fun :: MakeFunction t => FunName -> t
+fun n = makeFunction n []
+
+-- TODO decide if we need it
+
+instance {-# OVERLAPPABLE #-} MakeFunction t => IsString t where
+  -- \| Use a string as a name of a function
+  fromString :: MakeFunction t => String -> t
+  fromString = fun
 
 {- FOURMOLU_DISABLE -}
 -- $Cells
@@ -735,6 +761,10 @@ instance ToCellData (Expr a) where
         , X._cellfCalculate = True
         , X._cellfExpression = X.NormalFormula $ X.Formula $ T.pack $ show e
         }
+
+instance ToCellData (Formula a) where
+  toCellData :: Formula a -> CellData
+  toCellData (Formula e) = toCellData e
 
 {- FOURMOLU_DISABLE -}
 -- $Xlsx
