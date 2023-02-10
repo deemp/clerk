@@ -31,13 +31,13 @@ module Clerk (
   FromCoords (..),
 
   -- * Cell references
-  -- $CellRef
-  CellRef,
+  -- $Ref
+  Ref,
   getCol,
   getRow,
   overCol,
   overRow,
-  unsafeChangeCellRefType,
+  unsafeChangeRefType,
 
   -- * Cell formatting
   -- $Formatting
@@ -200,7 +200,7 @@ toAlphaNumeric x = f "" (x - 1)
 
 -- {- FOURMOLU_DISABLE -}
 
--- $CellRef
+-- $Ref
 -- {\- FOURMOLU_ENABLE -\}
 
 -- | A typed reference to a cell.
@@ -209,26 +209,26 @@ toAlphaNumeric x = f "" (x - 1)
 --
 -- The type prevents operations between cell references with incompatible types.
 --
--- >>>str = CellRef (Coords 1 1) :: CellRef String
+-- >>>str = Ref (Coords 1 1) :: Ref String
 -- >>> str |+| str
 -- No instance for (Num String) arising from a use of ‘|+|’
 --
--- When necessary, the user may change the cell reference type via 'unsafeChangeCellRefType'
+-- When necessary, the user may change the cell reference type via 'unsafeChangeRefType'
 --
--- >>>int = CellRef (Coords 1 1) :: CellRef Int
--- >>>double = CellRef (Coords 2 5) :: CellRef Double
--- >>>unsafeChangeCellRefType int |+| double
+-- >>>int = Ref (Coords 1 1) :: Ref Int
+-- >>>double = Ref (Coords 2 5) :: Ref Double
+-- >>>unsafeChangeRefType int |+| double
 -- A1+E2
-newtype CellRef a = CellRef {unCellRef :: Coords}
+newtype Ref a = Ref {unRef :: Coords}
   deriving newtype (Num)
 
-instance ToCoords (CellRef a) where
-  toCoords :: CellRef a -> Coords
-  toCoords = unCellRef
+instance ToCoords (Ref a) where
+  toCoords :: Ref a -> Coords
+  toCoords = unRef
 
-instance FromCoords (CellRef a) where
-  fromCoords :: Coords -> CellRef a
-  fromCoords = CellRef
+instance FromCoords (Ref a) where
+  fromCoords :: Coords -> Ref a
+  fromCoords = Ref
 
 -- | Get a column number
 getCol :: ToCoords a => a -> Int
@@ -249,8 +249,8 @@ overRow f (toCoords -> Coords row col) = Coords (f row) col
 -- | Change the type of a cell reference. Use with caution!
 --
 -- The type variables in the @forall@ clause are swapped for the conveniece of type applications
-unsafeChangeCellRefType :: forall b a. CellRef a -> CellRef b
-unsafeChangeCellRefType (CellRef c) = CellRef c
+unsafeChangeRefType :: forall b a. Ref a -> Ref b
+unsafeChangeRefType (Ref c) = Ref c
 
 {- FOURMOLU_DISABLE -}
 -- $Formatting
@@ -446,7 +446,7 @@ instance Default ColumnsProperties where
         }
 
 -- | A column with a possibly given width and cell format. Returns a cell reference
-columnWidthCell :: forall a input output. Maybe Double -> FormatCell -> (input -> output) -> RowBuilder input output (CellRef a)
+columnWidthCell :: forall a input output. Maybe Double -> FormatCell -> (input -> output) -> RowBuilder input output (Ref a)
 columnWidthCell width fmtCell mkOutput = do
   coords_ <- get
   let columnsProperties =
@@ -457,12 +457,12 @@ columnWidthCell width fmtCell mkOutput = do
             , X.cpWidth = width
             }
   tell (Template [CellTemplate{fmtCell, mkOutput, columnsProperties}])
-  cell <- gets CellRef
+  cell <- gets Ref
   modify (\x -> x{col = (x & col) + 1})
   return cell
 
 -- | A column with a given width and cell format. Returns a cell reference
-columnWidth :: ToCellData output => Double -> FormatCell -> (input -> output) -> RowBuilder input CellData (CellRef a)
+columnWidth :: ToCellData output => Double -> FormatCell -> (input -> output) -> RowBuilder input CellData (Ref a)
 columnWidth width fmtCell mkOutput = columnWidthCell (Just width) fmtCell (toCellData . mkOutput)
 
 -- | A column with a given width and cell format
@@ -470,7 +470,7 @@ columnWidth_ :: ToCellData output => Double -> FormatCell -> (input -> output) -
 columnWidth_ width fmtCell mkOutput = void (columnWidth width fmtCell mkOutput)
 
 -- | A column with a given cell format. Returns a cell reference
-column :: ToCellData output => FormatCell -> (input -> output) -> RowBuilder input CellData (CellRef a)
+column :: ToCellData output => FormatCell -> (input -> output) -> RowBuilder input CellData (Ref a)
 column fmtCell mkOutput = columnWidthCell Nothing fmtCell (toCellData . mkOutput)
 
 -- | A column with a given cell format
@@ -520,7 +520,7 @@ placeInput_ coords_ input = placeInputs_ coords_ [input]
 data Expr t
   = EBinOp BinaryOperator (Expr t) (Expr t)
   | EFunction String [Expr t]
-  | ECell (CellRef t)
+  | ERef (Ref t)
 
 data BinaryOperator
   = OpAdd
@@ -540,13 +540,13 @@ data BinaryOperator
 class ToExpr v where
   toExpr :: v -> Expr t
 
-instance ToExpr (CellRef a) where
-  toExpr :: CellRef a -> Expr t
-  toExpr (CellRef c) = ECell (CellRef c)
+instance ToExpr (Ref a) where
+  toExpr :: Ref a -> Expr t
+  toExpr (Ref c) = ERef (Ref c)
 
 instance ToExpr Coords where
   toExpr :: Coords -> Expr t
-  toExpr c = ECell (CellRef c)
+  toExpr c = ERef (Ref c)
 
 instance ToExpr (Expr a) where
   toExpr :: Expr a -> Expr b
@@ -563,7 +563,7 @@ instance ToExpr (Expr a) where
   toExpr (EBinOp OpNEQ l r) = EBinOp OpNEQ (toExpr l) (toExpr r)
   toExpr (EBinOp OpRange l r) = EBinOp OpRange (toExpr l) (toExpr r)
   toExpr (EFunction name args) = EFunction name (toExpr <$> args)
-  toExpr (ECell (CellRef c)) = ECell (CellRef c)
+  toExpr (ERef (Ref c)) = ERef (Ref c)
 
 showOp2 :: (Show a, Show b) => String -> a -> b -> String
 showOp2 operator c1 c2 = show c1 <> operator <> show c2
@@ -575,7 +575,7 @@ mkNumOp2 :: (Num t, ToExpr a, ToExpr b) => BinaryOperator -> a -> b -> Expr t
 mkNumOp2 = mkOp2
 
 -- | Construct a range expression
-(.:) :: forall c a b. CellRef a -> CellRef b -> Expr c
+(.:) :: forall c a b. Ref a -> Ref b -> Expr c
 (.:) = mkOp2 OpRange
 
 infixr 5 .:
@@ -674,7 +674,7 @@ instance Show (Expr t) where
   show (EBinOp OpGEQ c1 c2) = showOp2 ">=" c1 c2
   show (EBinOp OpEQ c1 c2) = showOp2 "=" c1 c2
   show (EBinOp OpNEQ c1 c2) = showOp2 "<>" c1 c2
-  show (ECell (CellRef e)) = show e
+  show (ERef (Ref e)) = show e
   show (EFunction n as) = n <> "(" <> intercalate "," (show <$> as) <> ")"
 
 {- FOURMOLU_DISABLE -}
@@ -692,7 +692,7 @@ instance Default CellData where
   def :: CellData
   def = CellEmpty
 
--- | Convert some CellRef component into a cell
+-- | Convert some Ref component into a cell
 dataCell :: CellData -> X.Cell
 dataCell cd =
   X.def
