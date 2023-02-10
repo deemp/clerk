@@ -5,10 +5,11 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE MonoLocalBinds #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
@@ -17,6 +18,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
+{-# OPTIONS_GHC -Wno-unticked-promoted-constructors #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
 -- | @Clerk@ library
@@ -87,15 +89,15 @@ module Clerk (
   -- $Expressions
   Expr (..),
   ToExpr (..),
-  ArithmeticOperator,
-  (|+|),
-  (|-|),
-  (|*|),
-  (|/|),
-  (|:|),
-  (|^|),
-  (|$|),
-  (+>),
+  NumOperator,
+  (.+),
+  (.-),
+  (.*),
+  (./),
+  (.:),
+  (.^),
+  (.$),
+  (.&),
 
   -- * Cells
   -- $Cells
@@ -326,10 +328,10 @@ blank _ _ cd = X.def & X.formattedCell .~ dataCell cd
 type FCTransform = X.FormattedCell -> X.FormattedCell
 
 -- | Apply 'FCTransform' to a 'FormatCell' to get a new 'FormatCell'
-(+>) :: FormatCell -> FCTransform -> FormatCell
-fc +> ft = \coords_ idx cd -> ft $ fc coords_ idx cd
+(.&) :: FormatCell -> FCTransform -> FormatCell
+fc .& ft = \coords_ idx cd -> ft $ fc coords_ idx cd
 
-infixl 5 +>
+infixl 5 .&
 
 -- | Get a 'FCTransform' with a given horizontal alignment in a cell
 horizontalAlignment :: X.CellHorizontalAlignment -> FCTransform
@@ -516,14 +518,23 @@ placeInput_ coords_ input = placeInputs_ coords_ [input]
 
 -- | Expression syntax
 data Expr t
-  = Add (Expr t) (Expr t)
-  | Sub (Expr t) (Expr t)
-  | Mul (Expr t) (Expr t)
-  | Div (Expr t) (Expr t)
-  | Power (Expr t) (Expr t)
-  | Function String [Expr t]
-  | Range (Expr t) (Expr t)
-  | ExprCell (CellRef t)
+  = EBinOp BinaryOperator (Expr t) (Expr t)
+  | EFunction String [Expr t]
+  | ECell (CellRef t)
+
+data BinaryOperator
+  = OpAdd
+  | OpSubtract
+  | OpMultiply
+  | OpDivide
+  | OpPower
+  | OpLT
+  | OpGT
+  | OpLEQ
+  | OpGEQ
+  | OpEQ
+  | OpNEQ
+  | OpRange
 
 -- | Something that can be turned into an expression
 class ToExpr v where
@@ -531,87 +542,140 @@ class ToExpr v where
 
 instance ToExpr (CellRef a) where
   toExpr :: CellRef a -> Expr t
-  toExpr (CellRef c) = ExprCell (CellRef c)
+  toExpr (CellRef c) = ECell (CellRef c)
 
 instance ToExpr Coords where
   toExpr :: Coords -> Expr t
-  toExpr c = ExprCell (CellRef c)
+  toExpr c = ECell (CellRef c)
 
 instance ToExpr (Expr a) where
   toExpr :: Expr a -> Expr b
-  toExpr (Add l r) = Add (toExpr l) (toExpr r)
-  toExpr (Sub l r) = Sub (toExpr l) (toExpr r)
-  toExpr (Mul l r) = Mul (toExpr l) (toExpr r)
-  toExpr (Div l r) = Div (toExpr l) (toExpr r)
-  toExpr (Power b p) = Power (toExpr b) (toExpr p)
-  toExpr (Function name args) = Function name (toExpr <$> args)
-  toExpr (Range l r) = Range (toExpr l) (toExpr r)
-  toExpr (ExprCell (CellRef c)) = ExprCell (CellRef c)
+  toExpr (EBinOp OpAdd l r) = EBinOp OpAdd (toExpr l) (toExpr r)
+  toExpr (EBinOp OpSubtract l r) = EBinOp OpSubtract (toExpr l) (toExpr r)
+  toExpr (EBinOp OpMultiply l r) = EBinOp OpMultiply (toExpr l) (toExpr r)
+  toExpr (EBinOp OpDivide l r) = EBinOp OpDivide (toExpr l) (toExpr r)
+  toExpr (EBinOp OpPower l r) = EBinOp OpPower (toExpr l) (toExpr r)
+  toExpr (EBinOp OpGT l r) = EBinOp OpGT (toExpr l) (toExpr r)
+  toExpr (EBinOp OpLT l r) = EBinOp OpLT (toExpr l) (toExpr r)
+  toExpr (EBinOp OpGEQ l r) = EBinOp OpGEQ (toExpr l) (toExpr r)
+  toExpr (EBinOp OpLEQ l r) = EBinOp OpLEQ (toExpr l) (toExpr r)
+  toExpr (EBinOp OpEQ l r) = EBinOp OpEQ (toExpr l) (toExpr r)
+  toExpr (EBinOp OpNEQ l r) = EBinOp OpNEQ (toExpr l) (toExpr r)
+  toExpr (EBinOp OpRange l r) = EBinOp OpRange (toExpr l) (toExpr r)
+  toExpr (EFunction name args) = EFunction name (toExpr <$> args)
+  toExpr (ECell (CellRef c)) = ECell (CellRef c)
 
 showOp2 :: (Show a, Show b) => String -> a -> b -> String
 showOp2 operator c1 c2 = show c1 <> operator <> show c2
 
-mkOp2 :: (ToExpr a, ToExpr b) => (Expr t -> Expr t -> Expr t) -> a -> b -> Expr t
-mkOp2 f c1 c2 = f (toExpr c1) (toExpr c2)
+mkOp2 :: (ToExpr a, ToExpr b) => BinaryOperator -> a -> b -> Expr t
+mkOp2 f c1 c2 = EBinOp f (toExpr c1) (toExpr c2)
 
-mkNumOp2 :: (Num t, ToExpr a, ToExpr b) => (Expr t -> Expr t -> Expr t) -> a -> b -> Expr t
+mkNumOp2 :: (Num t, ToExpr a, ToExpr b) => BinaryOperator -> a -> b -> Expr t
 mkNumOp2 = mkOp2
 
--- | Assemble a range expression
-(|:|) :: CellRef a -> CellRef b -> Expr c
-(|:|) = mkOp2 Range
+-- | Construct a range expression
+(.:) :: forall c a b. CellRef a -> CellRef b -> Expr c
+(.:) = mkOp2 OpRange
 
-infixr 5 |:|
+infixr 5 .:
 
--- | A type for arithmetic operators
-type ArithmeticOperator a b c = (Num a, ToExpr (b a), ToExpr (c a)) => b a -> c a -> Expr a
+-- | A type for numeric operators
+type NumOperator a b c = (Num a, ToExpr (b a), ToExpr (c a)) => b a -> c a -> Expr a
 
--- | Assemble an addition expression
-(|+|) :: ArithmeticOperator a b c
-(|+|) = mkNumOp2 Add
+-- | Construct an addition expression like @A1 + B1@
+(.+) :: NumOperator a b c
+(.+) = mkNumOp2 OpAdd
 
-infixl 6 |+|
+infixl 6 .+
 
--- | Assemble a subtraction expression
-(|-|) :: ArithmeticOperator a b c
-(|-|) = mkNumOp2 Sub
+-- | Construct a subtraction expression like @A1 - B1@
+(.-) :: NumOperator a b c
+(.-) = mkNumOp2 OpSubtract
 
-infixl 6 |-|
+infixl 6 .-
 
--- | Assemble a division expression
-(|/|) :: ArithmeticOperator a b c
-(|/|) = mkNumOp2 Div
+-- | Construct a division expression like @A1 / B1@
+(./) :: NumOperator a b c
+(./) = mkNumOp2 OpDivide
 
-infixl 7 |/|
+infixl 7 ./
 
--- | Assemble a multiplication expression
-(|*|) :: ArithmeticOperator a b c
-(|*|) = mkNumOp2 Mul
+-- | Construct a multiplication expression like @A1 * B1@
+(.*) :: NumOperator a b c
+(.*) = mkNumOp2 OpMultiply
 
-infixl 6 |*|
+infixl 6 .*
 
--- | Assemble a multiplication expression
-(|^|) :: ArithmeticOperator a b c
-(|^|) = mkNumOp2 Power
+-- | Construct an exponentiation expression like @A1 ^ B1@
+(.^) :: NumOperator a b c
+(.^) = mkNumOp2 OpPower
 
-infixr 8 |^|
+infixr 8 .^
 
--- | Assemble a function expression
-(|$|) :: ToExpr a => String -> [a] -> Expr t
-(|$|) n as = Function (toUpper <$> n) (toExpr <$> as)
+type BoolOperator a b c = (Ord a, ToExpr (b a), ToExpr (c a)) => b a -> c a -> Expr Bool
 
-infixr 0 |$|
+mkBoolOp2 :: (Ord a, ToExpr (b a), ToExpr (c a)) => BinaryOperator -> b a -> c a -> Expr Bool
+mkBoolOp2 f c1 c2 = EBinOp f (toExpr c1) (toExpr c2)
+
+-- | Construct a @less-than@ expression like @A1 < B1@
+(.<) :: BoolOperator a b c
+(.<) = mkBoolOp2 OpLT
+
+infix 4 .<
+
+-- | Construct a @greater-than@ expression like @A1 > B1@
+(.>) :: BoolOperator a b c
+(.>) = mkBoolOp2 OpGT
+
+infix 4 .>
+
+-- | Construct a @less-than-or-equal-to@ expression like @A1 <= B1@
+(.<=) :: BoolOperator a b c
+(.<=) = mkBoolOp2 OpLEQ
+
+infix 4 .<=
+
+-- | Construct a @greater-than-or-equal-to@ expression like @A1 <= B1@
+(.>=) :: BoolOperator a b c
+(.>=) = mkBoolOp2 OpGEQ
+
+infix 4 .>=
+
+-- | Construct a @equal-to@ expression like @A1 = B1@
+(.=) :: BoolOperator a b c
+(.=) = mkBoolOp2 OpEQ
+
+infix 4 .=
+
+-- | Construct a @not-equal-to@ expression like @A1 <> B1@
+(.<>) :: BoolOperator a b c
+(.<>) = mkBoolOp2 OpNEQ
+
+infix 4 .<>
+
+-- | Construct a function expression
+(.$) :: ToExpr a => String -> [a] -> Expr t
+(.$) n as = EFunction (toUpper <$> n) (toExpr <$> as)
+
+infix 0 .$
 
 instance Show (Expr t) where
   show :: Expr t -> String
-  show (Add c1 c2) = showOp2 "+" c1 c2
-  show (Sub c1 c2) = showOp2 "-" c1 c2
-  show (Mul c1 c2) = showOp2 "*" c1 c2
-  show (Div c1 c2) = showOp2 "/" c1 c2
-  show (Power c1 c2) = showOp2 "^" c1 c2
-  show (Range c1 c2) = showOp2 ":" c1 c2
-  show (ExprCell (CellRef e)) = show e
-  show (Function n as) = n <> "(" <> intercalate "," (show <$> as) <> ")"
+  show (EBinOp OpAdd c1 c2) = showOp2 "+" c1 c2
+  show (EBinOp OpSubtract c1 c2) = showOp2 "-" c1 c2
+  show (EBinOp OpMultiply c1 c2) = showOp2 "*" c1 c2
+  show (EBinOp OpDivide c1 c2) = showOp2 "/" c1 c2
+  show (EBinOp OpPower c1 c2) = showOp2 "^" c1 c2
+  show (EBinOp OpRange c1 c2) = showOp2 ":" c1 c2
+  show (EBinOp OpLT c1 c2) = showOp2 "<" c1 c2
+  show (EBinOp OpGT c1 c2) = showOp2 ">" c1 c2
+  show (EBinOp OpLEQ c1 c2) = showOp2 "<=" c1 c2
+  show (EBinOp OpGEQ c1 c2) = showOp2 ">=" c1 c2
+  show (EBinOp OpEQ c1 c2) = showOp2 "=" c1 c2
+  show (EBinOp OpNEQ c1 c2) = showOp2 "<>" c1 c2
+  show (ECell (CellRef e)) = show e
+  show (EFunction n as) = n <> "(" <> intercalate "," (show <$> as) <> ")"
 
 {- FOURMOLU_DISABLE -}
 -- $Cells
