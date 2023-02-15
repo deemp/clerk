@@ -41,8 +41,9 @@ library
     , bytestring
     , containers
     , data-default
-    , hlist
     , lens
+    , microlens
+    , microlens-th
     , mtl
     , text
     , time

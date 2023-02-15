@@ -20,6 +20,7 @@ The below sections describe how such a spreadsheet can be constructed.
 We'll need several language extensions.
 -}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -36,6 +37,7 @@ And import the necessary stuff.
 
 import Clerk
 import Codec.Xlsx qualified as X
+import Control.Lens ((&), (+~), (^.))
 import Control.Monad (forM_, void, zipWithM)
 import Data.ByteString.Lazy qualified as L
 import Data.Text qualified as T
@@ -74,7 +76,7 @@ indices = [0, 1 .. 8]
 We use this builder for boundary cells.
 -}
 
-boundaryBuilder :: Int -> RowBuilder' () (CellRef Int)
+boundaryBuilder :: Int -> RowBuilder' () (Ref Int)
 boundaryBuilder i = column blank (const i)
 
 {-
@@ -85,8 +87,8 @@ boundaryBuilder i = column blank (const i)
 We use this builder for inner cells. It depends on the coordinates of cells from the column and the row.
 -}
 
-tableBuilder :: Num a => (CellRef a, CellRef a) -> RowBuilder' () ()
-tableBuilder (a, b) = column_ blank (const (a |*| b))
+tableBuilder :: Num a => (Ref a, Ref a) -> RowBuilder' () ()
+tableBuilder (a, b) = column_ blank (const (a .* b))
 
 {-
 ### Sheet builder
@@ -99,9 +101,9 @@ references that it produces in the subsequent expressions.
 sheet :: SheetBuilder ()
 sheet = do
   let tl = coords 2 2
-  hs <- zipWithM (\i n -> placeInput (overCol (+ (2 + i)) tl) () (boundaryBuilder n)) indices numbers
-  vs <- zipWithM (\i n -> placeInput (overRow (+ (2 + i)) tl) () (boundaryBuilder n)) indices numbers
-  forM_ (do r <- vs; c <- hs; pure (r, c)) (\x@(r, c) -> placeInput (coords (getRow r) (getCol c)) () (tableBuilder x))
+  hs <- zipWithM (\i n -> placeInput (tl & col +~ (2 + i)) () (boundaryBuilder n)) indices numbers
+  vs <- zipWithM (\i n -> placeInput (tl & row +~ (2 + i)) () (boundaryBuilder n)) indices numbers
+  forM_ (do r <- vs; c <- hs; pure (r, c)) (\x@(r, c) -> placeInput (coords (r ^. row) (c ^. col)) () (tableBuilder x))
 
 {-
 ### Result

@@ -59,4 +59,5 @@ library:
     - time
     - containers
     - data-default
-    - hlist
+    - microlens
+    - microlens-th

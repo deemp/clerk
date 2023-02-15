@@ -36,10 +36,8 @@ module Clerk (
   -- * Cell references
   -- $Ref
   Ref,
-  getCol,
-  getRow,
-  overCol,
-  overRow,
+  row,
+  col,
   UnsafeChangeType (..),
 
   -- * Cell formatting
@@ -114,7 +112,7 @@ module Clerk (
 
 import Codec.Xlsx qualified as X
 import Codec.Xlsx.Formatted qualified as X
-import Control.Lens (Identity (runIdentity), (%~), (&), (?~))
+import Control.Lens (Identity (runIdentity), Lens', lens, (%~), (&), (?~))
 import Control.Lens.Operators ((.~))
 import Control.Monad.State (MonadState, StateT (StateT), evalStateT, get, gets, modify, void)
 import Control.Monad.Trans.Writer (execWriter, runWriter)
@@ -139,7 +137,7 @@ import Data.Text qualified as T
 {- FOURMOLU_ENABLE -}
 
 -- | Coords of a cell
-data Coords = Coords {row :: Int, col :: Int}
+data Coords = Coords {_row :: Int, _col :: Int}
 
 coords :: Int -> Int -> Coords
 coords = Coords
@@ -162,7 +160,7 @@ instance FromCoords Coords where
 
 instance Show Coords where
   show :: Coords -> String
-  show (Coords{..}) = toAlphaNumeric col <> show row
+  show (Coords{..}) = toAlphaNumeric _col <> show _row
 
 instance Num Coords where
   (+) :: Coords -> Coords -> Coords
@@ -234,21 +232,19 @@ instance FromCoords (Ref a) where
   fromCoords :: Coords -> Ref a
   fromCoords = Ref
 
--- | Get a column number
-getCol :: ToCoords a => a -> Int
-getCol = col . toCoords
+-- | A lens for @row@s
+row :: (ToCoords a, FromCoords a) => Lens' a Int
+row = lens getter setter
+ where
+  getter (toCoords -> Coords _row _) = _row
+  setter (toCoords -> Coords _row _col) f = fromCoords $ Coords f _col
 
--- | Get a row number
-getRow :: ToCoords a => a -> Int
-getRow = row . toCoords
-
--- | Apply a function over a column of a coordinate
-overCol :: ToCoords a => (Int -> Int) -> a -> Coords
-overCol f (toCoords -> Coords row col) = Coords row (f col)
-
--- | Apply a function over a row of a coordinate
-overRow :: ToCoords a => (Int -> Int) -> a -> Coords
-overRow f (toCoords -> Coords row col) = Coords (f row) col
+-- | A lens for @col@s
+col :: (ToCoords a, FromCoords a) => Lens' a Int
+col = lens getter setter
+ where
+  getter (toCoords -> Coords _ _col) = _col
+  setter (toCoords -> Coords _row _col) f = fromCoords $ Coords _row f
 
 -- | Change the type of something. Use with caution!
 class UnsafeChangeType (a :: Type -> Type) where
@@ -386,12 +382,12 @@ renderBuilderInputs offset render builder inputs = ret
  where
   ts =
     [ (coord, template)
-    | row <- [0 .. length inputs]
-    , let coord = offset + Coords{row, col = 0}
+    | _row <- [0 .. length inputs]
+    , let coord = offset + Coords{_row, _col = 0}
           template = evalBuilder builder coord
     ]
   -- result obtained from the top row
-  a = execBuilder builder (offset + Coords{row = 0, col = 0})
+  a = execBuilder builder (offset + Coords{_row = 0, _col = 0})
   transform =
     fold
       <$> sequenceA
@@ -411,14 +407,14 @@ renderTemplate Coords{..} inputIdx input (Template columns) = return $ fold ps
  where
   ps =
     zipWith
-      ( \columnIdx mk ->
+      ( \columnIndex mk ->
           let
             CellTemplate{..} = mk
             cd' = toCellData (mkOutput input)
-            col' = (col + columnIdx)
-            coords' = Coords row col'
+            _col' = (_col + columnIndex)
+            coords' = Coords _row _col'
             c = fmtCell coords' inputIdx cd'
-            fmTransform = Map.insert (fromIntegral row, fromIntegral col') c
+            fmTransform = Map.insert (fromIntegral _row, fromIntegral _col') c
             wsTransform
               -- add column width only once
               | inputIdx == 0 = X.wsColumnsProperties %~ (\x -> x ++ maybeToList columnsProperties)
@@ -457,13 +453,13 @@ columnWidthCell width fmtCell mkOutput = do
   let columnsProperties =
         Just $
           (unColumnsProperties def)
-            { X.cpMin = coords_ & col
-            , X.cpMax = coords_ & col
+            { X.cpMin = coords_ & _col
+            , X.cpMax = coords_ & _col
             , X.cpWidth = width
             }
   tell (Template [CellTemplate{fmtCell, mkOutput, columnsProperties}])
   cell <- gets Ref
-  modify (\x -> x{col = (x & col) + 1})
+  modify (\x -> x{_col = (x & _col) + 1})
   return cell
 
 -- | A column with a given width and cell format. Returns a cell reference
