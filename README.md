@@ -38,6 +38,7 @@ We'll need several language extensions.
 
 ```haskell
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -54,6 +55,7 @@ And import the necessary stuff.
 ```haskell
 import Clerk
 import Codec.Xlsx qualified as X
+import Control.Lens ((&), (+~), (^.))
 import Control.Monad (forM_, void, zipWithM)
 import Data.ByteString.Lazy qualified as L
 import Data.Text qualified as T
@@ -92,7 +94,7 @@ indices = [0, 1 .. 8]
 We use this builder for boundary cells.
 
 ```haskell
-boundaryBuilder :: Int -> RowBuilder' () (CellRef Int)
+boundaryBuilder :: Int -> RowBuilder' () (Ref Int)
 boundaryBuilder i = column blank (const i)
 ```
 
@@ -103,8 +105,8 @@ boundaryBuilder i = column blank (const i)
 We use this builder for inner cells. It depends on the coordinates of cells from the column and the row.
 
 ```haskell
-tableBuilder :: Num a => (CellRef a, CellRef a) -> RowBuilder' () ()
-tableBuilder (a, b) = column_ blank (const (a |*| b))
+tableBuilder :: Num a => (Ref a, Ref a) -> RowBuilder' () ()
+tableBuilder (a, b) = column_ blank (const (a .* b))
 ```
 
 ### Sheet builder
@@ -117,9 +119,9 @@ references that it produces in the subsequent expressions.
 sheet :: SheetBuilder ()
 sheet = do
   let tl = coords 2 2
-  hs <- zipWithM (\i n -> placeInput (overCol (+ (2 + i)) tl) () (boundaryBuilder n)) indices numbers
-  vs <- zipWithM (\i n -> placeInput (overRow (+ (2 + i)) tl) () (boundaryBuilder n)) indices numbers
-  forM_ (do r <- vs; c <- hs; pure (r, c)) (\x@(r, c) -> placeInput (coords (getRow r) (getCol c)) () (tableBuilder x))
+  hs <- zipWithM (\i n -> placeInput (tl & col +~ (2 + i)) () (boundaryBuilder n)) indices numbers
+  vs <- zipWithM (\i n -> placeInput (tl & row +~ (2 + i)) () (boundaryBuilder n)) indices numbers
+  forM_ (do r <- vs; c <- hs; pure (r, c)) (\x@(r, c) -> placeInput (coords (r ^. row) (c ^. col)) () (tableBuilder x))
 ```
 
 ### Result
@@ -189,7 +191,7 @@ And import the necessary stuff.
 import Clerk
 import Codec.Xlsx qualified as X
 import Codec.Xlsx.Formatted qualified as X
-import Control.Lens ((%~), (&), (?~))
+import Control.Lens ((%~), (&), (+~), (?~))
 import Control.Monad (void)
 import Data.ByteString.Lazy qualified as L
 import Data.Text qualified as T
@@ -298,11 +300,11 @@ We get a pair of outputs:
 Later, the outputs of this and other `RowBuilder`s will be used to relate the positions of tables on a sheet.
 
 ```haskell
-constantBuilder :: ToCellData a => RowBuilder (ConstantData a) CellData (CellRef (), CellRef a)
+constantBuilder :: ToCellData a => RowBuilder (ConstantData a) CellData (Ref (), Ref a)
 constantBuilder = do
   refTopLeft <- column lightBlue constantName
   column_ lightBlue constantSymbol
-  refValue <- column (lightBlue +> use2decimalDigits) constantValue
+  refValue <- column (lightBlue .& use2decimalDigits) constantValue
   column_ lightBlue constantUnits
   return (refTopLeft, refValue)
 ```
@@ -324,9 +326,9 @@ To pass the constants' references in a structured way, we make a helper type.
 
 ```haskell
 data ConstantsRefs = ConstantsRefs
-  { refGas :: CellRef Double
-  , refNumberOfMoles :: CellRef Double
-  , refTemperature :: CellRef Double
+  { refGas :: Ref Double
+  , refNumberOfMoles :: Ref Double
+  , refTemperature :: Ref Double
   }
 ```
 
@@ -336,8 +338,8 @@ Next, we define a function to produce a builder for volume and pressure. We pass
 valuesBuilder :: ConstantsRefs -> RowBuilder Volume CellData ()
 valuesBuilder ConstantsRefs{..} = do
   refVolume <- column mixed volume
-  let pressure' = refGas |*| refNumberOfMoles |*| refTemperature |/| refVolume
-  column_ (mixed +> use2decimalDigits) (const pressure')
+  let pressure' = refGas .* refNumberOfMoles .* refTemperature ./ refVolume
+  column_ (mixed .& use2decimalDigits) (const pressure')
 ```
 
 #### Constants' header
@@ -349,12 +351,12 @@ We won't use records here. Instead, we'll put the names of the columns straight 
 The outputs will be the coordinates of the top left cell and the top right cell of this table.
 
 ```haskell
-constantsHeaderBuilder :: RowBuilder () CellData (CellRef (), CellRef ())
+constantsHeaderBuilder :: RowBuilder () CellData (Ref (), Ref ())
 constantsHeaderBuilder = do
-  refTopLeft <- columnWidth 20 (blue +> alignCenter) (const "constant")
-  columnWidth_ 8 (blue +> alignCenter) (const "symbol")
-  column_ (blue +> alignCenter) (const "value")
-  refTopRight <- columnWidth 13 (blue +> alignCenter) (const "units")
+  refTopLeft <- columnWidth 20 (blue .& alignCenter) (const "constant")
+  columnWidth_ 8 (blue .& alignCenter) (const "symbol")
+  column_ (blue .& alignCenter) (const "value")
+  refTopRight <- columnWidth 13 (blue .& alignCenter) (const "units")
   return (refTopLeft, refTopRight)
 ```
 
@@ -382,11 +384,11 @@ references that it produces in the subsequent expressions.
 sheet :: SheetBuilder ()
 sheet = do
   (constantsHeaderTL, constantsHeaderTR) <- placeInput (coords 2 2) () constantsHeaderBuilder
-  (gasTL, gas) <- placeInput (overRow (+ 2) constantsHeaderTL) constants.gasConstant constantBuilder
-  (nMolesTL, nMoles) <- placeInput (overRow (+ 1) gasTL) constants.numberOfMoles constantBuilder
-  temperature <- snd <$> placeInput (overRow (+ 1) nMolesTL) constants.temperature constantBuilder
-  valuesHeaderTL <- placeInput (overCol (+ 2) constantsHeaderTR) () valuesHeaderBuilder
-  placeInputs_ (overRow (+ 2) valuesHeaderTL) volumeData (valuesBuilder $ ConstantsRefs gas nMoles temperature)
+  (gasTL, gas) <- placeInput (constantsHeaderTL & row +~ 2) constants.gasConstant constantBuilder
+  (nMolesTL, nMoles) <- placeInput (gasTL & row +~ 1) constants.numberOfMoles constantBuilder
+  temperature <- snd <$> placeInput (nMolesTL & row +~ 1) constants.temperature constantBuilder
+  valuesHeaderTL <- placeInput (constantsHeaderTR & row +~ 2) () valuesHeaderBuilder
+  placeInputs_ (valuesHeaderTL & row +~ 2) volumeData (valuesBuilder $ ConstantsRefs gas nMoles temperature)
 ```
 
 ### Result
