@@ -1,53 +1,240 @@
+\newminted[mycode]{haskell}{
+    % frame=lines,
+    framesep=2mm,
+    baselinestretch=1.2,
+    % bgcolor=LightGray,
+    fontsize=\small,
+    % linenos
+}
+
 \chapter{Implementation}
 \label{chap:impl}
 
-\begin{longtable}{c|c}
-\caption[This is the title I want to appear in the List of Tables]{Simulation Parameters} \label{table:fousimulation_params} \\
-\hline
-A & B  \\
-\hline
-\endfirsthead
-\multicolumn{2}{@{}l}{} \\
-\hline
-A & B \\
-\hline
-\endhead
-\hline
- \textbf{Parameter} & \textbf{Value}\\
- \hline
- Number of vehicles & $|\mathcal{V}|$\\
- \hline
- Number of RSUs & $|\mathcal{U}|$\\
- \hline
- RSU coverage radius & 150 m\\
- \hline
- V2V communication radius & 30 m\\
- \hline
- Smart vehicle antenna height & 1.5 m\\
- \hline
- RSU antenna height & 25 m\\
- \hline
- Smart vehicle maximum speed & $v_{max}$ m/s\\
- \hline
- Smart vehicle minimum speed & $v_{min}$ m/s\\
- \hline
- Common smart vehicle cache capacities & $[50, 100, 150, 200, 250]$ mb\\
- \hline
- Common RSU cache capacities & $[5000,1000,1500,2000,2500]$ mb\\
- \hline
- Common backhaul rates & $[75, 100, 150]$ mb/s\\
- \hline
-\end{longtable}
+This chapter describes low-level details of the \texttt{clerk} library implementation. First, the used types and their purpose are explained. Following that, the main helper functions are presented. Finally, a simple example is given to demonstrate the capabilities of \texttt{clerk}.
 
-\begin{figure}[hbt]
-\centering
-\includegraphics[]{figs/inno.png}
-\caption{One kernel at $x_s$ (\emph{dotted kernel}) or two kernels at
-$x_i$ and $x_j$ (\textit{left and right}) lead to the same summed estimate
-at $x_s$. This shows a figure consisting of different types of
-lines. Elements of the figure described in the caption should be set in
-italics, in parentheses, as shown in this sample caption.}
-\label{fig:fouex}
-\end{figure}
+\section{Types}
+\label{sec:types}
 
-\ldots
+The core type of the library is the \texttt{RowBuilder}. This is a monad that allows to construct a template for a row of data. It keeps track of the coordinates of the current cell via the \texttt{StateT Coords m a} transformer. It writes the new cells into a template via the \texttt{Writer (Template input output) a}.
+
+\begin {mycode}
+newtype RowBuilder input output a = RowBuilder
+  { unBuilder :: StateT Coords (Writer (Template input output)) a
+  }
+  deriving (
+    Functor,  Applicative,  Monad,  MonadState Coords,
+    MonadWriter (Template input output)
+  )
+\end{mycode}
+
+The row templates are applied to a list of inputs, producing a template for a table.
+In this table, each cell has an address, data, and formatting. A special type is used to construct formulas to produce data.
+
+\subsection{Addresses}
+\label{sec:addresses}
+
+The \texttt{Coords} denote the address of a cell. This data type has a \texttt{Num} instance that provides cell arithmetics with them like shifts along sheet axes in the directions given as another \texttt{Coords}. Additionally, this type has a \texttt{Show} instance that translates it into valid spreadsheet addresses.
+
+\begin{mycode}
+data Coords = Coords {_row :: Int, _col :: Int}
+\end{mycode}
+
+Typeclasses \texttt{ToCoords} and \texttt{FromCoords} allow to generalize working with data that is convertible to and from \texttt{Coords}. Based on these typeclasses, a pair of lenses is provided for convenient work with \texttt{Coords}-like data types.
+
+\begin{mycode}
+row :: (ToCoords a, FromCoords a) => Lens' a Int
+col :: (ToCoords a, FromCoords a) => Lens' a Int
+\end{mycode}
+
+Such data types include \texttt{Ref}s, which are addresses of cells plus a phantom type to allow type-safe operations. For example, for a \texttt{Ref Int}, arithmetic operations are only allowed with another \texttt{Ref Int}. \texttt{Ref} inherits the \texttt{Num} instance of \texttt{Coords}.
+
+\begin{mycode}
+newtype Ref a = Ref {unRef :: Coords} deriving newtype (Num)
+\end{mycode}
+
+The phantom type transformations are made possible via the \texttt{UnsafeChangeType} class.
+
+\begin{mycode}
+class UnsafeChangeType (a :: Type -> Type) where
+  unsafeChangeType :: forall c b. a b -> a c
+\end{mycode}
+
+\subsection{Cell data}
+\label{sec:celldata}
+
+When building a template, all \texttt{input}s are translated into \texttt{CellData}, which unites the data types from \texttt{xlsx}. 
+
+\begin{mycode}
+data CellData
+  = CellFormula X.CellFormula
+  | CellValue X.CellValue
+  | CellComment X.Comment
+  | CellEmpty
+\end{mycode}
+
+That is why, one can use a type synonym for building row templates.
+
+\begin{mycode}
+type Row input a = RowBuilder input CellData a
+\end{mycode}
+
+There is a typeclass \texttt{ToCellData} that allows to work with arbitrary types convertible to \texttt{CellData}.
+
+\begin{mycode}
+class ToCellData a where
+  toCellData :: a -> CellData
+\end{mycode}
+
+\subsection{Formatting}
+\label{sec:formatting}
+
+To store the additional information about a cell, a \texttt{CellTemplate} type is introduced.
+
+\begin{mycode}
+data CellTemplate input output = CellTemplate
+  { mkOutput :: input -> output
+  , fmtCell :: FormatCell
+  , columnsProperties :: Maybe X.ColumnsProperties
+  }
+\end{mycode}
+
+The \texttt{FormatCell} type synonym denotes a function that produces a formatted cell based on that cell's address, index in the input list, and the data.
+
+\begin{mycode}
+type FormatCell = 
+  forall a b. (ToCoords a, ToCellData b) => 
+    a -> InputIndex -> CellData -> X.FormattedCell
+\end{mycode}
+
+\subsection{Formulas}
+\label{sec:formulas}
+
+The spreadsheet formulas are modeled via recursive data types and have a phantom type to store the resulting type of a formula.
+
+\begin{mycode}
+data Expr t
+  = EBinOp BinaryOperator (Expr t) (Expr t)
+  | EFunction String [Expr t]
+  | ERef (Ref t)
+  | ERange (Ref t) (Ref t)
+\end{mycode}
+
+To introduce the new functionality on top of \texttt{Expr}, the \texttt{Formula} is used.
+
+\begin{mycode}
+newtype Formula t = Formula {unFormula :: Expr t}
+  deriving newtype (UnsafeChangeType, Show)
+\end{mycode}
+
+It is accompanied by a type class that allows conversion to a \texttt{Formula}.
+
+\begin{mycode}
+class ToFormula a where
+  toFormula :: a -> Formula t
+\end{mycode}
+
+Formulas are constructed from values and addresses combined via operators and functions.
+
+\subsubsection{Operators}
+\label{sec:operators}
+
+A number of operators are used to build formulas. These operators resemble the spreadsheet ones.
+
+\begin{itemize}
+  \item For constructing ranges
+  \begin{mycode}
+  (.:) :: forall c a b. Ref a -> Ref b -> Formula c
+  \end{mycode}
+  \item Arithmetic operators
+  \begin{mycode}
+  type NumOperator a b c = (Num a, ToFormula (b a), ToFormula (c a)) => b a -> c a -> Formula a
+  (.+) :: NumOperator a b c
+  (.-) :: NumOperator a b c
+  (./) :: NumOperator a b c
+  (.*) :: NumOperator a b c
+  (.^) :: NumOperator a b c
+  \end{mycode}
+  \item Operators that produce boolean values
+  \begin{mycode}
+  type BoolOperator a b c = (Ord a, ToFormula (b a), ToFormula (c a)) => b a -> c a -> Formula Bool
+  (.<) :: BoolOperator a b c
+  (.>) :: BoolOperator a b c
+  (.<=) :: BoolOperator a b c
+  (.>=) :: BoolOperator a b c
+  (.=) :: BoolOperator a b c
+  (.<>) :: BoolOperator a b c
+  \end{mycode}
+\end{itemize}
+
+\subsubsection{Functions}
+
+A user may want to construct custom functions. It is made possible via another typeclass and a helper method. To set the types of arguments, a user can specify the type \texttt{t}.
+
+\begin{mycode}
+type FunName = String
+
+class MakeFunction t where
+  makeFunction :: FunName -> [Formula s] -> t
+
+fun :: MakeFunction t => FunName -> t
+fun n = makeFunction n []
+\end{mycode}
+
+Due to an instance of \texttt{IsString}, it is possible to use function names as \texttt{Haskell} functions.
+
+\begin{mycode}
+instance {-# OVERLAPPABLE #-} MakeFunction t => IsString t where
+  fromString :: MakeFunction t => String -> t
+  fromString = fun
+\end{mycode}
+
+% \begin{longtable}{c|c}
+% \caption[This is the title I want to appear in the List of Tables]{Simulation Parameters} \label{table:fousimulation_params} \\
+% \hline
+% A & B  \\
+% \hline
+% \endfirsthead
+% \multicolumn{2}{@{}l}{} \\
+% \hline
+% A & B \\
+% \hline
+% \endhead
+% \hline
+%  \textbf{Parameter} & \textbf{Value}\\
+%  \hline
+%  Number of vehicles & $|\mathcal{V}|$\\
+%  \hline
+%  Number of RSUs & $|\mathcal{U}|$\\
+%  \hline
+%  RSU coverage radius & 150 m\\
+%  \hline
+%  V2V communication radius & 30 m\\
+%  \hline
+%  Smart vehicle antenna height & 1.5 m\\
+%  \hline
+%  RSU antenna height & 25 m\\
+%  \hline
+%  Smart vehicle maximum speed & $v_{max}$ m/s\\
+%  \hline
+%  Smart vehicle minimum speed & $v_{min}$ m/s\\
+%  \hline
+%  Common smart vehicle cache capacities & $[50, 100, 150, 200, 250]$ mb\\
+%  \hline
+%  Common RSU cache capacities & $[5000,1000,1500,2000,2500]$ mb\\
+%  \hline
+%  Common backhaul rates & $[75, 100, 150]$ mb/s\\
+%  \hline
+% \end{longtable}
+
+% \begin{figure}[hbt]
+% \centering
+% \includegraphics[]{figs/inno.png}
+% \caption{One kernel at $x_s$ (\emph{dotted kernel}) or two kernels at
+% $x_i$ and $x_j$ (\textit{left and right}) lead to the same summed estimate
+% at $x_s$. This shows a figure consisting of different types of
+% lines. Elements of the figure described in the caption should be set in
+% italics, in parentheses, as shown in this sample caption.}
+% \label{fig:fouex}
+% \end{figure}
+
+% \ldots
