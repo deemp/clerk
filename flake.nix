@@ -34,14 +34,12 @@
       pkgs = nixpkgs.legacyPackages.${system};
       inherit (pkgs.lib.attrsets) genAttrs mapAttrs';
       inherit (my-codium.functions.${system}) writeSettingsJSON mkCodium;
-      inherit (drv-tools.functions.${system}) mkBinName withAttrs mkShellApps mkBin mkShellApp;
+      inherit (drv-tools.functions.${system}) mkShellApps mkBin mkShellApp mapGenAttrs mapStrGenAttrs;
       inherit (my-codium.configs.${system}) extensions settingsNix;
       inherit (flakes-tools.functions.${system}) mkFlakesTools;
-      inherit (my-devshell.functions.${system}) mkCommands mkShell;
-      inherit (workflows.functions.${system})
-        writeWorkflow run stepsIf expr
-        mkAccessors genAttrsId;
-      inherit (workflows.configs.${system}) steps os oss nixCI;
+      inherit (my-devshell.functions.${system}) mkCommands mkRunCommands mkShell;
+      inherit (workflows.functions.${system}) writeWorkflow run expr mkAccessors genAttrsId;
+
 
       ghcVersion = "92";
       override =
@@ -62,13 +60,47 @@
           };
         };
       inherit (haskell-tools.functions.${system}) toolsGHC;
-      inherit (toolsGHC ghcVersion override (ps: [ ps.clerk ]) [ ])
+      inherit (toolsGHC {
+        version = ghcVersion;
+        inherit override;
+        packages = (ps: [ ps.clerk ]);
+      })
         stack hls cabal ghcid hpack ghc;
 
-      writeSettings = writeSettingsJSON {
-        inherit (settingsNix) haskell todo-tree files editor gitlens
-          git nix-ide workbench markdown-all-in-one markdown-language-features;
-      };
+      scripts =
+        mkShellApps (
+          {
+            writeDocs = {
+              text = ''${cabal}/bin/cabal v1-test docs'';
+            };
+          }
+          //
+          (mapStrGenAttrs
+            (x: {
+              "example${x}" = {
+                text = "(cd example && nix run .#example${x}) && mv example/example-${x}.xlsx .";
+                description = "Get `example-${x}.xlsx`";
+              };
+            }) [ 1 2 ]
+          )
+        );
+
+      buildPrefix = "buildWithGHC";
+      ghcVersions = [ "8107" "902" "925" ];
+
+      cabalBuild = mkShellApps
+        (mapGenAttrs
+          (x: {
+            "${buildPrefix}${x}" =
+              let inherit (toolsGHC x override (ps: [ ps.clerk ]) [ ]) cabal; in
+              {
+                name = "cabal-build";
+                text = "${cabal}/bin/cabal v1-build";
+              };
+          })
+          ghcVersions
+        )
+      ;
 
       tools = [
         cabal
@@ -77,141 +109,40 @@
         ghc
       ];
 
-      codium = mkCodium {
-        extensions = { inherit (extensions) nix haskell misc github markdown; };
-        runtimeDependencies = tools;
-      };
-
-      flakesTools = mkFlakesTools [ "." "example" ];
-
-      ghcVersions = [ "8107" "902" "925" ];
-
-      buildPrefix = "buildWithGHC";
-      scripts = {
-        cabalBuild = mapAttrs'
-          (name: value: { name = "${buildPrefix}${name}"; inherit value; })
-          (genAttrs ghcVersions (ghcVersion_:
-            let inherit (toolsGHC ghcVersion_ override (ps: [ ps.clerk ]) [ ]) cabal; in
-            mkShellApp {
-              name = "cabal-build";
-              text = "${cabal}/bin/cabal v1-build";
-            }));
-      } // (
-        mkShellApps {
-          writeDocs = {
-            text = ''${cabal}/bin/cabal v1-test'';
-          };
-        });
-
-      names = mkAccessors {
-        matrix = genAttrsId [ "os" "ghc" ];
-      };
-
-      workflow =
-        let
-          job1 = "_1_nix_ci";
-          job2 = "_2_build_with_ghc";
-          job3 = "_3_push_to_cachix";
-        in
-        nixCI // {
-          jobs = {
-            "${job1}" = {
-              name = "Update flake locks and README.md";
-              runs-on = os.ubuntu-20;
-              steps =
-                [
-                  steps.checkout
-                  steps.installNix
-                  steps.configGitAsGHActions
-                  steps.updateLocksAndCommit
-                  {
-                    name = "Write docs";
-                    run = run.nixRunAndCommit scripts.writeDocs.pname "Write docs";
-                  }
-                ];
-            };
-            "${job2}" = {
-              name = "Build with GHC";
-              strategy.matrix.ghc = ghcVersions;
-              needs = job1;
-              runs-on = os.ubuntu-20;
-              steps = [
-                steps.checkout
-                steps.installNix
-                {
-                  name = "Pull repo";
-                  run = "git pull --rebase --autostash";
-                }
-                (
-                  let ghc = expr names.matrix.ghc; in
-                  {
-                    name = "Build with ghc${ghc}";
-                    run = ''nix run .#${buildPrefix}${ghc}'';
-                  }
-                )
-              ];
-            };
-            "${job3}" = {
-              name = "Push to cachix";
-              needs = job1;
-              strategy.matrix.os = oss;
-              runs-on = expr names.matrix.os;
-              steps =
-                [
-                  steps.checkout
-                  steps.installNix
-                  steps.logInToCachix
-                  steps.pushFlakesToCachix
-                ];
-            };
-          };
+      packages = {
+        codium = mkCodium {
+          extensions = { inherit (extensions) nix haskell misc github markdown; };
+          runtimeDependencies = tools;
         };
-      writeWorkflows = writeWorkflow "ci" workflow;
 
-      s = builtins.getFlake;
+        writeSettings = writeSettingsJSON {
+          inherit (settingsNix) haskell todo-tree files editor gitlens
+            git nix-ide workbench markdown-all-in-one markdown-language-features;
+        };
+
+        inherit (mkFlakesTools [ "." "example" ]) updateLocks pushToCachix;
+
+        writeWorkflows = writeWorkflow "ci" (
+          import ./nix-dev/workflow.nix {
+            inherit system workflows scripts buildPrefix ghcVersions;
+          }
+        );
+      } // cabalBuild // scripts;
+
+      devShells = {
+        default = mkShell {
+          packages = tools;
+          bash.extra = ''export LANG=C'';
+          commands =
+            mkCommands "tools" tools
+            ++ mkRunCommands "ide" { "codium ." = packages.codium; inherit (packages) writeSettings; }
+            ++ mkRunCommands "infra" { inherit (packages) writeWorkflows; }
+            ++ mkRunCommands "test" { inherit (packages) example1 example2; };
+        };
+      };
     in
     {
-      packages = {
-        inherit (flakesTools) updateLocks pushToCachix;
-        inherit codium writeWorkflows;
-        inherit (scripts) writeDocs;
-      } // scripts.cabalBuild;
-
-      devShells =
-        {
-          default = mkShell
-            {
-              packages = tools;
-              bash.extra = ''export LANG=C'';
-              commands = (mkCommands "tools" tools) ++ [
-                {
-                  name = "nix run .#codium .";
-                  help = codium.meta.description;
-                  category = "clerk";
-                }
-                {
-                  name = "nix run .#writeSettings";
-                  help = writeSettings.meta.description;
-                  category = "clerk";
-                }
-                {
-                  name = "nix run .#writeWorkflows";
-                  help = writeWorkflows.meta.description;
-                  category = "clerk";
-                }
-                {
-                  name = "cd example && nix run example#codium .";
-                  help = codium.meta.description;
-                  category = "example";
-                }
-                {
-                  name = "cd example && nix run .#writeSettings";
-                  help = writeSettings.meta.description;
-                  category = "example";
-                }
-              ];
-            };
-        };
+      inherit packages devShells;
     });
 
   nixConfig = {

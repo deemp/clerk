@@ -24,10 +24,10 @@
       # --- imports ---
       pkgs = nixpkgs.legacyPackages.${system};
       inherit (my-codium.functions.${system}) writeSettingsJSON mkCodium;
-      inherit (drv-tools.functions.${system}) mkBin withAttrs withMan withDescription mkShellApp;
+      inherit (drv-tools.functions.${system}) mkShellApps mapStrGenAttrs;
       inherit (drv-tools.configs.${system}) man;
       inherit (my-codium.configs.${system}) extensions settingsNix;
-      inherit (devshell.functions.${system}) mkCommands mkShell;
+      inherit (devshell.functions.${system}) mkCommands mkRunCommands mkShell;
       inherit (haskell-tools.functions.${system}) toolsGHC;
 
       # set ghc version
@@ -48,52 +48,55 @@
         };
       };
 
-      inherit (toolsGHC ghcVersion override (ps: [ ps.clerk-example ]) [ ]) hls hpack cabal;
+      inherit (toolsGHC {
+        version = ghcVersion;
+        inherit override;
+        packages = (ps: [ ps.clerk-example ]);
+      }) hls hpack cabal;
 
-      codiumTools = [ hpack cabal hls ];
+      tools = [ hpack cabal hls ];
 
-      tools = codiumTools;
+      scripts = mkShellApps (
+        mapStrGenAttrs
+          (x: {
+            "example${x}" = {
+              text = "${cabal}/bin/cabal v1-run example-${x}";
+              description = "Get `example-${x}.xlsx`";
+            };
+          }
+          ) [ 1 2 ]
+      );
 
-      # VSCodium with dev tools
-      codium = mkCodium {
-        extensions = { inherit (extensions) nix haskell misc github markdown; };
-        runtimeDependencies = codiumTools;
-      };
-
-      # what to write in settings.json
-      writeSettings = writeSettingsJSON {
-        inherit (settingsNix) haskell todo-tree files editor gitlens
-          git nix-ide workbench markdown-all-in-one markdown-language-features;
-      };
-
-
-      # --- default shell ---
-      defaultShell = mkShell
-        {
-          packages = tools;
-          bash.extra = "";
-          commands = (mkCommands "tools" tools) ++ [
-            {
-              name = "nix run .#codium .";
-              help = codium.meta.description;
-              category = "other commands";
-            }
-            {
-              name = "nix run .#writeSettings";
-              help = writeSettings.meta.description;
-              category = "other commands";
-            }
-          ];
-        };
-    in
-    {
       packages = {
-        inherit writeSettings codium;
-      };
+        writeSettings = writeSettingsJSON {
+          inherit (settingsNix) haskell todo-tree files editor gitlens
+            git nix-ide workbench markdown-all-in-one markdown-language-features;
+        };
+
+        codium = mkCodium {
+          extensions = { inherit (extensions) nix haskell misc github markdown; };
+          runtimeDependencies = tools;
+        };
+      } // scripts;
 
       devShells = {
-        default = defaultShell;
+        default = mkShell {
+          packages = tools;
+          bash.extra = "";
+          commands =
+            mkCommands "tools" tools ++
+            mkRunCommands "ide" {
+              "codium ." = packages.codium;
+              inherit (packages) writeSettings;
+            } ++
+            mkRunCommands "test" {
+              inherit (packages) example1 example2;
+            };
+        };
       };
+    in
+    {
+      inherit packages devShells;
     });
 
   nixConfig = {
