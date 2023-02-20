@@ -38,7 +38,7 @@ And import the necessary stuff.
 import Clerk
 import Codec.Xlsx qualified as X
 import Control.Lens ((&), (+~), (^.))
-import Control.Monad (forM_, void, zipWithM)
+import Control.Monad (forM, forM_, void, zipWithM)
 import Data.ByteString.Lazy qualified as L
 import Data.Text qualified as T
 import Data.Time.Clock.POSIX (getPOSIXTime)
@@ -54,30 +54,35 @@ The tables that we'd like to construct are:
 
 #### Data
 
-This is our data:
-
-- numbers that we'd like to make a multiplication table for
-- indices that we'd like to use when placing the values
+This is our data: numbers that we'd like to make a multiplication table for
 -}
 
 numbers :: [Int]
 numbers = [1 .. 9]
 
-indices :: [Int]
-indices = [0, 1 .. 8]
-
 {-
-#### Row and column builder
+#### A row with numbers
 
 <img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example1/horizontal.png" width = "80%">
 
-<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example1/vertical.png" width = "10%">
+`clerk` uses a special `Row` where we can describe a row of data. This monad takes some input, internally converts it into Excel types, and can output something, e.g., a template coordinate. Simultaneously, it will build a template of a row of data. This template will be used when placing the input values onto a sheet. When the values are placed, template coordinates become actual addresses like `A1` or `B1`.
 
-We use this builder for boundary cells.
+Now, our goal is to construct a `Row` of numbers. We'll need the coordinates of the cells in that row.
 -}
 
-boundaryBuilder :: Int -> RowBuilder' () (Ref Int)
-boundaryBuilder i = column blank (const i)
+mkRow :: [Int] -> Row () [Ref Int]
+mkRow ns = forM ns (column blank . const)
+
+{-
+#### A column with numbers
+
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example1/vertical.png" width = "10%">
+
+To construct a column of numbers, we can use a template for rendering a single column of data. Again, we'll need the coordinate of that cell.
+-}
+
+mkCol :: Int -> Row () (Ref Int)
+mkCol i = column blank (const i)
 
 {-
 #### Table builder
@@ -87,31 +92,33 @@ boundaryBuilder i = column blank (const i)
 We use this builder for inner cells. It depends on the coordinates of cells from the column and the row.
 -}
 
-tableBuilder :: Num a => (Ref a, Ref a) -> RowBuilder' () ()
-tableBuilder (a, b) = column_ blank (const (a .* b))
+mkTable :: Num a => (Ref a, Ref a) -> Row () ()
+mkTable (a, b) = column_ blank (const (a .* b))
 
 {-
 ### Sheet builder
 
-The `SheetBuilder` is used to place `RowBuilder'`s onto a sheet and glue them together.
-Inside `SheetBuilder`, when a `RowBuilder'` is placed onto a sheet, we can use the
+The `Sheet` is used to place `Row`s onto a sheet and glue them together.
+Inside `Sheet`, when a `Row` is placed onto a sheet, we can use the
 references that it produces in the subsequent expressions.
 -}
 
-sheet :: SheetBuilder ()
+sheet :: Sheet ()
 sheet = do
-  let tl = coords 2 2
-  hs <- zipWithM (\i n -> placeInput (tl & col +~ (2 + i)) () (boundaryBuilder n)) indices numbers
-  vs <- zipWithM (\i n -> placeInput (tl & row +~ (2 + i)) () (boundaryBuilder n)) indices numbers
-  forM_ (do r <- vs; c <- hs; pure (r, c)) (\x@(r, c) -> placeInput (coords (r ^. row) (c ^. col)) () (tableBuilder x))
+  let start = coords 2 2
+  rowRefs <- place (start & col +~ 2) (mkRow numbers)
+  colRefs <- forM numbers $ \n -> place (start & row +~ n + 1) (mkCol n)
+  forM_
+    [(r, c) | r <- colRefs, c <- rowRefs]
+    (\x@(r, c) -> place (coords (r ^. row) (c ^. col)) (mkTable x))
 
 {-
 ### Result
 
-Finally, we can write the result and get the spreadsheet like the one that at the top of this tutorial.
+Finally, we can write the result and get the spreadsheet like the one at the top of this tutorial.
 -}
 
-writeWorksheet :: SheetBuilder a -> String -> IO ()
+writeWorksheet :: Sheet a -> String -> IO ()
 writeWorksheet tb name = do
   ct <- getPOSIXTime
   let xlsx = composeXlsx [(T.pack "List 1", void tb)]
@@ -121,10 +128,10 @@ main :: IO ()
 main = writeWorksheet sheet "1"
 
 {-
-To get `example/example-1.xlsx`, run:
+To get `example-1.xlsx`, run:
 
 ```console
-cd example && nix develop -c cabal run example-1
+nix develop -c example1
 ```
 
 With formulas enabled, the sheet looks like this:

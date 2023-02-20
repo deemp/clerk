@@ -136,7 +136,7 @@ alignCenter :: FCTransform
 alignCenter = horizontalAlignment X.CellHorizontalAlignmentCenter
 
 {-
-Now, we can make a `RowBuilder` for a constant.
+Now, we can make a `Row` for a constant.
 We'll later use this builder for each constant separately.
 
 We get a pair of outputs:
@@ -144,10 +144,10 @@ We get a pair of outputs:
 - Top left cell of a constant's table. That is, the cell with that constant's name.
 - The value of the constant.
 
-Later, the outputs of this and other `RowBuilder`s will be used to relate the positions of tables on a sheet.
+Later, the outputs of this and other `Row`s will be used to relate the positions of tables on a sheet.
 -}
 
-constantBuilder :: ToCellData a => RowBuilder (ConstantData a) CellData (Ref (), Ref a)
+constantBuilder :: ToCellData a => Row (ConstantData a) (Ref (), Ref a)
 constantBuilder = do
   refTopLeft <- column lightBlue constantName
   column_ lightBlue constantSymbol
@@ -182,7 +182,7 @@ data ConstantsRefs = ConstantsRefs
 Next, we define a function to produce a builder for volume and pressure. We pass references to constants' values to this builder
 -}
 
-valuesBuilder :: ConstantsRefs -> RowBuilder Volume CellData ()
+valuesBuilder :: ConstantsRefs -> Row Volume ()
 valuesBuilder ConstantsRefs{..} = do
   refVolume <- column mixed volume
   let pressure' = refGas .* refNumberOfMoles .* refTemperature ./ refVolume
@@ -193,12 +193,12 @@ valuesBuilder ConstantsRefs{..} = do
 
 <img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/constantsHeader.png" width = "50%">
 
-We won't use records here. Instead, we'll put the names of the columns straight into the `RowBuilder`.
+We won't use records here. Instead, we'll put the names of the columns straight into the `Row`.
 
 The outputs will be the coordinates of the top left cell and the top right cell of this table.
 -}
 
-constantsHeaderBuilder :: RowBuilder () CellData (Ref (), Ref ())
+constantsHeaderBuilder :: Row () (Ref (), Ref ())
 constantsHeaderBuilder = do
   refTopLeft <- columnWidth 20 (blue .& alignCenter) (const "constant")
   columnWidth_ 8 (blue .& alignCenter) (const "symbol")
@@ -214,7 +214,7 @@ constantsHeaderBuilder = do
 For this header, we'll also put the names of columns straight inside the builder.
 -}
 
-valuesHeaderBuilder :: RowBuilder () CellData Coords
+valuesHeaderBuilder :: Row () Coords
 valuesHeaderBuilder = do
   tl <- columnWidth 12 green (const "VOLUME (L)")
   columnWidth_ 16 green (const "PRESSURE (atm)")
@@ -223,19 +223,19 @@ valuesHeaderBuilder = do
 {-
 ### Sheet builder
 
-The `SheetBuilder` is used to place `RowBuilder`s onto a sheet and glue them together.
-Inside `SheetBuilder`, when a `RowBuilder` is placed onto a sheet, we can use the
+The `SheetBuilder` is used to place `Row`s onto a sheet and glue them together.
+Inside `SheetBuilder`, when a `Row` is placed onto a sheet, we can use the
 references that it produces in the subsequent expressions.
 -}
 
-sheet :: SheetBuilder ()
+sheet :: Sheet ()
 sheet = do
-  (constantsHeaderTL, constantsHeaderTR) <- placeInput (coords 2 2) () constantsHeaderBuilder
-  (gasTL, gas) <- placeInput (constantsHeaderTL & row +~ 2) constants.gasConstant constantBuilder
-  (nMolesTL, nMoles) <- placeInput (gasTL & row +~ 1) constants.numberOfMoles constantBuilder
-  temperature <- snd <$> placeInput (nMolesTL & row +~ 1) constants.temperature constantBuilder
-  valuesHeaderTL <- placeInput (constantsHeaderTR & row +~ 2) () valuesHeaderBuilder
-  placeInputs_ (valuesHeaderTL & row +~ 2) volumeData (valuesBuilder $ ConstantsRefs gas nMoles temperature)
+  (constantsHeaderTL, constantsHeaderTR) <- place (coords 2 2) constantsHeaderBuilder
+  (gasTL, gas) <- place1 (constantsHeaderTL & row +~ 2) constants.gasConstant constantBuilder
+  (nMolesTL, nMoles) <- place1 (gasTL & row +~ 1) constants.numberOfMoles constantBuilder
+  temperature <- snd <$> place1 (nMolesTL & row +~ 1) constants.temperature constantBuilder
+  valuesHeaderTL <- place (constantsHeaderTR & row +~ 2) valuesHeaderBuilder
+  placeN (valuesHeaderTL & row +~ 2) volumeData (valuesBuilder $ ConstantsRefs gas nMoles temperature)
 
 {-
 ### Result
@@ -243,7 +243,7 @@ sheet = do
 Finally, we can write the result and get the spreadsheet like the one at the top of this tutorial.
 -}
 
-writeWorksheet :: SheetBuilder a -> String -> IO ()
+writeWorksheet :: Sheet a -> String -> IO ()
 writeWorksheet tb name = do
   ct <- getPOSIXTime
   let xlsx = composeXlsx [(T.pack "List 1", void tb)]
@@ -253,10 +253,10 @@ main :: IO ()
 main = writeWorksheet sheet "2"
 
 {-
-To get `example/example-2.xlsx`, run:
+To get `example-2.xlsx`, run:
 
 ```console
-cd example && nix develop -c cabal run example-2
+nix develop -c example2
 ```
 
 With formulas enabled, the sheet looks like this:

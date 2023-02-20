@@ -57,8 +57,8 @@ module Clerk (
 
   -- * Templates
   -- $Templates
+  Row,
   RowBuilder,
-  RowBuilder',
   Template,
 
   -- * Columns
@@ -71,12 +71,11 @@ module Clerk (
   column_,
 
   -- * Sheet builder
-  -- $SheetBuilder
-  SheetBuilder,
-  placeInputs,
-  placeInputs_,
-  placeInput,
-  placeInput_,
+  -- $Sheet
+  Sheet,
+  placeN,
+  place1,
+  place,
 
   -- * Expressions
   -- $Expressions
@@ -262,7 +261,7 @@ instance UnsafeChangeType Ref where
 type InputIndex = Int
 
 -- | Format a single cell depending on its coordinates, index, and data
-type FormatCell = forall a. ToCoords a => a -> InputIndex -> CellData -> X.FormattedCell
+type FormatCell = forall a b. (ToCoords a, ToCellData b) => a -> InputIndex -> b -> X.FormattedCell
 
 -- | Template of a cell with contents, style, column properties
 data CellTemplate input output = CellTemplate
@@ -303,7 +302,7 @@ class ToARGB a where
 --
 -- @show@ on the input should translate into an @ARGB@ color. See 'XS.Color'
 mkColor :: ToARGB a => a -> FormatCell
-mkColor color _ _ cd =
+mkColor color _ _ (toCellData -> cd) =
   X.def
     & X.formattedCell .~ dataCell cd
     & X.formattedFormat
@@ -324,7 +323,7 @@ mkColor color _ _ cd =
 
 -- | A 'FormatCell' that produces a cell with the given data
 blank :: FormatCell
-blank _ _ cd = X.def & X.formattedCell .~ dataCell cd
+blank _ _ (toCellData -> cd) = X.def & X.formattedCell .~ dataCell cd
 
 -- | Transform of a formatted cell
 type FCTransform = X.FormattedCell -> X.FormattedCell
@@ -356,10 +355,12 @@ newtype Template input output = Template [CellTemplate input output]
   deriving (Semigroup, Monoid)
 
 -- | Allows to describe how to build a template for a row
-newtype RowBuilder input output a = RowBuilder {unBuilder :: StateT Coords (Writer (Template input output)) a}
+newtype RowBuilder input output a = RowBuilder
+  { unBuilder :: StateT Coords (Writer (Template input output)) a
+  }
   deriving (Functor, Applicative, Monad, MonadState Coords, MonadWriter (Template input output))
 
-type RowBuilder' input a = RowBuilder input CellData a
+type Row input a = RowBuilder input CellData a
 
 -- | Run builder on given coordinates. Get a result and a template
 runBuilder :: RowBuilder input output a -> Coords -> (a, Template input output)
@@ -487,31 +488,27 @@ defaultComposeTransformAndResult :: ToCellData output => Coords -> [input] -> Ro
 defaultComposeTransformAndResult = composeTransformAndResult renderTemplate
 
 {- FOURMOLU_DISABLE -}
--- $SheetBuilder
+-- $Sheet
 {- FOURMOLU_ENABLE -}
 
--- | A builder to compose the results of 'RowBuilder's
-newtype SheetBuilder a = SheetBuilder {unSheetBuilder :: Writer Transform a}
+-- | A builder to compose the results of 'Transform's
+newtype Sheet a = Sheet {unSheet :: Writer Transform a}
   deriving (Functor, Applicative, Monad, MonadWriter Transform)
 
--- | Starting at given coordinates, place rows of data made from a list of inputs according to a row builder. Return the result of the row builder.
-placeInputs :: (ToCellData output, ToCoords c) => c -> [input] -> RowBuilder input output a -> SheetBuilder a
-placeInputs (toCoords -> coords_) inputs b = do
+-- | Starting at given coordinates, placeN rows of data made from a list of inputs according to a row builder. Return the result of the row builder.
+placeN :: (ToCellData output, ToCoords c) => c -> [input] -> RowBuilder input output a -> Sheet a
+placeN (toCoords -> coords_) inputs b = do
   let transformResult = defaultComposeTransformAndResult coords_ inputs b
   tell (fst transformResult)
   return (snd transformResult)
 
--- | Starting at given coordinates, place a row of data made from a single input according to a row builder. Return the result of the row builder.
-placeInput :: (ToCellData output, ToCoords c) => c -> input -> RowBuilder input output a -> SheetBuilder a
-placeInput coords_ input = placeInputs coords_ [input]
+-- | Starting at given coordinates, placeN a row of data made from a single input according to a row builder. Return the result of the row builder.
+place1 :: (ToCellData output, ToCoords c) => c -> input -> RowBuilder input output a -> Sheet a
+place1 coords_ input = placeN coords_ [input]
 
--- | Starting at given coordinates, place rows of data made from a list of inputs according to a row builder.
-placeInputs_ :: (ToCellData output, ToCoords c) => c -> [input] -> RowBuilder input output a -> SheetBuilder ()
-placeInputs_ coords_ inputs b = void (placeInputs coords_ inputs b)
-
--- | Starting at given coordinates, place a row of data made from a single input according to a row builder.
-placeInput_ :: (ToCellData output, ToCoords c) => c -> input -> RowBuilder input output a -> SheetBuilder ()
-placeInput_ coords_ input = placeInputs_ coords_ [input]
+-- | Starting at given coordinates, placeN a row of data made without input according to a row builder. Return the result of the row builder.
+place :: (ToCellData output, ToCoords c) => c -> RowBuilder () output a -> Sheet a
+place coords_ = place1 coords_ ()
 
 {- FOURMOLU_DISABLE -}
 -- $Expressions
@@ -695,7 +692,7 @@ fun n = makeFunction n []
 -- TODO decide if we need it
 
 instance {-# OVERLAPPABLE #-} MakeFunction t => IsString t where
-  -- \| Use a string as a name of a function
+  -- Use a string as a name of a function
   fromString :: MakeFunction t => String -> t
   fromString = fun
 
@@ -767,10 +764,10 @@ instance ToCellData (Formula a) where
 {- FOURMOLU_ENABLE -}
 
 -- | Compose an @xlsx@ from a list of sheet names and builders
-composeXlsx :: [(T.Text, SheetBuilder ())] -> X.Xlsx
+composeXlsx :: [(T.Text, Sheet ())] -> X.Xlsx
 composeXlsx sheetBuilders = workBook'
  where
-  getTransform x = execWriter $ unSheetBuilder x
+  getTransform x = execWriter $ unSheet x
   workBook = X.formatWorkbook ((\(name, tf') -> (name, (getTransform tf' & fmTransform) X.def)) <$> sheetBuilders) X.def
   filterWidths ws = ws & X.wsColumnsProperties %~ filter (isJust . X.cpWidth)
   workBook' =
