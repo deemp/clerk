@@ -90,9 +90,11 @@
 
       cabalBuild = mkShellApps
         (mapGenAttrs
-          (x: {
-            "${buildPrefix}${x}" =
-              let inherit (toolsGHC x override (ps: [ ps.clerk ]) [ ]) cabal; in
+          (version: {
+            "${buildPrefix}${version}" =
+              let inherit (toolsGHC {
+                inherit version override; packages = (ps: [ ps.clerk ]);
+              }) cabal; in
               {
                 name = "cabal-build";
                 text = "${cabal}/bin/cabal v1-build";
