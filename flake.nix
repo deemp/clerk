@@ -40,13 +40,14 @@
       inherit (my-devshell.functions.${system}) mkCommands mkRunCommands mkShell;
       inherit (workflows.functions.${system}) writeWorkflow run expr mkAccessors genAttrsId;
 
+      packageName = "clerk";
 
       ghcVersion = "925";
       override =
         let inherit (pkgs.haskell.lib) doJailbreak dontCheck overrideCabal; in
         {
           overrides = self: super: {
-            clerk = overrideCabal (super.callCabal2nix "clerk" ./. { })
+            "${packageName}" = overrideCabal (super.callCabal2nix packageName ./. { })
               (x: {
                 librarySystemDepends = [
                   pkgs.zlib
@@ -63,7 +64,7 @@
       inherit (toolsGHC {
         version = ghcVersion;
         inherit override;
-        packages = (ps: [ ps.clerk ]);
+        packages = (ps: [ ps.${packageName} ]);
       })
         stack hls cabal ghcid hpack ghc;
 
@@ -78,7 +79,7 @@
           (mapStrGenAttrs
             (x: {
               "example${x}" = {
-                text = "${cabal}/bin/cabal run example-${x}";
+                text = "${cabal}/bin/cabal run example${x}";
                 description = "Get `example-${x}.xlsx`";
               };
             }) [ 1 2 ]
@@ -93,11 +94,11 @@
           (version: {
             "${buildPrefix}${version}" =
               let inherit (toolsGHC {
-                inherit version override; packages = (ps: [ ps.clerk ]);
+                inherit version override; packages = (ps: [ ps.${packageName} ]);
               }) cabal; in
               {
                 name = "cabal-build";
-                text = "${cabal}/bin/cabal v1-build";
+                text = "${cabal}/bin/cabal v1-build ${packageName}";
               };
           })
           ghcVersions
