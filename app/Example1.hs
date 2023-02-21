@@ -70,7 +70,7 @@ Each row is shifted relative to the input coordinates.
 mkVertical :: Coords -> [Int] -> Sheet [Ref Int]
 mkVertical coords numbers =
   forM (zip [0 ..] numbers) $ \(idx, number) ->
-    placeAt1
+    place1
       (coords & row +~ idx + 2)
       number
       ((columnRef blank (const number)) :: RowI Int (Ref Int))
@@ -88,7 +88,7 @@ In the `Sheet` monad, we place this row starting at a specified coordinate.
 
 mkHorizontal :: Coords -> [Int] -> Sheet [Ref Int]
 mkHorizontal coords numbers =
-  placeAt
+  place
     (coords & col +~ 2)
     ((forM numbers $ \n -> columnRef blank (const n)) :: Row [Ref Int])
 
@@ -103,10 +103,9 @@ As we don't need any info about these cells, we use the `Row ()` type.
 
 mkTable :: [(Ref Int, Ref Int)] -> Sheet ()
 mkTable cs =
-  forM_ cs $ \(r, c) ->
-    placeAt
-      (mkCoords (c ^. col) (r ^. row))
-      ((column blank (const (r .* c))) :: Row ())
+  forM_ cs $ \(r, c) -> do
+    coords <- mkCoords (c ^. col) (r ^. row)
+    place coords ((column blank (const (r .* c))) :: Row ())
 
 {-
 ### Sheet
@@ -116,8 +115,8 @@ Now, we combine all functions.
 
 sheet :: Sheet ()
 sheet = do
-  let start = mkCoords 2 2
-      numbers = [1 .. 9]
+  start <- mkCoords 2 2
+  let numbers = [1 .. 9]
   cs <- mkHorizontal start numbers
   rs <- mkVertical start numbers
   mkTable [(r, c) | r <- rs, c <- cs]

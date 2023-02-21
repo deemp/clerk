@@ -112,7 +112,7 @@ Notice that we use styles like `lightBlue` here. These styles are defined in the
 
 constant :: ToCellData a => RowI (ConstantData a) (Ref (), Ref a)
 constant = do
-  refTopLeft <- columnWidthRef 40 lightBlue constantName
+  refTopLeft <- columnRef lightBlue constantName
   column lightBlue constantSymbol
   refValue <- columnRef (lightBlue .& with2decimalDigits) constantValue
   column lightBlue constantUnits
@@ -193,13 +193,13 @@ At last, we combine all rows.
 
 sheet :: Sheet ()
 sheet = do
-  let start = mkCoords 2 2
-  (constantsHeaderTL, constantsHeaderTR) <- placeAt start constantsHeader
-  (gasTL, gas) <- placeAt1 (constantsHeaderTL & row +~ 2) constants.gasConstant constant
-  (nMolesTL, nMoles) <- placeAt1 (gasTL & row +~ 1) constants.numberOfMoles constant
-  temperature <- snd <$> placeAt1 (nMolesTL & row +~ 1) constants.temperature constant
-  valuesHeaderTL <- placeAt (constantsHeaderTR & col +~ 2) valuesHeader
-  placeAtN (valuesHeaderTL & row +~ 2) volumeData (values $ ConstantsRefs gas nMoles temperature)
+  start <- mkCoords 2 2
+  (constantsHeaderTL, constantsHeaderTR) <- place start constantsHeader
+  (gasTL, gas) <- place1 (constantsHeaderTL & row +~ 2) constants.gasConstant constant
+  (nMolesTL, nMoles) <- place1 (gasTL & row +~ 1) constants.numberOfMoles constant
+  temperature <- snd <$> place1 (nMolesTL & row +~ 1) constants.temperature constant
+  valuesHeaderTL <- place (constantsHeaderTR & col +~ 2) valuesHeader
+  placeN (valuesHeaderTL & row +~ 2) volumeData (values $ ConstantsRefs gas nMoles temperature)
 
 {-
 ### Styles
