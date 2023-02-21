@@ -1,7 +1,8 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -29,9 +30,10 @@ module Clerk (
   -- * Coords
   -- $Coords
   Coords,
-  coords,
+  mkCoords,
   ToCoords (..),
   FromCoords (..),
+  IsCoords,
 
   -- * Cell references
   -- $Ref
@@ -58,24 +60,30 @@ module Clerk (
   -- * Templates
   -- $Templates
   Row,
-  RowBuilder,
+  RowI,
+  RowIO,
   Template,
 
   -- * Columns
   -- $Columns
   ColumnsProperties,
-  columnWidthCell,
+  columnWidthFormatRef,
+  columnWidthRef,
   columnWidth,
-  columnWidth_,
+  columnRef,
   column,
-  column_,
 
   -- * Sheet builder
   -- $Sheet
   Sheet,
+  placeAtN,
+  placeAt1,
+  placeAt,
   placeN,
   place1,
   place,
+  moveTo,
+  moveBy,
 
   -- * Expressions
   -- $Expressions
@@ -104,26 +112,29 @@ module Clerk (
   CellData,
   ToCellData (..),
 
-  -- * Produce xlsx
+  -- * xlsx
   -- $Xlsx
   composeXlsx,
+  writeXlsx,
 ) where
 
 import Codec.Xlsx qualified as X
 import Codec.Xlsx.Formatted qualified as X
-import Control.Lens (Identity (runIdentity), Lens', lens, (%~), (&), (?~))
-import Control.Lens.Operators ((.~))
+import Control.Monad.Identity (Identity (runIdentity))
 import Control.Monad.State (MonadState, StateT (StateT), evalStateT, get, gets, modify, void)
 import Control.Monad.Trans.Writer (execWriter, runWriter)
 import Control.Monad.Writer (MonadWriter (..), Writer)
+import Data.ByteString.Lazy qualified as LBS
 import Data.Default (Default (..))
 import Data.Foldable (Foldable (..))
 import Data.Kind (Type)
 import Data.List (intercalate)
 import Data.Map.Strict qualified as Map (Map, insert)
 import Data.Maybe (isJust, maybeToList)
-import Data.String (IsString (..))
 import Data.Text qualified as T
+import Data.Time.Clock.POSIX (getPOSIXTime)
+import GHC.Generics (Generic)
+import Lens.Micro (Lens', lens, (%~), (&), (+~), (.~), (?~), (^.))
 
 -- TODO Allow sheet addresses
 
@@ -131,23 +142,32 @@ import Data.Text qualified as T
 -- Or, make just formula printers aware so that they don't print the full address
 -- when referring to data on the same sheet
 
+-- TODO add move sheet
+
 {- FOURMOLU_DISABLE -}
 -- $Coords
 {- FOURMOLU_ENABLE -}
 
 -- | Coords of a cell
-data Coords = Coords {_row :: Int, _col :: Int}
+data Coords = Coords
+  { _col :: Int
+  , _row :: Int
+  }
+  deriving (Generic, Default)
 
-coords :: Int -> Int -> Coords
-coords = Coords
+-- | Make 'Coords' from a column index and a row index
+mkCoords :: Int -> Int -> Coords
+mkCoords _col _row = Coords{..}
 
--- | Can extract coordinates from this
+-- | Convertible to 'Coords'
 class ToCoords a where
   toCoords :: a -> Coords
 
--- | Can construct this from Coordinates
+-- | Convertible from 'Coords'
 class FromCoords a where
   fromCoords :: Coords -> a
+
+type IsCoords a = (FromCoords a, ToCoords a)
 
 instance ToCoords Coords where
   toCoords :: Coords -> Coords
@@ -159,39 +179,40 @@ instance FromCoords Coords where
 
 instance Show Coords where
   show :: Coords -> String
-  show (Coords{..}) = toAlphaNumeric _col <> show _row
+  show (Coords{..}) = toLetters _col <> show _row
 
 instance Num Coords where
   (+) :: Coords -> Coords -> Coords
-  (+) (Coords r1 c1) (Coords r2 c2) = Coords (r1 + r2) (c1 + c2)
+  (+) Coords{_row = r1, _col = c1} Coords{_row = r2, _col = c2} = Coords{_row = r1 + r2, _col = c1 + c2}
   (*) :: Coords -> Coords -> Coords
-  (*) (Coords r1 c1) (Coords r2 c2) = Coords (r1 * r2) (c1 * c2)
+  (*) Coords{_row = r1, _col = c1} Coords{_row = r2, _col = c2} = Coords{_row = r1 * r2, _col = c1 * c2}
   (-) :: Coords -> Coords -> Coords
-  (-) (Coords r1 c1) (Coords r2 c2) = Coords (r1 - r2) (c1 - c2)
+  (-) Coords{_row = r1, _col = c1} Coords{_row = r2, _col = c2} = Coords{_row = r1 - r2, _col = c1 - c2}
   abs :: Coords -> Coords
-  abs (Coords r1 c1) = Coords (abs r1) (abs c1)
+  abs Coords{..} = Coords{_row = abs _row, _col = abs _col}
   signum :: Coords -> Coords
-  signum (Coords r1 c1) = Coords (signum r1) (signum c1)
+  signum Coords{..} = Coords{_row = signum _row, _col = signum _col}
   fromInteger :: Integer -> Coords
-  fromInteger x = Coords (fromIntegral (abs x)) (fromIntegral (abs x))
+  fromInteger x = Coords{_row = fromIntegral (abs x), _col = fromIntegral (abs x)}
 
 -- | Letters that can be used in column indices
-alphabet :: [Char]
+alphabet :: String
 alphabet = ['A' .. 'Z']
 
--- | Translate a number into an alphanumeric representation. Relevant for columns
-toAlphaNumeric :: Int -> String
-toAlphaNumeric x = f "" (x - 1)
+-- | Translate a number into a column letters
+--
+-- @
+-- >>> toLetters <$> [1, 26, 27, 52, 78]
+-- ["A","Z","AA","AZ","BZ"]
+--
+-- @
+toLetters :: Int -> String
+toLetters x = f "" (x - 1)
  where
   new :: Int -> String -> String
   new cur acc = [alphabet !! (cur `mod` 26)] <> acc
   f :: String -> Int -> String
   f acc cur = if cur `div` 26 > 0 then f (new cur acc) (cur `div` 26 - 1) else new cur acc
-
-{-
->>>toLetters <$> [1, 26, 27, 52, 78]
-["A","Z","AA","AZ","BZ"]
--}
 
 {- FOURMOLU_DISABLE -}
 -- $Ref
@@ -203,25 +224,25 @@ toAlphaNumeric x = f "" (x - 1)
 --
 -- The type prevents operations between cell references with incompatible types.
 --
+-- @
 -- >>>str = Ref (Coords 1 1) :: Ref String
--- >>> str .+ str
--- When necessary, the user may change the cell reference type via 'unsafeChangeRefType'
-
+-- >>>str .+ str
+-- No instance for (Num String) arising from a use of `.+'
+-- In the expression: str .+ str
+-- In an equation for `it_a18COt': it_a18COt = str .+ str
+--
+-- @
+-- When necessary, one can change the cell reference type via 'unsafeChangeRefType'
+--
+-- @
 -- >>>int = Ref (Coords 1 1) :: Ref Int
 -- >>>double = Ref (Coords 2 5) :: Ref Double
 -- >>>unsafeChangeType int .+ double
 -- A1+E2
 --
--- >>>int .+ double
--- Couldn't match type `Double' with `Int'
--- Expected: Ref Int
---   Actual: Ref Double
--- In the second argument of `(.+)', namely `double'
--- In the expression: int .+ double
--- In an equation for `it_a1zosx': it_a1zosx = int .+ double
-
+-- @
 newtype Ref a = Ref {unRef :: Coords}
-  deriving newtype (Num)
+  deriving (Num) via Coords
 
 instance ToCoords (Ref a) where
   toCoords :: Ref a -> Coords
@@ -232,18 +253,18 @@ instance FromCoords (Ref a) where
   fromCoords = Ref
 
 -- | A lens for @row@s
-row :: (ToCoords a, FromCoords a) => Lens' a Int
+row :: IsCoords a => Lens' a Int
 row = lens getter setter
  where
-  getter (toCoords -> Coords _row _) = _row
-  setter (toCoords -> Coords _row _col) f = fromCoords $ Coords f _col
+  getter (toCoords -> Coords{_row}) = _row
+  setter (toCoords -> Coords{_row, _col}) f = fromCoords $ Coords{_row = f, _col}
 
 -- | A lens for @col@s
-col :: (ToCoords a, FromCoords a) => Lens' a Int
+col :: IsCoords a => Lens' a Int
 col = lens getter setter
  where
-  getter (toCoords -> Coords _ _col) = _col
-  setter (toCoords -> Coords _row _col) f = fromCoords $ Coords _row f
+  getter (toCoords -> Coords{_col}) = _col
+  setter (toCoords -> Coords{_row, _col}) f = fromCoords $ Coords{_row, _col = f}
 
 -- | Change the type of something. Use with caution!
 class UnsafeChangeType (a :: Type -> Type) where
@@ -330,7 +351,7 @@ type FCTransform = X.FormattedCell -> X.FormattedCell
 
 -- | Apply 'FCTransform' to a 'FormatCell' to get a new 'FormatCell'
 (.&) :: FormatCell -> FCTransform -> FormatCell
-fc .& ft = \coords_ idx cd -> ft $ fc coords_ idx cd
+fc .& ft = \coords_ index cd -> ft $ fc coords_ index cd
 
 infixl 5 .&
 
@@ -339,12 +360,8 @@ horizontalAlignment :: X.CellHorizontalAlignment -> FCTransform
 horizontalAlignment alignment fc =
   fc
     & X.formattedFormat
-      %~ ( \ff ->
-            ff
-              & X.formatAlignment
-                ?~ ( X.def & X.alignmentHorizontal ?~ alignment
-                   )
-         )
+      %~ X.formatAlignment
+      ?~ (X.def & X.alignmentHorizontal ?~ alignment)
 
 {- FOURMOLU_DISABLE -}
 -- $Templates
@@ -352,49 +369,75 @@ horizontalAlignment alignment fc =
 
 -- | Template for multiple cells
 newtype Template input output = Template [CellTemplate input output]
-  deriving (Semigroup, Monoid)
+  deriving newtype (Semigroup, Monoid)
+
+type WorkSheetId = Int
+
+type WorkBookId = Int
+
+data BuilderState = BuilderState
+  { _coords :: Coords
+  , _workSheetId :: WorkSheetId
+  , _workBookId :: WorkBookId
+  }
+  deriving (Generic, Default)
+
+coords :: Lens' BuilderState Coords
+coords = lens getter setter
+ where
+  getter BuilderState{..} = _coords
+  setter x _coords = x{_coords}
+
+workSheetId :: Lens' BuilderState WorkSheetId
+workSheetId = lens getter setter
+ where
+  getter BuilderState{..} = _workSheetId
+  setter x _workSheetId = x{_workSheetId}
 
 -- | Allows to describe how to build a template for a row
-newtype RowBuilder input output a = RowBuilder
-  { unBuilder :: StateT Coords (Writer (Template input output)) a
-  }
-  deriving (Functor, Applicative, Monad, MonadState Coords, MonadWriter (Template input output))
+newtype RowIO input output a = RowIO
+  {unBuilder :: StateT BuilderState (Writer (Template input output)) a}
+  deriving newtype (Functor, Applicative, Monad, MonadState BuilderState, MonadWriter (Template input output))
 
-type Row input a = RowBuilder input CellData a
+-- | The output is of no interest
+type RowI input a = RowIO input CellData a
+
+-- | The input and output are of no interest
+type Row a = RowIO () CellData a
 
 -- | Run builder on given coordinates. Get a result and a template
-runBuilder :: RowBuilder input output a -> Coords -> (a, Template input output)
+runBuilder :: RowIO input output a -> BuilderState -> (a, Template input output)
 runBuilder builder coord = runWriter (evalStateT (unBuilder builder) coord)
 
 -- | Run builder on given coordinates. Get a template
-evalBuilder :: RowBuilder input output a -> Coords -> Template input output
+evalBuilder :: RowIO input output a -> BuilderState -> Template input output
 evalBuilder builder coord = snd $ runBuilder builder coord
 
 -- | Run builder on given coordinates. Get a result
-execBuilder :: RowBuilder input output a -> Coords -> a
+execBuilder :: RowIO input output a -> BuilderState -> a
 execBuilder builder coord = fst $ runBuilder builder coord
 
-type RenderTemplate m input output = (Monad m, ToCellData output) => Coords -> InputIndex -> input -> Template input output -> m Transform
-type RenderBuilderInputs m input output a = (Monad m, ToCellData output) => RowBuilder input output a -> [input] -> m (Transform, a)
+type RenderTemplate m input output = (Monad m, ToCellData output) => BuilderState -> InputIndex -> input -> Template input output -> m Transform
+type RenderBuilderInputs m input output a = (Monad m, ToCellData output) => RowIO input output a -> [input] -> m (Transform, a)
 
 -- | Render a builder with given coords and inputs. Return the result calculated using the topmost row
-renderBuilderInputs :: (Monad m, ToCellData output) => Coords -> RenderTemplate m input output -> RenderBuilderInputs m input output a
-renderBuilderInputs offset render builder inputs = ret
+renderBuilderInputs :: (Monad m, ToCellData output) => BuilderState -> RenderTemplate m input output -> RenderBuilderInputs m input output a
+renderBuilderInputs state render builder inputs = ret
  where
   ts =
-    [ (coord, template)
-    | _row <- [0 .. length inputs]
-    , let coord = offset + Coords{_row, _col = 0}
-          template = evalBuilder builder coord
+    [ (newState, template)
+    | inputRow <- [0 .. length inputs - 1]
+    , let newState = state & coords . row +~ inputRow
+          template = evalBuilder builder newState
     ]
   -- result obtained from the top row
-  a = execBuilder builder (offset + Coords{_row = 0, _col = 0})
+  a = execBuilder builder state
   transform =
     fold
       <$> sequenceA
         ( zipWith3
-            ( \input inputIdx (coord, template) ->
-                render coord inputIdx input template
+            ( \input inputIndex (st, template) ->
+                render st inputIndex input template
             )
             inputs
             [0 ..]
@@ -402,23 +445,29 @@ renderBuilderInputs offset render builder inputs = ret
         )
   ret = (,a) <$> transform
 
+instance FromCoords (X.RowIndex, X.ColumnIndex) where
+  fromCoords :: Coords -> (X.RowIndex, X.ColumnIndex)
+  fromCoords Coords{..} = (fromIntegral _row, fromIntegral _col)
+
 -- | Render a template with a given offset, input index and input
 renderTemplate :: RenderTemplate m input output
-renderTemplate Coords{..} inputIdx input (Template columns) = return $ fold ps
+renderTemplate state inputIndex input (Template columns) = pure $ fold ps
  where
   ps =
     zipWith
-      ( \columnIndex mk ->
+      ( \columnIndex cellTemplate ->
           let
-            CellTemplate{..} = mk
-            cd' = toCellData (mkOutput input)
-            _col' = (_col + columnIndex)
-            coords' = Coords _row _col'
-            c = fmtCell coords' inputIdx cd'
-            fmTransform = Map.insert (fromIntegral _row, fromIntegral _col') c
+            CellTemplate{..} = cellTemplate
+            leftCell = state ^. coords
+            cellData = toCellData (mkOutput input)
+            cellCol = leftCell ^. col + columnIndex
+            cellCoords = mkCoords (leftCell ^. row) cellCol
+            cell = fmtCell cellCoords inputIndex cellData
+            fmTransform = Map.insert (fromCoords $ mkCoords cellCol (leftCell ^. row)) cell
             wsTransform
               -- add column width only once
-              | inputIdx == 0 = X.wsColumnsProperties %~ (\x -> x ++ maybeToList columnsProperties)
+              -- new properties precede old properties
+              | inputIndex == 0 = X.wsColumnsProperties %~ (maybeToList columnsProperties ++)
               | otherwise = id
            in
             def{fmTransform, wsTransform}
@@ -447,68 +496,90 @@ instance Default ColumnsProperties where
         , cpBestFit = False
         }
 
--- | A column with a possibly given width and cell format. Returns a cell reference
-columnWidthCell :: forall a input output. Maybe Double -> FormatCell -> (input -> output) -> RowBuilder input output (Ref a)
-columnWidthCell width fmtCell mkOutput = do
-  coords_ <- get
+-- | A column with a maybe given width and a given cell format. Return a cell reference
+columnWidthFormatRef :: forall a input output. Maybe Double -> FormatCell -> (input -> output) -> RowIO input output (Ref a)
+columnWidthFormatRef width fmtCell mkOutput = do
+  state <- get
   let columnsProperties =
-        Just $
-          (unColumnsProperties def)
-            { X.cpMin = coords_ & _col
-            , X.cpMax = coords_ & _col
+        def
+          Just
+          $ (unColumnsProperties def)
+            { X.cpMin = state ^. coords . col
+            , X.cpMax = state ^. coords . col
             , X.cpWidth = width
             }
   tell (Template [CellTemplate{fmtCell, mkOutput, columnsProperties}])
-  cell <- gets Ref
-  modify (\x -> x{_col = (x & _col) + 1})
-  return cell
+  cell <- gets (Ref . (^. coords))
+  modify (coords . col +~ 1)
+  pure cell
 
 -- | A column with a given width and cell format. Returns a cell reference
-columnWidth :: ToCellData output => Double -> FormatCell -> (input -> output) -> RowBuilder input CellData (Ref a)
-columnWidth width fmtCell mkOutput = columnWidthCell (Just width) fmtCell (toCellData . mkOutput)
+columnWidthRef :: ToCellData output => Double -> FormatCell -> (input -> output) -> RowIO input CellData (Ref a)
+columnWidthRef width fmtCell mkOutput = columnWidthFormatRef (Just width) fmtCell (toCellData . mkOutput)
 
 -- | A column with a given width and cell format
-columnWidth_ :: ToCellData output => Double -> FormatCell -> (input -> output) -> RowBuilder input CellData ()
-columnWidth_ width fmtCell mkOutput = void (columnWidth width fmtCell mkOutput)
+columnWidth :: ToCellData output => Double -> FormatCell -> (input -> output) -> RowIO input CellData ()
+columnWidth width fmtCell mkOutput = void (columnWidthRef width fmtCell mkOutput)
 
 -- | A column with a given cell format. Returns a cell reference
-column :: ToCellData output => FormatCell -> (input -> output) -> RowBuilder input CellData (Ref a)
-column fmtCell mkOutput = columnWidthCell Nothing fmtCell (toCellData . mkOutput)
+columnRef :: ToCellData output => FormatCell -> (input -> output) -> RowIO input CellData (Ref a)
+columnRef fmtCell mkOutput = columnWidthFormatRef Nothing fmtCell (toCellData . mkOutput)
 
 -- | A column with a given cell format
-column_ :: ToCellData output => FormatCell -> (input -> output) -> RowBuilder input CellData ()
-column_ fmtCell mkOutput = void (column fmtCell mkOutput)
+column :: ToCellData output => FormatCell -> (input -> output) -> RowIO input CellData ()
+column fmtCell mkOutput = void (columnRef fmtCell mkOutput)
 
 -- | Produce a transform and a result from a template renderer, inputs, and a builder
-composeTransformAndResult :: forall a input output. ToCellData output => RenderTemplate Identity input output -> Coords -> [input] -> RowBuilder input output a -> (Transform, a)
+composeTransformAndResult :: forall a input output. ToCellData output => RenderTemplate Identity input output -> BuilderState -> [input] -> RowIO input output a -> (Transform, a)
 composeTransformAndResult renderTemplate' offset input builder = runIdentity $ renderBuilderInputs offset renderTemplate' builder input
 
 -- | Produce a result from a default template renderer, inputs, and a builder
-defaultComposeTransformAndResult :: ToCellData output => Coords -> [input] -> RowBuilder input output a -> (Transform, a)
-defaultComposeTransformAndResult = composeTransformAndResult renderTemplate
+defaultComposeTransformWithResult :: ToCellData output => BuilderState -> [input] -> RowIO input output a -> (Transform, a)
+defaultComposeTransformWithResult = composeTransformAndResult renderTemplate
 
 {- FOURMOLU_DISABLE -}
 -- $Sheet
 {- FOURMOLU_ENABLE -}
 
 -- | A builder to compose the results of 'Transform's
-newtype Sheet a = Sheet {unSheet :: Writer Transform a}
-  deriving (Functor, Applicative, Monad, MonadWriter Transform)
+newtype Sheet a = Sheet {unSheet :: StateT BuilderState (Writer Transform) a}
+  deriving newtype (Functor, Applicative, Monad, MonadWriter Transform, MonadState BuilderState)
 
--- | Starting at given coordinates, placeN rows of data made from a list of inputs according to a row builder. Return the result of the row builder.
-placeN :: (ToCellData output, ToCoords c) => c -> [input] -> RowBuilder input output a -> Sheet a
-placeN (toCoords -> coords_) inputs b = do
-  let transformResult = defaultComposeTransformAndResult coords_ inputs b
+-- | Starting at a given coordinate, place a list of inputs according to a row builder and return a result
+placeAtN :: (ToCellData output, ToCoords c) => c -> [input] -> RowIO input output a -> Sheet a
+placeAtN (toCoords -> coords_) inputs b = do
+  state <- get
+  let transformResult = defaultComposeTransformWithResult (state & coords .~ coords_) inputs b
   tell (fst transformResult)
-  return (snd transformResult)
+  pure (snd transformResult)
 
--- | Starting at given coordinates, placeN a row of data made from a single input according to a row builder. Return the result of the row builder.
-place1 :: (ToCellData output, ToCoords c) => c -> input -> RowBuilder input output a -> Sheet a
-place1 coords_ input = placeN coords_ [input]
+-- | Starting at a given coordinate, place one input according to a row builder and return a result
+placeAt1 :: (ToCellData output, ToCoords c) => c -> input -> RowIO input output a -> Sheet a
+placeAt1 coords_ input = placeAtN coords_ [input]
 
--- | Starting at given coordinates, placeN a row of data made without input according to a row builder. Return the result of the row builder.
-place :: (ToCellData output, ToCoords c) => c -> RowBuilder () output a -> Sheet a
-place coords_ = place1 coords_ ()
+-- | Starting at a given coordinate, place a row builder and return a result
+placeAt :: (ToCellData output, ToCoords c) => c -> RowIO () output a -> Sheet a
+placeAt coords_ = placeAt1 coords_ ()
+
+-- | Set the current coordinate in a 'Sheet'
+moveTo :: ToCoords c => c -> Sheet a -> Sheet a
+moveTo c t = modify (\x -> x & coords .~ toCoords c) >> t
+
+-- | Shift the current coordinate in a 'Sheet'
+moveBy :: ToCoords c => c -> Sheet a -> Sheet a
+moveBy c t = modify (\x -> x & coords +~ toCoords c) >> t
+
+-- | Starting at the current coordinate in the 'Sheet', place a list of inputs according to a row builder and return a result
+placeN :: ToCellData output => [input] -> RowIO input output a -> Sheet a
+placeN input b = get >>= \state -> placeAtN (state ^. coords) input b
+
+-- | Starting at the current coordinate in the 'Sheet', place a single input according to a row builder and return a result
+place1 :: ToCellData output => input -> RowIO input output a -> Sheet a
+place1 input = placeN [input]
+
+-- | Starting at the current coordinate in the 'Sheet', place a row builder and return a result
+place :: ToCellData output => RowIO () output a -> Sheet a
+place = place1 ()
 
 {- FOURMOLU_DISABLE -}
 -- $Expressions
@@ -553,6 +624,10 @@ instance ToFormula Coords where
 instance ToFormula (Expr a) where
   toFormula :: Expr a -> Formula b
   toFormula = Formula . unsafeChangeType
+
+instance ToFormula (Formula a) where
+  toFormula :: Formula a -> Formula b
+  toFormula (Formula f) = Formula $ unsafeChangeType f
 
 showOp2 :: (Show a, Show b) => String -> a -> b -> String
 showOp2 operator c1 c2 = show c1 <> operator <> show c2
@@ -670,10 +745,6 @@ instance UnsafeChangeType Expr where
 -- | Name of a function like @SUM@
 type FunName = String
 
-instance ToFormula (Formula a) where
-  toFormula :: Formula a -> Formula b
-  toFormula (Formula f) = Formula $ unsafeChangeType f
-
 class MakeFunction t where
   makeFunction :: FunName -> [Formula s] -> t
 
@@ -688,13 +759,6 @@ instance (Foldable f, MakeFunction t, ToFormula a) => MakeFunction (f a -> t) wh
 -- | Construct a function like @SUM(A1,B1)@
 fun :: MakeFunction t => FunName -> t
 fun n = makeFunction n []
-
--- TODO decide if we need it
-
-instance {-# OVERLAPPABLE #-} MakeFunction t => IsString t where
-  -- Use a string as a name of a function
-  fromString :: MakeFunction t => String -> t
-  fromString = fun
 
 {- FOURMOLU_DISABLE -}
 -- $Cells
@@ -767,10 +831,27 @@ instance ToCellData (Formula a) where
 composeXlsx :: [(T.Text, Sheet ())] -> X.Xlsx
 composeXlsx sheetBuilders = workBook'
  where
-  getTransform x = execWriter $ unSheet x
-  workBook = X.formatWorkbook ((\(name, tf') -> (name, (getTransform tf' & fmTransform) X.def)) <$> sheetBuilders) X.def
+  getTransform index x = execWriter $ flip evalStateT (def & workSheetId .~ index) $ unSheet x
+  workBook =
+    flip X.formatWorkbook X.def $
+      zipWith
+        (\index (name, tf) -> (name, (fmTransform $ getTransform index tf) X.def))
+        [1 ..]
+        sheetBuilders
   filterWidths ws = ws & X.wsColumnsProperties %~ filter (isJust . X.cpWidth)
   workBook' =
     workBook
       & X.xlSheets
-        %~ \sheets -> zipWith (\x (name, ws) -> (name, (getTransform x & wsTransform) ws & filterWidths)) (snd <$> sheetBuilders) sheets
+        %~ \sheets ->
+          zipWith3
+            (\index x (name, ws) -> (name, (getTransform index x & wsTransform) ws & filterWidths))
+            [0 ..]
+            (snd <$> sheetBuilders)
+            sheets
+
+-- | Lazily write an xlsx
+writeXlsx :: FilePath -> [(T.Text, Sheet ())] -> IO ()
+writeXlsx file sheets = do
+  ct <- getPOSIXTime
+  let xlsx = composeXlsx sheets
+  LBS.writeFile file $ X.fromXlsx ct xlsx

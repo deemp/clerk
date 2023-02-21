@@ -41,12 +41,12 @@
       inherit (workflows.functions.${system}) writeWorkflow run expr mkAccessors genAttrsId;
 
 
-      ghcVersion = "92";
+      ghcVersion = "925";
       override =
-        let inherit (pkgs.haskell.lib) doJailbreak dontCheck; in
+        let inherit (pkgs.haskell.lib) doJailbreak dontCheck overrideCabal; in
         {
           overrides = self: super: {
-            clerk = pkgs.haskell.lib.overrideCabal (super.callCabal2nix "clerk" ./. { })
+            clerk = overrideCabal (super.callCabal2nix "clerk" ./. { })
               (x: {
                 librarySystemDepends = [
                   pkgs.zlib
@@ -78,7 +78,7 @@
           (mapStrGenAttrs
             (x: {
               "example${x}" = {
-                text = "(cd example && nix run .#example${x}) && mv example/example-${x}.xlsx .";
+                text = "${cabal}/bin/cabal run example-${x}";
                 description = "Get `example-${x}.xlsx`";
               };
             }) [ 1 2 ]
@@ -122,7 +122,7 @@
             git nix-ide workbench markdown-all-in-one markdown-language-features;
         };
 
-        inherit (mkFlakesTools [ "." "example" ]) updateLocks pushToCachix;
+        inherit (mkFlakesTools [ "." ]) updateLocks pushToCachix;
 
         writeWorkflows = writeWorkflow "ci" (
           import ./nix-dev/workflow.nix {

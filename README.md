@@ -21,7 +21,7 @@ The example below demonstrates most of these features.
 
 **The goal**: describe and generate a spreadsheet with a simple multiplication table.
 
-The source code for this example is available in the [Example1.hs](example/app/Example1.hs).
+The source code for this example is available in the [Example1.hs](app/Example1.hs).
 The program produces an `xlsx` file that looks as follows:
 
 <img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example1/demoValues.png" width = "80%">
@@ -43,9 +43,7 @@ We'll need several language extensions.
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 ```
-<!-- LIMA_DISABLE
-{-# OPTIONS_GHC -Wno-unused-top-binds #-}
-LIMA_ENABLE -->
+
 <!-- FOURMOLU_ENABLE -->
 
 ### Imports
@@ -54,99 +52,90 @@ And import the necessary stuff.
 
 ```haskell
 import Clerk
-import Codec.Xlsx qualified as X
-import Control.Lens ((&), (+~), (^.))
-import Control.Monad (forM, forM_, void, zipWithM)
-import Data.ByteString.Lazy qualified as L
+import Control.Monad (forM, forM_, void)
 import Data.Text qualified as T
-import Data.Time.Clock.POSIX (getPOSIXTime)
+import Lens.Micro ((&), (+~), (^.))
 ```
 
 ### Tables
 
 The tables that we'd like to construct are:
 
-- A row with numbers
-- A column with numbers
-- A table with results of multiplication of the numbers from these row and column
+- A vertical header
+- A horizontal header
+- A table with results of multiplication of the numbers from these headers
 
-#### Data
-
-This is our data: numbers that we'd like to make a multiplication table for
-
-```haskell
-numbers :: [Int]
-numbers = [1 .. 9]
-```
-
-#### A row with numbers
+#### A horizontal header
 
 <img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example1/horizontal.png" width = "80%">
 
-`clerk` uses a special `Row` where we can describe a row of data. This monad takes some input, internally converts it into Excel types, and can output something, e.g., a template coordinate. Simultaneously, it will build a template of a row of data. This template will be used when placing the input values onto a sheet. When the values are placed, template coordinates become actual addresses like `A1` or `B1`.
+`clerk` provides the `Row` monad.
+This monad takes some input, internally converts it into Excel types, and outputs something, e.g., a reference.
+Simultaneously, it writes a template of a horizontal block of cells (**row**).
+This row is used for placing the input values onto a sheet.
 
-Now, our goal is to construct a `Row` of numbers. We'll need the coordinates of the cells in that row.
+For a horizontal header, we make a row of numbers and collect the references to all its cells.
+Additionally, in the `Sheet` monad, we place this row starting at a specified coordinate.
 
 ```haskell
-mkRow :: [Int] -> Row () [Ref Int]
-mkRow ns = forM ns (column blank . const)
+mkHorizontal :: Coords -> [Int] -> Sheet [Ref Int]
+mkHorizontal c ns = placeAt (c & col +~ 2) (forM ns $ \n -> column blank (const n))
 ```
 
-#### A column with numbers
+#### A vertical header
 
 <img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example1/vertical.png" width = "10%">
 
-To construct a column of numbers, we can use a template for rendering a single column of data. Again, we'll need the coordinate of that cell.
+A vertical block of cells can be represented as several horizontal blocks of cells placed under each other.
+So, as a template, we use a `Row` with a single number.
+
+We place the rows for each input and collect the references.
 
 ```haskell
-mkCol :: Int -> Row () (Ref Int)
-mkCol i = column blank (const i)
+mkVertical :: Coords -> [Int] -> Sheet [Ref Int]
+mkVertical c ns =
+  forM ns $ \n ->
+    placeAt1 (c & row +~ n + 1) n (column blank (const n))
 ```
 
 #### Table builder
 
 <img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example1/table.png" width = "50%">
 
-We use this builder for inner cells. It depends on the coordinates of cells from the column and the row.
+For inner cells, we use a single-column rows for each cell.
+The coordinates of such a cell depend on the coordinates of the cells in input.
 
 ```haskell
-mkTable :: Num a => (Ref a, Ref a) -> Row () ()
-mkTable (a, b) = column_ blank (const (a .* b))
+mkTable :: [(Ref Int, Ref Int)] -> Sheet ()
+mkTable cs =
+  forM_ cs $ \(r, c) ->
+    placeAt (r ^. row, c ^. col) (column_ blank (const (r .* c)))
 ```
 
-### Sheet builder
+### Sheet
 
-The `Sheet` is used to place `Row`s onto a sheet and glue them together.
-Inside `Sheet`, when a `Row` is placed onto a sheet, we can use the
-references that it produces in the subsequent expressions.
+Now, we combine all functions to get a full sheet.
 
 ```haskell
 sheet :: Sheet ()
 sheet = do
-  let start = coords 2 2
-  rowRefs <- place (start & col +~ 2) (mkRow numbers)
-  colRefs <- forM numbers $ \n -> place (start & row +~ n + 1) (mkCol n)
-  forM_
-    [(r, c) | r <- colRefs, c <- rowRefs]
-    (\x@(r, c) -> place (coords (r ^. row) (c ^. col)) (mkTable x))
+  let start = mkCoords 2 2
+      numbers = [1 .. 9]
+  cs <- mkHorizontal start numbers
+  rs <- mkVertical start numbers
+  mkTable [(r, c) | r <- rs, c <- cs]
 ```
 
 ### Result
 
-Finally, we can write the result and get the spreadsheet like the one at the top of this tutorial.
+Finally, we write the result and get the spreadsheet like the one at the beginning of [Example 1](#example-1).
 
 ```haskell
-writeWorksheet :: Sheet a -> String -> IO ()
-writeWorksheet tb name = do
-  ct <- getPOSIXTime
-  let xlsx = composeXlsx [(T.pack "List 1", void tb)]
-  L.writeFile ("example-" <> name <> ".xlsx") $ X.fromXlsx ct xlsx
-
 main :: IO ()
-main = writeWorksheet sheet "1"
+main = writeXlsx "example1.xlsx" [(T.pack "List 1", void sheet)]
 ```
 
-To get `example-1.xlsx`, run:
+To get `./example1.xlsx`, run:
 
 ```console
 nix develop -c example1
@@ -162,7 +151,7 @@ With formulas enabled, the sheet looks like this:
 
 **The goal**: describe and generate a spreadsheet that calculates the pressure data given some volume data and constants.
 
-The source code for this example is available in the [Example2.hs](example/app/Example2.hs).
+The source code for this example is available in the [Example2.hs](app/Example2.hs).
 The program produces an `xlsx` file that looks as follows:
 
 <img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/demoValues.png" width = "80%">
@@ -198,11 +187,8 @@ And import the necessary stuff.
 import Clerk
 import Codec.Xlsx qualified as X
 import Codec.Xlsx.Formatted qualified as X
-import Control.Lens ((%~), (&), (+~), (?~))
-import Control.Monad (void)
-import Data.ByteString.Lazy qualified as L
 import Data.Text qualified as T
-import Data.Time.Clock.POSIX (getPOSIXTime)
+import Lens.Micro ((%~), (&), (+~), (?~))
 ```
 
 ### Tables
@@ -278,7 +264,7 @@ green :: FormatCell
 green = mkColor Green
 
 mixed :: FormatCell
-mixed coords_ idx = mkColor (if even idx then LightGreen else LightBlue) coords_ idx
+mixed coords index = mkColor (if even index then LightGreen else LightBlue) coords index
 ```
 
 Additionally, we compose a transformation of a `FormatCell` for the number format
@@ -296,7 +282,8 @@ alignCenter :: FCTransform
 alignCenter = horizontalAlignment X.CellHorizontalAlignmentCenter
 ```
 
-Now, we can make a `Row` for a constant.
+Now, we can make a `RowI` for a constant.
+We use a `RowI` because this row cares about the `i`nput type.
 We'll later use this builder for each constant separately.
 
 We get a pair of outputs:
@@ -307,7 +294,7 @@ We get a pair of outputs:
 Later, the outputs of this and other `Row`s will be used to relate the positions of tables on a sheet.
 
 ```haskell
-constantBuilder :: ToCellData a => Row (ConstantData a) (Ref (), Ref a)
+constantBuilder :: ToCellData a => RowI (ConstantData a) (Ref (), Ref a)
 constantBuilder = do
   refTopLeft <- column lightBlue constantName
   column_ lightBlue constantSymbol
@@ -337,12 +324,13 @@ data ConstantsRefs = ConstantsRefs
   , refNumberOfMoles :: Ref Double
   , refTemperature :: Ref Double
   }
-```
 
-Next, we define a function to produce a builder for volume and pressure. We pass references to constants' values to this builder
+{-`
+Next, we define a function to produce a row for volume and pressure.
+We pass references to constants' values to this builder
+-}
 
-```haskell
-valuesBuilder :: ConstantsRefs -> Row Volume ()
+valuesBuilder :: ConstantsRefs -> RowI Volume ()
 valuesBuilder ConstantsRefs{..} = do
   refVolume <- column mixed volume
   let pressure' = refGas .* refNumberOfMoles .* refTemperature ./ refVolume
@@ -358,7 +346,7 @@ We won't use records here. Instead, we'll put the names of the columns straight 
 The outputs will be the coordinates of the top left cell and the top right cell of this table.
 
 ```haskell
-constantsHeaderBuilder :: Row () (Ref (), Ref ())
+constantsHeaderBuilder :: Row (Ref (), Ref ())
 constantsHeaderBuilder = do
   refTopLeft <- columnWidth 20 (blue .& alignCenter) (const "constant")
   columnWidth_ 8 (blue .& alignCenter) (const "symbol")
@@ -374,7 +362,7 @@ constantsHeaderBuilder = do
 For this header, we'll also put the names of columns straight inside the builder.
 
 ```haskell
-valuesHeaderBuilder :: Row () Coords
+valuesHeaderBuilder :: Row Coords
 valuesHeaderBuilder = do
   tl <- columnWidth 12 green (const "VOLUME (L)")
   columnWidth_ 16 green (const "PRESSURE (atm)")
@@ -390,33 +378,28 @@ references that it produces in the subsequent expressions.
 ```haskell
 sheet :: Sheet ()
 sheet = do
-  (constantsHeaderTL, constantsHeaderTR) <- place (coords 2 2) constantsHeaderBuilder
-  (gasTL, gas) <- place1 (constantsHeaderTL & row +~ 2) constants.gasConstant constantBuilder
-  (nMolesTL, nMoles) <- place1 (gasTL & row +~ 1) constants.numberOfMoles constantBuilder
-  temperature <- snd <$> place1 (nMolesTL & row +~ 1) constants.temperature constantBuilder
-  valuesHeaderTL <- place (constantsHeaderTR & row +~ 2) valuesHeaderBuilder
-  placeN (valuesHeaderTL & row +~ 2) volumeData (valuesBuilder $ ConstantsRefs gas nMoles temperature)
+  let start = mkCoords 2 2
+  (constantsHeaderTL, constantsHeaderTR) <- placeAt start constantsHeaderBuilder
+  (gasTL, gas) <- placeAt1 (constantsHeaderTL & row +~ 2) constants.gasConstant constantBuilder
+  (nMolesTL, nMoles) <- placeAt1 (gasTL & row +~ 1) constants.numberOfMoles constantBuilder
+  temperature <- snd <$> placeAt1 (nMolesTL & row +~ 1) constants.temperature constantBuilder
+  valuesHeaderTL <- placeAt (constantsHeaderTR & col +~ 2) valuesHeaderBuilder
+  placeAtN (valuesHeaderTL & row +~ 2) volumeData (valuesBuilder $ ConstantsRefs gas nMoles temperature)
 ```
 
 ### Result
 
-Finally, we can write the result and get the spreadsheet like the one at the top of this tutorial.
+Finally, we write the result and get the spreadsheet like the one at the beginning of [Example 2](#example-2).
 
 ```haskell
-writeWorksheet :: Sheet a -> String -> IO ()
-writeWorksheet tb name = do
-  ct <- getPOSIXTime
-  let xlsx = composeXlsx [(T.pack "List 1", void tb)]
-  L.writeFile ("example-" <> name <> ".xlsx") $ X.fromXlsx ct xlsx
-
 main :: IO ()
-main = writeWorksheet sheet "2"
+main = writeXlsx "example2.xlsx" [(T.pack "List 1", sheet)]
 ```
 
-To get `example-2.xlsx`, run:
+To get `./example2.xlsx`, run:
 
 ```console
-nix develop -c example2
+nix run .#example2
 ```
 
 With formulas enabled, the sheet looks like this:
@@ -437,7 +420,7 @@ This project provides a dev environment via a `Nix` flake.
 1. This `README.md` is generated from several files. If you edit them, re-generate it.
 
     ```console
-    cabal test docs
+    nix run .#writeDocs
     ```
 
 1. (Optionally) Start `VSCodium` with `Haskell` extensions.

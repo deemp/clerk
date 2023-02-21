@@ -2,7 +2,7 @@
 *~
 .direnv
 .vscode
-example-*
+example*.xlsx
 dist-newstyle
 .~lock*
 result

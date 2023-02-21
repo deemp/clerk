@@ -24,13 +24,13 @@ main = do
   (exitCode, _, _) <-
     shellStrictWithErr
       [i|
-        lima hs2md -f example/app/Example1.hs -f example/app/Example2.hs
+        lima hs2md -f app/Example1.hs -f app/Example2.hs
         touch README.tmp
         cat README/Intro.md >> README.tmp
         #{appendNewline}
-        cat example/app/Example1.hs.md >> README.tmp && rm example/app/Example1.hs.md
+        cat app/Example1.hs.md >> README.tmp && rm app/Example1.hs.md
         #{appendNewline}
-        cat example/app/Example2.hs.md >> README.tmp && rm example/app/Example2.hs.md
+        cat app/Example2.hs.md >> README.tmp && rm app/Example2.hs.md
         #{appendNewline}
         cat README/Outro.md >> README.tmp
         mv README.tmp README.md

@@ -1,5 +1,5 @@
 name: clerk
-version: 0.1.0.3
+version: 0.2.0.3
 github: "deemp/clerk"
 license: BSD3
 author: "Danila Danko, Nickolay Kudasov"
@@ -27,7 +27,6 @@ description: |
 
 dependencies:
   - base >= 4.9 && < 5.0
-  - text
 
 ghc-options:
   - -Wall
@@ -46,18 +45,30 @@ tests:
     dependencies:
       - turtle
       - string-interpolate
+      - text
     build-tools: lima:lima ^>= 0.1
 
 library:
   source-dirs: src
   dependencies:
-    - mtl
-    - transformers
-    - xlsx
     - bytestring
-    - lens
-    - time
     - containers
     - data-default
     - microlens
-    - microlens-th
+    - mtl
+    - text
+    - time
+    - transformers
+    - xlsx
+
+executables:
+  example1:
+    main: app/Example1.hs
+    dependencies: &example
+      - clerk
+      - microlens
+      - text
+      - xlsx
+  example2:
+    main: app/Example2.hs
+    dependencies: *example
