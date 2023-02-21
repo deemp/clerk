@@ -27,7 +27,7 @@ nixCI // {
     "${job2}" = {
       name = "Build with GHC";
       strategy.matrix.ghc = ghcVersions;
-      needs = job1;
+      # needs = job1;
       runs-on = os.ubuntu-20;
       steps = [
         steps.checkout
@@ -47,7 +47,7 @@ nixCI // {
     };
     "${job3}" = {
       name = "Push to cachix";
-      needs = job1;
+      # needs = job1;
       strategy.matrix.os = oss;
       runs-on = expr names.matrix.os;
       steps =

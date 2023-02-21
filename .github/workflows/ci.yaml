@@ -26,7 +26,6 @@ jobs:
           git commit -a -m "action: Write docs" && git push || echo ""
   _2_build_with_ghc:
     name: Build with GHC
-    needs: _1_nix_ci
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout this repo
@@ -48,7 +47,6 @@ jobs:
           - "925"
   _3_push_to_cachix:
     name: Push to cachix
-    needs: _1_nix_ci
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout this repo

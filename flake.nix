@@ -126,7 +126,7 @@
         inherit (mkFlakesTools [ "." ]) updateLocks pushToCachix;
 
         writeWorkflows = writeWorkflow "ci" (
-          import ./nix-dev/workflow.nix {
+          import ./nix-files/workflow.nix {
             inherit system workflows scripts buildPrefix ghcVersions;
           }
         );
