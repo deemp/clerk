@@ -83,6 +83,15 @@ module Clerk (
   placeN,
   place1,
   place,
+  evalSheetDefault,
+  -- TODO make this module internal
+  -- move to ForExamples
+  SheetState (..),
+  Sheet (..),
+  Coords (..),
+  RowState (..),
+  RowShow (..),
+  evalRow,
 
   -- * Expressions
   -- $Expressions
@@ -133,6 +142,7 @@ import Data.Text qualified as T
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import GHC.Generics (Generic)
 import Lens.Micro (Lens', lens, (%~), (&), (+~), (.~), (?~), (^.))
+import Unsafe.Coerce (unsafeCoerce)
 
 -- TODO add modes to state
 -- Google Sheets, Excel, Tabular
@@ -196,6 +206,9 @@ instance RowShow Coords where
         | (cs & _coordsWorksheetName) /= (state & _coordsWorksheetName) = (cs & _coordsWorksheetName) <> "!"
         | otherwise = ""
     pure $ prefix <> toLetters (cs ^. col) <> T.pack (show (cs ^. row))
+
+-- instance Show a => RowShow a where
+--   rowShow a =
 
 -- instance Show Coords where
 --   show :: Coords -> T.Text
@@ -404,23 +417,26 @@ newtype RowIO input output a = Row
   {unRow :: StateT RowState (Writer (Template input output)) a}
   deriving newtype (Functor, Applicative, Monad, MonadState RowState, MonadWriter (Template input output))
 
--- | The output is of no interest
+-- | Row with a default 'CellData' output
 type RowI input a = RowIO input CellData a
 
--- | The input and output are of no interest
-type Row a = RowIO () CellData a
+-- | Row with a default @()@ input
+type RowO output a = RowIO () output a
+
+-- | Row with a default @()@ input and a default 'CellData' output
+type Row a = RowO CellData a
 
 -- | Run builder on given coordinates. Get a result and a template
 runBuilder :: RowIO input output a -> RowState -> (a, Template input output)
 runBuilder builder coord = runWriter (evalStateT (unRow builder) coord)
 
 -- | Run builder on given coordinates. Get a template
-evalBuilder :: RowIO input output a -> RowState -> Template input output
-evalBuilder builder state = snd $ runBuilder builder state
+execRow :: RowIO input output a -> RowState -> Template input output
+execRow builder state = snd $ runBuilder builder state
 
 -- | Run builder on given coordinates. Get a result
-execBuilder :: RowIO input output a -> RowState -> a
-execBuilder builder state = fst $ runBuilder builder state
+evalRow :: RowIO input output a -> RowState -> a
+evalRow builder state = fst $ runBuilder builder state
 
 type RenderTemplate m input output = (Monad m, ToCellData output) => RowState -> InputIndex -> input -> Template input output -> Sheet Transform
 type RenderInputs m input output a = (Monad m, ToCellData output) => [input] -> RowIO input output a -> Sheet (Transform, a)
@@ -433,10 +449,10 @@ renderInputs state render inputs row_ = do
       [ (newState, template)
       | inputRow <- [0 .. length inputs - 1]
       , let newState = state & row +~ inputRow
-            template = evalBuilder row_ newState
+            template = execRow row_ newState
       ]
     -- result obtained from the top row
-    rowResult = execBuilder row_ state
+    rowResult = evalRow row_ state
     transform =
       fold
         <$> sequenceA
@@ -518,23 +534,23 @@ columnWidthFormatRef width fmtCell mkOutput = do
   pure cell
 
 -- | A column with a given width and cell format. Returns a cell reference
-columnWidthRef :: ToCellData output => Double -> FormatCell -> (input -> output) -> RowIO input CellData (Ref a)
+columnWidthRef :: ToCellData output => Double -> FormatCell -> (input -> output) -> RowI input (Ref a)
 columnWidthRef width fmtCell mkOutput = do
   state <- get
   columnWidthFormatRef (Just width) fmtCell (fst . runWriter . flip evalStateT state . unRow . toCellData . mkOutput)
 
 -- | A column with a given width and cell format
-columnWidth :: ToCellData output => Double -> FormatCell -> (input -> output) -> RowIO input CellData ()
+columnWidth :: ToCellData output => Double -> FormatCell -> (input -> output) -> RowI input ()
 columnWidth width fmtCell mkOutput = void (columnWidthRef width fmtCell mkOutput)
 
 -- | A column with a given cell format. Returns a cell reference
-columnRef :: ToCellData output => FormatCell -> (input -> output) -> RowIO input CellData (Ref a)
+columnRef :: ToCellData output => FormatCell -> (input -> output) -> RowI input (Ref a)
 columnRef fmtCell mkOutput = do
   state <- get
   columnWidthFormatRef Nothing fmtCell (fst . runWriter . flip evalStateT state . unRow . toCellData . mkOutput)
 
 -- | A column with a given cell format
-column :: ToCellData output => FormatCell -> (input -> output) -> RowIO input CellData ()
+column :: ToCellData output => FormatCell -> (input -> output) -> RowI input ()
 column fmtCell mkOutput = void (columnRef fmtCell mkOutput)
 
 {- FOURMOLU_DISABLE -}
@@ -550,6 +566,10 @@ data SheetState = SheetState
 newtype Sheet a = Sheet {unSheet :: StateT SheetState (Writer Transform) a}
   deriving newtype (Functor, Applicative, Monad, MonadWriter Transform, MonadState SheetState)
 
+-- | Evaluate the result of a sheet with a default state
+evalSheetDefault :: Sheet a -> a
+evalSheetDefault s = fst $ runWriter $ flip evalStateT (SheetState{_sheetWorksheetName = "worksheet", _sheetWorkbookPath = "workbook"}) $ unSheet s
+
 -- | Starting at a given coordinate, place a list of inputs according to a row builder and return a result
 placeN :: (ToCellData output, ToCoords c) => c -> [input] -> RowIO input output a -> Sheet a
 placeN (toCoords -> state) inputs b = do
@@ -562,7 +582,7 @@ place1 :: (ToCellData output, ToCoords c) => c -> input -> RowIO input output a 
 place1 coords_ input = placeN coords_ [input]
 
 -- | Starting at a given coordinate, place a row builder and return a result
-place :: (ToCellData output, ToCoords c) => c -> RowIO () output a -> Sheet a
+place :: (ToCellData output, ToCoords c) => c -> RowO output a -> Sheet a
 place coords_ = place1 coords_ ()
 
 {- FOURMOLU_DISABLE -}
@@ -571,10 +591,12 @@ place coords_ = place1 coords_ ()
 
 -- | Expressions
 data Expr t
-  = EBinOp BinaryOperator (Expr t) (Expr t)
-  | EFunction T.Text [Expr t]
-  | ERef (Ref t)
-  | ERange (Ref t) (Ref t)
+  = EBinaryOp {binOp :: BinaryOperator, arg1 :: (Expr t), arg2 :: (Expr t)}
+  | EFunction {fName :: T.Text, fArgs :: [Expr t]}
+  | ERef {ref :: (Ref t)}
+  | ERange {ref1 :: (Ref t), ref2 :: (Ref t)}
+  | EValue {value :: t}
+  | EUnaryOp {unaryOp :: UnaryOp, arg :: Expr t}
 
 data BinaryOperator
   = OpAdd
@@ -588,6 +610,9 @@ data BinaryOperator
   | OpGEQ
   | OpEQ
   | OpNEQ
+
+data UnaryOp
+  = OpNeg
 
 -- | Formula
 newtype Formula t = Formula {unFormula :: Expr t}
@@ -613,14 +638,19 @@ instance ToFormula (Formula a) where
   toFormula :: Formula a -> Formula b
   toFormula (Formula f) = Formula $ unsafeChangeType f
 
-showOp2 :: (RowShow a, RowShow b) => T.Text -> a -> b -> Row T.Text
-showOp2 operator c1 c2 = do
+-- TODO dangerous?
+instance {-# OVERLAPPABLE #-} Num a => ToFormula a where
+  toFormula :: a -> Formula b
+  toFormula = Formula . EValue . unsafeCoerce
+
+showOp2 :: (RowShow a, RowShow b) => a -> b -> T.Text -> Row T.Text
+showOp2 c1 c2 operator = do
   d1 <- rowShow c1
   d2 <- rowShow c2
   pure $ d1 <> operator <> d2
 
 mkOp2 :: (ToFormula a, ToFormula b) => BinaryOperator -> a -> b -> Formula t
-mkOp2 f c1 c2 = Formula $ EBinOp f (unFormula $ toFormula c1) (unFormula $ toFormula c2)
+mkOp2 f c1 c2 = Formula $ EBinaryOp f (unFormula $ toFormula c1) (unFormula $ toFormula c2)
 
 mkNumOp2 :: (Num t, ToFormula a, ToFormula b) => BinaryOperator -> a -> b -> Formula t
 mkNumOp2 = mkOp2
@@ -667,7 +697,7 @@ infixr 8 .^
 type BoolOperator a b c = (Ord a, ToFormula (b a), ToFormula (c a)) => b a -> c a -> Formula Bool
 
 mkBoolOp2 :: (Ord a, ToFormula (b a), ToFormula (c a)) => BinaryOperator -> b a -> c a -> Formula Bool
-mkBoolOp2 f c1 c2 = Formula $ EBinOp f (unFormula $ toFormula c1) (unFormula $ toFormula c2)
+mkBoolOp2 f c1 c2 = Formula $ EBinaryOp f (unFormula $ toFormula c1) (unFormula $ toFormula c2)
 
 -- | Construct a @less-than@ expression like @A1 < B1@
 (.<) :: BoolOperator a b c
@@ -707,17 +737,20 @@ infix 4 .<>
 
 instance RowShow (Expr t) where
   rowShow :: Expr t -> Row T.Text
-  rowShow (EBinOp OpAdd c1 c2) = showOp2 "+" c1 c2
-  rowShow (EBinOp OpSubtract c1 c2) = showOp2 "-" c1 c2
-  rowShow (EBinOp OpMultiply c1 c2) = showOp2 "*" c1 c2
-  rowShow (EBinOp OpDivide c1 c2) = showOp2 "/" c1 c2
-  rowShow (EBinOp OpPower c1 c2) = showOp2 "^" c1 c2
-  rowShow (EBinOp OpLT c1 c2) = showOp2 "<" c1 c2
-  rowShow (EBinOp OpGT c1 c2) = showOp2 ">" c1 c2
-  rowShow (EBinOp OpLEQ c1 c2) = showOp2 "<=" c1 c2
-  rowShow (EBinOp OpGEQ c1 c2) = showOp2 ">=" c1 c2
-  rowShow (EBinOp OpEQ c1 c2) = showOp2 "=" c1 c2
-  rowShow (EBinOp OpNEQ c1 c2) = showOp2 "<>" c1 c2
+  rowShow (EBinaryOp{..}) =
+    showOp2 arg1 arg2 $
+      case binOp of
+        OpAdd -> "+"
+        OpSubtract -> "-"
+        OpMultiply -> "*"
+        OpDivide -> "/"
+        OpPower -> "^"
+        OpLT -> "<"
+        OpGT -> ">"
+        OpLEQ -> "<="
+        OpGEQ -> ">="
+        OpEQ -> "="
+        OpNEQ -> "<>"
   rowShow (ERef (Ref e)) = rowShow e
   rowShow (ERange (Ref c1) (Ref c2)) = do
     d1 <- rowShow c1
@@ -727,12 +760,18 @@ instance RowShow (Expr t) where
     d1 <- forM as rowShow
     pure $ n <> "(" <> T.intercalate "," d1 <> ")"
 
+-- rowShow (EUnaryOp{..}) =
+--   case unaryOp of
+--     OpId -> rowShow arg
+--     OpNeg -> rowShow arg
+
 instance UnsafeChangeType Expr where
   unsafeChangeType :: Expr b -> Expr c
-  unsafeChangeType (EBinOp a b c) = EBinOp a (unsafeChangeType b) (unsafeChangeType c)
+  unsafeChangeType (EBinaryOp a b c) = EBinaryOp a (unsafeChangeType b) (unsafeChangeType c)
   unsafeChangeType (ERef (Ref a)) = ERef (Ref a)
   unsafeChangeType (EFunction n as) = EFunction n (unsafeChangeType <$> as)
   unsafeChangeType (ERange l r) = ERange (unsafeChangeType l) (unsafeChangeType r)
+  unsafeChangeType (EUnaryOp u v) = EUnaryOp u (unsafeCoerce v)
 
 -- | Name of a function like @SUM@
 type FunName = T.Text

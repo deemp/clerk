@@ -13,4 +13,4 @@ The library supports:
 - Constructing expressions with given types. Example: `(e :: Expr Double) = "SUM" |$| [a |:| b]`, `e` translates to `SUM(A1:B1)` (actual value depends on the values of `a` and `b`).
 - Conditional styles, formatting, column widths.
 
-The example below demonstrates most of these features.
+The examples below demonstrate these features.

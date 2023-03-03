@@ -1,6 +1,5 @@
--c stack ghci app/Main.hs
+-c cabal repl app/Example1.hs
 -W
--r=:main
 --reload=./
 --reverse-errors
 --allow-eval

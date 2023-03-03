@@ -10,7 +10,7 @@ in
 nixCI // {
   jobs = {
     "${job1}" = {
-      name = "Update flake locks and README.md";
+      name = "Write docs";
       runs-on = os.ubuntu-20;
       steps =
         [

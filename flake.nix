@@ -82,7 +82,7 @@
                 text = "${cabal}/bin/cabal run example${x}";
                 description = "Get `example-${x}.xlsx`";
               };
-            }) [ 1 2 ]
+            }) [ 1 2 3 4 ]
           )
         );
 
@@ -110,6 +110,7 @@
         hpack
         hls
         ghc
+        ghcid
       ];
 
       packages = {
@@ -140,7 +141,7 @@
             mkCommands "tools" tools
             ++ mkRunCommands "ide" { "codium ." = packages.codium; inherit (packages) writeSettings; }
             ++ mkRunCommands "infra" { inherit (packages) writeWorkflows; }
-            ++ mkRunCommands "test" { inherit (packages) example1 example2; };
+            ++ mkRunCommands "test" { inherit (packages) example2 example3; };
         };
       };
     in

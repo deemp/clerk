@@ -20,8 +20,8 @@ extra-source-files:
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
 description: |
-  `clerk` provides a Haskell eDSL and a library for declaratively describing the spreadsheets. 
-  `clerk` is built on top of the [xlsx](https://hackage.haskell.org/package/xlsx) package 
+  `clerk` provides a Haskell library for declaratively describing the spreadsheets.
+  `clerk` is built on top of the [xlsx](https://hackage.haskell.org/package/xlsx) package
   and extends upon the [work](https://youtu.be/1xGoa-zEOrQ) of Nickolay Kudasov.
   See the [README](https://github.com/deemp/clerk#readme) for an example of `clerk` usage and further info.
 
@@ -44,9 +44,9 @@ tests:
     main: test/Docs.hs
     dependencies:
       - turtle
-      - string-interpolate
+      - lima
       - text
-    build-tools: lima:lima ^>= 0.1
+      - data-default
 
 library:
   source-dirs: src
@@ -64,11 +64,20 @@ library:
 executables:
   example1:
     main: app/Example1.hs
-    dependencies: &example
+    dependencies: &example1
+      - clerk
+      - microlens
+      - text
+  example2:
+    main: app/Example2.hs
+    dependencies: &example2
       - clerk
       - microlens
       - text
       - xlsx
-  example2:
-    main: app/Example2.hs
-    dependencies: *example
+  example3:
+    main: app/Example3.hs
+    dependencies: *example2
+  example4:
+    main: app/Example4.hs
+    dependencies: *example2

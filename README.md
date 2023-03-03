@@ -13,23 +13,84 @@ The library supports:
 - Constructing expressions with given types. Example: `(e :: Expr Double) = "SUM" |$| [a |:| b]`, `e` translates to `SUM(A1:B1)` (actual value depends on the values of `a` and `b`).
 - Conditional styles, formatting, column widths.
 
-The example below demonstrates most of these features.
+The examples below demonstrate these features.
 
 <!-- FOURMOLU_DISABLE -->
 
 ## Example 1
 
+**The goal**: demonstrate formula syntax.
+
+The source code for this example is available [here](app/Example1.hs).
+<!-- LIMA_DISABLE
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Redundant bracket" #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
+{- FOURMOLU_ENABLE -}
+LIMA_ENABLE -->
+
+### Imports
+
+We import the necessary stuff.
+
+```haskell
+import Clerk
+import Data.Text (Text)
+import ForExamples (mkRef, showFormula)
+```
+<!-- LIMA_DISABLE
+main :: IO ()
+main = undefined
+
+LIMA_ENABLE -->
+
+### Formulas
+
+Formulas consist of references, functions, and values.
+
+We pretend that there are values with given types and that we can get references to them.
+
+First, we make a couple of references to `Int` values.
+
+```haskell
+r1 :: Ref Int
+r1 = mkRef 2 4
+
+r2 :: Ref Int
+r2 = mkRef 5 6
+
+r3 :: Ref Double
+r3 = mkRef 7 8
+
+t1 :: Text
+t1 = showFormula $ toFormula r2
+
+-- >>>t1
+-- "E6"
+
+t2 :: Text
+t2 = showFormula $ (r1 .* r2) .+ r1 .^ r2 ./ (unsafeChangeType r3)
+
+-- >>>t2
+-- "B4*E6+B4^E6/G8"
+```
+
+<!-- FOURMOLU_DISABLE -->
+
+## Example 2
+
 **The goal**: describe and generate a spreadsheet with a simple multiplication table.
 
-The source code for this example is available in the [Example1.hs](app/Example1.hs).
+The source code for this example is available [here](app/Example2.hs).
 
 The program produces an `xlsx` file that looks as follows:
 
-<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example1/demoValues.png" width = "80%">
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/demoValues.png" width = "80%">
 
 With formulas enabled:
 
-<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example1/demoFormulas.png" width = "80%">
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/demoFormulas.png" width = "80%">
 
 The below sections describe how such a spreadsheet can be constructed.
 
@@ -48,7 +109,7 @@ LIMA_ENABLE -->
 
 ### Imports
 
-And import the necessary stuff.
+We import the necessary stuff.
 
 ```haskell
 import Clerk
@@ -67,7 +128,7 @@ The tables that we'd like to construct are:
 
 #### A vertical header
 
-<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example1/vertical.png" width = "10%">
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/vertical.png" width = "10%">
 
 `clerk` provides the `RowI` monad.
 This monad takes some `i`nput, internally converts it into Excel types, and outputs something, e.g., a cell reference.
@@ -94,7 +155,7 @@ mkVertical coords numbers =
 
 #### A horizontal header
 
-<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example1/horizontal.png" width = "80%">
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/horizontal.png" width = "80%">
 
 For a horizontal header, we make a row of numbers and collect the references to all its cells.
 As we don't care about the type of inputs, we use the `Row` type.
@@ -111,7 +172,7 @@ mkHorizontal coords numbers =
 
 #### Table builder
 
-<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example1/table.png" width = "50%">
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/table.png" width = "50%">
 
 For inner cells, we use single-cell rows for each input.
 As we don't need any info about these cells, we use the `Row ()` type.
@@ -140,40 +201,40 @@ sheet = do
 
 ### Result
 
-Finally, we can write the result and get a spreadsheet like the one at the beginning of [Example 1](#example-1).
+Finally, we can write the result and get a spreadsheet like the one at the beginning of [Example 2](#example-2).
 
 ```haskell
 main :: IO ()
-main = writeXlsx "example1.xlsx" [(T.pack "List 1", void sheet)]
+main = writeXlsx "example2.xlsx" [(T.pack "List 1", void sheet)]
 ```
 
-To get `./example1.xlsx`, run:
+To get `./example2.xlsx`, run:
 
 ```console
-nix run .#example1
+nix run .#example2
 -- or
-cabal run example1
+cabal run example2
 ```
 
 With formulas enabled, the sheet looks like this:
 
-<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example1/demoFormulas.png" width = "80%">
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/demoFormulas.png" width = "80%">
 
 <!-- FOURMOLU_DISABLE -->
 
-## Example 2
+## Example 3
 
 **The goal**: describe and generate a spreadsheet that calculates the pressure data given some volume data and constants.
 
-The source code for this example is available in the [Example2.hs](app/Example2.hs).
+The source code for this example is available [here](app/Example3.hs).
 
 The program produces an `xlsx` file that looks as follows:
 
-<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/demoValues.png" width = "80%">
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example3/demoValues.png" width = "80%">
 
 With formulas enabled:
 
-<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/demoFormulas.png" width = "80%">
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example3/demoFormulas.png" width = "80%">
 
 The below sections describe how such a spreadsheet can be constructed.
 
@@ -218,7 +279,7 @@ The tables that we'd like to construct are:
 
 #### constants values
 
-<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/constants.png" width = "50%">
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example3/constants.png" width = "50%">
 
 In our case, each constant has the same type of the numeric value - `Double`.
 However, it might be the case that in another set of constants, they'll have different types.
@@ -283,7 +344,7 @@ constant = do
 
 #### volume and pressure values
 
-<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/valuesFormulas.png" width = "50%">
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example3/valuesFormulas.png" width = "50%">
 
 To fill this table, we'll take some data and combine it with the constants.
 
@@ -316,7 +377,7 @@ values ConstantsRefs{..} = do
 
 #### Constants' header
 
-<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/constantsHeader.png" width = "50%">
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example3/constantsHeader.png" width = "50%">
 
 We won't use records here. Instead, we'll put the names of the columns straight into the `Row`.
 
@@ -336,7 +397,7 @@ constantsHeader = do
 
 #### Volume & Pressure header
 
-<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/valuesHeader.png" width = "50%">
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example3/valuesHeader.png" width = "50%">
 
 For this header, we'll also put the names of columns straight into a row.
 
@@ -409,24 +470,29 @@ alignedCenter = horizontalAlignment X.CellHorizontalAlignmentCenter
 
 ### Result
 
-Finally, we write the result and get the spreadsheet like the one at the beginning of [Example 2](#example-2).
+Finally, we write the result and get the spreadsheet like the one at the beginning of [Example 3](#example-3).
 
 ```haskell
 main :: IO ()
-main = writeXlsx "example2.xlsx" [(T.pack "List 1", sheet)]
+main = writeXlsx "example3.xlsx" [(T.pack "List 1", sheet)]
 ```
 
-To get `./example2.xlsx`, run:
+To get `./example3.xlsx`, run:
 
 ```console
-nix run .#example2
+nix run .#example3
 -- or
-cabal run example2
+cabal run example3
 ```
 
 With formulas enabled, the sheet looks like this:
 
-<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/demoFormulas.png" width = "80%">
+<img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example3/demoFormulas.png" width = "80%">
+
+```haskell
+main :: IO ()
+main = print "hello"
+```
 
 ## Contribute
 
