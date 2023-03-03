@@ -70,7 +70,7 @@ t1 = showFormula $ toFormula r2
 -- "E6"
 
 t2 :: Text
-t2 = showFormula $ (r1 .* r2) .+ r1 .^ r2 ./ (unsafeChangeType r3)
+t2 = showFormula $ (r1 .* r2) .* (toFormula @Int 3) .+ r1 .^ r2 ./ (unsafeChangeType r3)
 
 -- >>>t2
 -- "B4*E6+B4^E6/G8"
