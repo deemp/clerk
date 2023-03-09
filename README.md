@@ -1,6 +1,6 @@
 # clerk
 
-`clerk` provides a Haskell eDSL in a library for declarative spreadsheet generation. `clerk` is built on top of the [xlsx](https://hackage.haskell.org/package/xlsx) package and extends upon the [work](https://youtu.be/1xGoa-zEOrQ) of Nickolay Kudasov by making the tables' layout more flexible.
+`clerk` provides a Haskell library for declaratively describing the spreadsheets.. `clerk` is built on top of the [xlsx](https://hackage.haskell.org/package/xlsx) package and extends upon the [work](https://youtu.be/1xGoa-zEOrQ) of Nickolay Kudasov.
 
 ## Features
 
@@ -8,9 +8,9 @@
 
 The library supports:
 
-- Typed cell references. Example: `CellRef Double`.
-- Type-safe arithmetic operations with them. Example: `(a :: CellRef Double) + (b :: CellRef Double)` produces a `CellRef Double`.
-- Constructing expressions with given types. Example: `(e :: Expr Double) = "SUM" |$| [a |:| b]`, `e` translates to `SUM(A1:B1)` (actual value depends on the values of `a` and `b`).
+- Typed cell references. Example: `Ref Double`.
+- Type-safe arithmetic operations with them. Example: `(a :: Ref Double) + (b :: Ref Double)` produces a `Ref Double`.
+- Constructing expressions with given types. Example: `(e :: Expr Double) = "SUM" [a .: b]`, `e` translates to `SUM(A1:B1)` (actual value depends on the values of `a` and `b`).
 - Conditional styles, formatting, column widths.
 
 The examples below demonstrate these features.
@@ -23,10 +23,7 @@ The examples below demonstrate these features.
 
 The source code for this example is available [here](app/Example1.hs).
 <!-- LIMA_DISABLE
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Redundant bracket" #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
+-- {-# HLINT ignore "Redundant bracket" #-}
 {- FOURMOLU_ENABLE -}
 LIMA_ENABLE -->
 
@@ -37,7 +34,6 @@ We import the necessary stuff.
 ```haskell
 import Clerk
 import Data.Text (Text)
-import ForExamples (mkRef, showFormula)
 ```
 <!-- LIMA_DISABLE
 main :: IO ()
@@ -49,31 +45,39 @@ LIMA_ENABLE -->
 
 Formulas consist of references, functions, and values.
 
-We pretend that there are values with given types and that we can get references to them.
+We define a couple of helper functions just for this example.
+These function simplify working with references and formulas.
+
+Now, we pretend that there are values with given types and that we can get references to them.
 
 First, we make a couple of references to `Int` values.
 
 ```haskell
-r1 :: Ref Int
-r1 = mkRef 2 4
+r1, r2, r3 :: Ref Double
+r1 = mkRef "B4"
+r2 = mkRef "E6"
+r3 = mkRef "G8"
+```
 
-r2 :: Ref Int
-r2 = mkRef 5 6
+Next, we convert one of these references to a formula via `ref` and inspect its representation.
 
-r3 :: Ref Double
-r3 = mkRef 7 8
-
+```haskell
 t1 :: Text
-t1 = showFormula $ toFormula r2
+t1 = showFormula $ ref r2
 
 -- >>>t1
 -- "E6"
+```
 
+Finally, we construct a longer expression and look at its representation.
+We convert a literal value to a formula via `val`.
+
+```haskell
 t2 :: Text
-t2 = showFormula $ (r1 .* r2) .* (toFormula @Int 3) .+ r1 .^ r2 ./ (unsafeChangeType r3)
+t2 = showFormula $ r1 .* r2 .* val 3 .+ r1 .** r2 ./ r3
 
 -- >>>t2
--- "B4*E6+B4^E6/G8"
+-- "B4*E6*3.0+B4^E6/G8"
 ```
 
 <!-- FOURMOLU_DISABLE -->
@@ -232,7 +236,7 @@ The program produces an `xlsx` file that looks as follows:
 
 <img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example3/demoValues.png" width = "80%">
 
-With formulas enabled:
+With formulas enabled:l
 
 <img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example3/demoFormulas.png" width = "80%">
 

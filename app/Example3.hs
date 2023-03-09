@@ -10,7 +10,7 @@ The program produces an `xlsx` file that looks as follows:
 
 <img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example3/demoValues.png" width = "80%">
 
-With formulas enabled:
+With formulas enabled:l
 
 <img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example3/demoFormulas.png" width = "80%">
 

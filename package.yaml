@@ -60,14 +60,18 @@ library:
     - time
     - transformers
     - xlsx
+  when:
+    - condition: false
+      other-modules: Paths_clerk
 
 executables:
   example1:
     main: app/Example1.hs
-    dependencies: &example1
+    dependencies:
       - clerk
       - microlens
       - text
+      - data-default
   example2:
     main: app/Example2.hs
     dependencies: &example2

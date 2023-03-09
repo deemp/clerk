@@ -44,7 +44,13 @@ module Clerk (
   Ref,
   row,
   col,
+  ref,
+  val,
+
+  -- * Changing types
+  -- $ChangeTypes
   UnsafeChangeType (..),
+  as,
 
   -- * Cell formatting
   -- $Formatting
@@ -84,14 +90,6 @@ module Clerk (
   place1,
   place,
   evalSheetDefault,
-  -- TODO make this module internal
-  -- move to ForExamples
-  SheetState (..),
-  Sheet (..),
-  Coords (..),
-  RowState (..),
-  RowShow (..),
-  evalRow,
 
   -- * Expressions
   -- $Expressions
@@ -105,6 +103,8 @@ module Clerk (
   (./),
   (.:),
   (.^),
+  (.^^),
+  (.**),
   (.<),
   (.>),
   (.<=),
@@ -113,6 +113,8 @@ module Clerk (
   (.<>),
   (.&),
   fun,
+  -- TODO work on default types
+  Range,
   FunName,
 
   -- * Cells
@@ -124,6 +126,17 @@ module Clerk (
   -- $Xlsx
   composeXlsx,
   writeXlsx,
+
+  -- * For examples
+  -- $ForExamples
+  SheetState (..),
+  Sheet (..),
+  Coords (..),
+  RowState (..),
+  RowShow (..),
+  evalRow,
+  mkRef,
+  showFormula,
 ) where
 
 import Codec.Xlsx qualified as X
@@ -133,15 +146,18 @@ import Control.Monad.State (MonadState, StateT (StateT), evalStateT, get, gets, 
 import Control.Monad.Trans.Writer (execWriter, runWriter)
 import Control.Monad.Writer (MonadWriter (..), Writer)
 import Data.ByteString.Lazy qualified as LBS
+import Data.Char (isAlpha, ord)
 import Data.Default (Default (..))
 import Data.Foldable (Foldable (..))
 import Data.Kind (Type)
 import Data.Map.Strict qualified as Map (Map, insert)
 import Data.Maybe (isJust, maybeToList)
+import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import GHC.Generics (Generic)
 import Lens.Micro (Lens', lens, (%~), (&), (+~), (.~), (?~), (^.))
+import Numeric (readInt)
 import Unsafe.Coerce (unsafeCoerce)
 
 -- TODO add modes to state
@@ -162,7 +178,7 @@ data Coords = Coords
   , _coordsWorksheetName :: T.Text
   , _coordsWorkbookPath :: FilePath
   }
-  deriving (Generic, Default)
+  deriving (Generic, Default, Show)
 
 instance Default T.Text where
   def :: T.Text
@@ -192,7 +208,8 @@ instance FromCoords Coords where
   fromCoords :: Coords -> Coords
   fromCoords = id
 
-class RowShow a where
+-- | Show in context of a row
+class Show a => RowShow a where
   rowShow :: a -> Row T.Text
 
 instance RowShow Coords where
@@ -249,6 +266,12 @@ toLetters x = f "" (x - 1)
   f :: T.Text -> Int -> T.Text
   f acc cur = if cur `div` 26 > 0 then f (new cur acc) (cur `div` 26 - 1) else new cur acc
 
+-- | Translate a column address into a number
+fromLetters :: T.Text -> Int
+fromLetters (T.unpack -> x)
+  | any (`notElem` alphabet) x = error "Column address contains an invalid character"
+  | otherwise = foldl' (\res c -> res * 26 + (ord c - ord 'A' + 1)) 0 x
+
 {- FOURMOLU_DISABLE -}
 -- $Ref
 {- FOURMOLU_ENABLE -}
@@ -260,20 +283,25 @@ toLetters x = f "" (x - 1)
 -- The type prevents operations between cell references with incompatible types.
 --
 -- @
--- >>>str = Ref (Coords 1 1) :: Ref T.Text
+-- >>>str = undefined :: Ref T.Text
 -- >>>str .+ str
--- No instance for (Num T.Text) arising from a use of `.+'
+-- No instance for (Num Text) arising from a use of `.+'
 -- In the expression: str .+ str
--- In an equation for `it_a18COt': it_a18COt = str .+ str
+-- In an equation for `it_aezf8': it_aezf8 = str .+ str
 --
 -- @
--- When necessary, one can change the cell reference type via 'unsafeChangeRefType'
+-- When necessary, one can UNSAFELY change the cell reference type via 'as'
 --
 -- @
--- >>>int = Ref (Coords 1 1) :: Ref Int
--- >>>double = Ref (Coords 2 5) :: Ref Double
--- >>>unsafeChangeType int .+ double
--- A1+E2
+-- >>>int = undefined :: Ref Int
+-- >>>double = undefined :: Ref Double
+-- >>>as int .+ double
+-- Couldn't match expected type `Coords'
+--             with actual type `Text -> FilePath -> Coords'
+-- Probable cause: `Coords' is applied to too few arguments
+-- In the first argument of `Ref', namely `(Coords 1 1)'
+-- In the expression: Ref (Coords 1 1) :: Ref Int
+-- In an equation for `int': int = Ref (Coords 1 1) :: Ref Int
 --
 -- @
 newtype Ref a = Ref {unRef :: Coords}
@@ -301,9 +329,17 @@ col = lens getter setter
   getter (toCoords -> Coords{_col}) = _col
   setter (toCoords -> Coords{_row, _col, ..}) f = fromCoords $ Coords{_row, _col = f, ..}
 
+{- FOURMOLU_DISABLE -}
+-- $ChangeTypes
+{- FOURMOLU_ENABLE -}
+
 -- | Change the type of something. Use with caution!
 class UnsafeChangeType (a :: Type -> Type) where
   unsafeChangeType :: forall c b. a b -> a c
+
+-- | UNSAFELY change the type of something wrapped
+as :: forall c b a. UnsafeChangeType a => a b -> a c
+as = unsafeChangeType
 
 instance UnsafeChangeType Ref where
   unsafeChangeType :: Ref b -> Ref c
@@ -593,7 +629,7 @@ place coords_ = place1 coords_ ()
 data Expr t
   = EBinaryOp {binOp :: BinaryOperator, arg1 :: (Expr t), arg2 :: (Expr t)}
   | EFunction {fName :: T.Text, fArgs :: [Expr t]}
-  | ERef {ref :: (Ref t)}
+  | ERef {r :: (Ref t)}
   | ERange {ref1 :: (Ref t), ref2 :: (Ref t)}
   | EValue {value :: t}
   | EUnaryOp {unaryOp :: UnaryOp, arg :: Expr t}
@@ -616,15 +652,19 @@ data UnaryOp
 
 -- | Formula
 newtype Formula t = Formula {unFormula :: Expr t}
-  deriving newtype (UnsafeChangeType, RowShow)
+  deriving newtype (UnsafeChangeType)
 
 -- | Something that can be turned into a formula
 class ToFormula a where
-  toFormula :: a -> Formula t
+  toFormula :: a -> Formula b
 
 instance ToFormula (Ref a) where
   toFormula :: Ref a -> Formula t
   toFormula (Ref c) = Formula $ ERef (Ref c)
+
+-- | Convert a reference to a formula
+ref :: Ref a -> Formula a
+ref = toFormula
 
 instance ToFormula Coords where
   toFormula :: Coords -> Formula t
@@ -639,11 +679,11 @@ instance ToFormula (Formula a) where
   toFormula (Formula f) = Formula $ unsafeChangeType f
 
 -- TODO dangerous?
-instance {-# OVERLAPPABLE #-} Num a => ToFormula a where
-  toFormula :: a -> Formula b
-  toFormula = Formula . EValue . unsafeCoerce
+-- instance {-# OVERLAPPABLE #-} Show a => ToFormula a where
+--   toFormula :: a -> Formula b
+--   toFormula = Formula . EValue . unsafeCoerce
 
-showOp2 :: (RowShow a, RowShow b) => a -> b -> T.Text -> Row T.Text
+showOp2 :: (Show a, RowShow a, Show b, RowShow b) => a -> b -> T.Text -> Row T.Text
 showOp2 c1 c2 operator = do
   d1 <- rowShow c1
   d2 <- rowShow c2
@@ -655,44 +695,62 @@ mkOp2 f c1 c2 = Formula $ EBinaryOp f (unFormula $ toFormula c1) (unFormula $ to
 mkNumOp2 :: (Num t, ToFormula a, ToFormula b) => BinaryOperator -> a -> b -> Formula t
 mkNumOp2 = mkOp2
 
+data Range
+
 -- | Construct a range expression
-(.:) :: forall c a b. Ref a -> Ref b -> Formula c
+(.:) :: forall a b. Ref a -> Ref b -> Formula Range
 (.:) a b = Formula $ ERange (unsafeChangeType a) (unsafeChangeType b)
 
 infixr 5 .:
 
+-- | Convert a value to a formula
+val :: Show a => a -> Formula a
+val a = Formula $ EValue a
+
 -- | A type for numeric operators
-type NumOperator a b c = (Num a, ToFormula (b a), ToFormula (c a)) => b a -> c a -> Formula a
+type NumOperator a b c d e = (Num a, Num c, ToFormula (d a), ToFormula (e b)) => d a -> e b -> Formula c
 
 -- | Construct an addition expression like @A1 + B1@
-(.+) :: NumOperator a b c
+(.+) :: NumOperator a a a d e
 (.+) = mkNumOp2 OpAdd
 
 infixl 6 .+
 
 -- | Construct a subtraction expression like @A1 - B1@
-(.-) :: NumOperator a b c
+(.-) :: NumOperator a a a d e
 (.-) = mkNumOp2 OpSubtract
 
 infixl 6 .-
 
 -- | Construct a division expression like @A1 / B1@
-(./) :: NumOperator a b c
+(./) :: (Fractional a) => NumOperator a a a d e
 (./) = mkNumOp2 OpDivide
 
 infixl 7 ./
 
 -- | Construct a multiplication expression like @A1 * B1@
-(.*) :: NumOperator a b c
+(.*) :: NumOperator a a a d e
 (.*) = mkNumOp2 OpMultiply
 
 infixl 6 .*
 
 -- | Construct an exponentiation expression like @A1 ^ B1@
-(.^) :: NumOperator a b c
+(.^) :: (Num a, Integral b) => NumOperator a b a d e
 (.^) = mkNumOp2 OpPower
 
 infixr 8 .^
+
+-- | Construct an exponentiation expression like @A1 ^ B1@ with 'Fractional' base
+(.^^) :: (Fractional a, Integral b) => NumOperator a b a d e
+(.^^) = mkNumOp2 OpPower
+
+infixr 8 .^^
+
+-- | Construct an exponentiation expression like @A1 ^ B1@ with 'Floating' base
+(.**) :: (Floating a) => NumOperator a a a d e
+(.**) = mkNumOp2 OpPower
+
+infixr 8 .**
 
 type BoolOperator a b c = (Ord a, ToFormula (b a), ToFormula (c a)) => b a -> c a -> Formula Bool
 
@@ -735,8 +793,13 @@ infix 4 .=
 
 infix 4 .<>
 
-instance RowShow (Expr t) where
-  rowShow :: Expr t -> Row T.Text
+instance Show t => Show (Expr t) where
+  show :: Show t => Expr t -> String
+  show (EValue v) = show v
+  show _ = error "Shouldn't be accessed for other constructors"
+
+instance Show (Expr t) => RowShow (Expr t) where
+  rowShow :: Show (Expr t) => Expr t -> Row T.Text
   rowShow (EBinaryOp{..}) =
     showOp2 arg1 arg2 $
       case binOp of
@@ -759,11 +822,10 @@ instance RowShow (Expr t) where
   rowShow (EFunction n as) = do
     d1 <- forM as rowShow
     pure $ n <> "(" <> T.intercalate "," d1 <> ")"
-
--- rowShow (EUnaryOp{..}) =
---   case unaryOp of
---     OpId -> rowShow arg
---     OpNeg -> rowShow arg
+  rowShow (EUnaryOp{..}) =
+    case unaryOp of
+      OpNeg -> rowShow arg
+  rowShow EValue{..} = pure $ T.pack $ show (EValue{..})
 
 instance UnsafeChangeType Expr where
   unsafeChangeType :: Expr b -> Expr c
@@ -772,6 +834,7 @@ instance UnsafeChangeType Expr where
   unsafeChangeType (EFunction n as) = EFunction n (unsafeChangeType <$> as)
   unsafeChangeType (ERange l r) = ERange (unsafeChangeType l) (unsafeChangeType r)
   unsafeChangeType (EUnaryOp u v) = EUnaryOp u (unsafeCoerce v)
+  unsafeChangeType (EValue v) = EValue (unsafeCoerce v)
 
 -- | Name of a function like @SUM@
 type FunName = T.Text
@@ -781,7 +844,7 @@ class MakeFunction t where
 
 instance MakeFunction (Formula a) where
   makeFunction :: FunName -> [Formula s] -> Formula a
-  makeFunction name args = Formula $ EFunction name (unsafeChangeType . unFormula . toFormula <$> args)
+  makeFunction name args = Formula $ EFunction name (unsafeChangeType . unFormula <$> args)
 
 instance (Foldable f, MakeFunction t, ToFormula a) => MakeFunction (f a -> t) where
   makeFunction :: (Foldable f, MakeFunction t, ToFormula a) => FunName -> [Formula s] -> f a -> t
@@ -794,6 +857,14 @@ instance (Foldable f, MakeFunction t, ToFormula a) => MakeFunction (f a -> t) wh
 fun :: MakeFunction t => FunName -> t
 fun n = makeFunction n []
 
+instance Show (Expr t) => Show (Formula t) where
+  show :: Show (Expr t) => Formula t -> String
+  show (Formula f) = show f
+
+instance Show (Expr t) => RowShow (Formula t) where
+  rowShow :: Show (Expr t) => Formula t -> Row T.Text
+  rowShow (Formula f) = rowShow f
+
 {- FOURMOLU_DISABLE -}
 -- $Cells
 {- FOURMOLU_ENABLE -}
@@ -804,6 +875,7 @@ data CellData
   | CellValue X.CellValue
   | CellComment X.Comment
   | CellEmpty
+  deriving (Show)
 
 instance Default CellData where
   def :: CellData
@@ -820,7 +892,7 @@ dataCell cd =
       CellEmpty -> X.def
 
 -- | Something that can be turned into 'CellData'
-class ToCellData a where
+class Show a => ToCellData a where
   toCellData :: a -> Row CellData
 
 instance ToCellData T.Text where
@@ -847,7 +919,7 @@ instance ToCellData CellData where
   toCellData :: CellData -> Row CellData
   toCellData = pure
 
-instance ToCellData (Expr a) where
+instance Show (Expr a) => ToCellData (Expr a) where
   toCellData :: Expr a -> Row CellData
   toCellData e_ = do
     e <- rowShow e_
@@ -859,7 +931,7 @@ instance ToCellData (Expr a) where
           , X._cellfExpression = X.NormalFormula $ X.Formula e
           }
 
-instance ToCellData (Formula a) where
+instance (Show (Formula a), Show (Expr a)) => ToCellData (Formula a) where
   toCellData :: Formula a -> Row CellData
   toCellData (Formula e) = toCellData e
 
@@ -902,3 +974,16 @@ writeXlsx file sheets = do
   ct <- getPOSIXTime
   let xlsx = composeXlsx file sheets
   LBS.writeFile file $ X.fromXlsx ct xlsx
+
+{- FOURMOLU_DISABLE -}
+-- $ForExamples
+{- FOURMOLU_ENABLE -}
+
+mkRef :: String -> Ref a
+mkRef s = fromCoords def{_col, _row}
+ where
+  _col = fromLetters $ T.pack $ takeWhile isAlpha s
+  _row = read $ dropWhile isAlpha s
+
+showFormula :: RowShow a => a -> Text
+showFormula a = evalRow (rowShow a) def

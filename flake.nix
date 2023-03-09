@@ -66,7 +66,7 @@
         inherit override;
         packages = (ps: [ ps.${packageName} ]);
       })
-        stack hls cabal ghcid hpack ghc;
+        hls cabal ghcid hpack ghc implicit-hie;
 
       scripts =
         mkShellApps (
@@ -111,6 +111,7 @@
         hls
         ghc
         ghcid
+        implicit-hie
       ];
 
       packages = {
@@ -141,7 +142,8 @@
             mkCommands "tools" tools
             ++ mkRunCommands "ide" { "codium ." = packages.codium; inherit (packages) writeSettings; }
             ++ mkRunCommands "infra" { inherit (packages) writeWorkflows; }
-            ++ mkRunCommands "test" { inherit (packages) example2 example3; };
+            ++ mkRunCommands "test" { inherit (packages) example2 example3; }
+            ++ mkRunCommands "scripts" { inherit (packages) writeDocs; };
         };
       };
     in
