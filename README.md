@@ -297,6 +297,7 @@ We'll need several language extensions.
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NoOverloadedStrings #-}
 ```
 
 <!-- FOURMOLU_ENABLE
