@@ -1,33 +1,4 @@
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DerivingVia #-}
-{-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE ViewPatterns #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# OPTIONS_GHC -Wno-unticked-promoted-constructors #-}
-
-{-# HLINT ignore "Redundant bracket" #-}
-
--- {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
 -- | @Clerk@ library
 module Clerk (
@@ -130,9 +101,7 @@ module Clerk (
   -- * For examples
   -- $ForExamples
   SheetState (..),
-  Sheet (..),
-  Coords (..),
-  RowState (..),
+  RowState,
   RowShow (..),
   evalRow,
   mkRef,
@@ -157,7 +126,6 @@ import Data.Text qualified as T
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import GHC.Generics (Generic)
 import Lens.Micro (Lens', lens, (%~), (&), (+~), (.~), (?~), (^.))
-import Numeric (readInt)
 import Unsafe.Coerce (unsafeCoerce)
 
 -- TODO add modes to state
@@ -219,7 +187,7 @@ instance RowShow Coords where
     let
       prefix
         | (cs & _coordsWorkbookPath) /= (state & _coordsWorkbookPath) =
-            ("'[" <> T.pack (cs & _coordsWorkbookPath) <> "]" <> (cs & _coordsWorksheetName) <> "'!")
+            "'[" <> T.pack (cs & _coordsWorkbookPath) <> "]" <> (cs & _coordsWorksheetName) <> "'!"
         | (cs & _coordsWorksheetName) /= (state & _coordsWorksheetName) = (cs & _coordsWorksheetName) <> "!"
         | otherwise = ""
     pure $ prefix <> toLetters (cs ^. col) <> T.pack (show (cs ^. row))
@@ -248,7 +216,7 @@ instance Num Coords where
   fromInteger x = def{_row = fromIntegral (abs x), _col = fromIntegral (abs x)}
 
 -- | Letters that can be used in column indices
-alphabet :: [Char]
+alphabet :: String
 alphabet = ['A' .. 'Z']
 
 -- | Translate a number into a column letters
@@ -419,7 +387,7 @@ mkColor color _ _ c = do
 blank :: FormatCell
 blank _ _ cd_ = do
   cd <- toCellData cd_
-  do pure $ X.def & X.formattedCell .~ dataCell cd
+  pure $ X.def & X.formattedCell .~ dataCell cd
 
 -- | Transform of a formatted cell
 type FCTransform = X.FormattedCell -> X.FormattedCell
@@ -627,10 +595,10 @@ place coords_ = place1 coords_ ()
 
 -- | Expressions
 data Expr t
-  = EBinaryOp {binOp :: BinaryOperator, arg1 :: (Expr t), arg2 :: (Expr t)}
+  = EBinaryOp {binOp :: BinaryOperator, arg1 :: Expr t, arg2 :: Expr t}
   | EFunction {fName :: T.Text, fArgs :: [Expr t]}
-  | ERef {r :: (Ref t)}
-  | ERange {ref1 :: (Ref t), ref2 :: (Ref t)}
+  | ERef {r :: Ref t}
+  | ERange {ref1 :: Ref t, ref2 :: Ref t}
   | EValue {value :: t}
   | EUnaryOp {unaryOp :: UnaryOp, arg :: Expr t}
 
@@ -819,8 +787,8 @@ instance Show (Expr t) => RowShow (Expr t) where
     d1 <- rowShow c1
     d2 <- rowShow c2
     pure $ d1 <> ":" <> d2
-  rowShow (EFunction n as) = do
-    d1 <- forM as rowShow
+  rowShow (EFunction n args) = do
+    d1 <- forM args rowShow
     pure $ n <> "(" <> T.intercalate "," d1 <> ")"
   rowShow (EUnaryOp{..}) =
     case unaryOp of
@@ -831,7 +799,7 @@ instance UnsafeChangeType Expr where
   unsafeChangeType :: Expr b -> Expr c
   unsafeChangeType (EBinaryOp a b c) = EBinaryOp a (unsafeChangeType b) (unsafeChangeType c)
   unsafeChangeType (ERef (Ref a)) = ERef (Ref a)
-  unsafeChangeType (EFunction n as) = EFunction n (unsafeChangeType <$> as)
+  unsafeChangeType (EFunction n args) = EFunction n (unsafeChangeType <$> args)
   unsafeChangeType (ERange l r) = ERange (unsafeChangeType l) (unsafeChangeType r)
   unsafeChangeType (EUnaryOp u v) = EUnaryOp u (unsafeCoerce v)
   unsafeChangeType (EValue v) = EValue (unsafeCoerce v)

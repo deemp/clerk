@@ -28,32 +28,6 @@ description: |
 dependencies:
   - base >= 4.9 && < 5.0
 
-default-extensions:
-  - ConstraintKinds
-  - DataKinds
-  - DeriveAnyClass
-  - DeriveGeneric
-  - DerivingVia
-  - DuplicateRecordFields
-  - FlexibleContexts
-  - FlexibleInstances
-  - GADTs
-  - GeneralizedNewtypeDeriving
-  - ImplicitParams
-  - ImportQualifiedPost
-  - InstanceSigs
-  - KindSignatures
-  - MultiParamTypeClasses
-  - NamedFieldPuns
-  - OverloadedStrings
-  - RankNTypes
-  - RecordWildCards
-  - ScopedTypeVariables
-  - TupleSections
-  - UndecidableInstances
-  - ViewPatterns
-  - QuasiQuotes
-
 ghc-options:
   - -Wall
   - -Wcompat
@@ -74,6 +48,11 @@ tests:
       - text
       - data-default
       - string-interpolate
+    default-extensions:
+      - ImportQualifiedPost
+      - QuasiQuotes
+      - ScopedTypeVariables
+      - OverloadedStrings
 
 library:
   source-dirs: src
@@ -90,6 +69,29 @@ library:
   when:
     - condition: false
       other-modules: Paths_clerk
+  default-extensions:
+    - ConstraintKinds
+    - DataKinds
+    - DeriveAnyClass
+    - DeriveGeneric
+    - DerivingVia
+    - DuplicateRecordFields
+    - FlexibleContexts
+    - FlexibleInstances
+    - GADTs
+    - GeneralizedNewtypeDeriving
+    - ImportQualifiedPost
+    - InstanceSigs
+    - KindSignatures
+    - MultiParamTypeClasses
+    - NamedFieldPuns
+    - OverloadedStrings
+    - RankNTypes
+    - RecordWildCards
+    - ScopedTypeVariables
+    - TupleSections
+    - UndecidableInstances
+    - ViewPatterns
 
 executables:
   example1:
