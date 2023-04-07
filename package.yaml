@@ -28,6 +28,32 @@ description: |
 dependencies:
   - base >= 4.9 && < 5.0
 
+default-extensions:
+  - ConstraintKinds
+  - DataKinds
+  - DeriveAnyClass
+  - DeriveGeneric
+  - DerivingVia
+  - DuplicateRecordFields
+  - FlexibleContexts
+  - FlexibleInstances
+  - GADTs
+  - GeneralizedNewtypeDeriving
+  - ImplicitParams
+  - ImportQualifiedPost
+  - InstanceSigs
+  - KindSignatures
+  - MultiParamTypeClasses
+  - NamedFieldPuns
+  - OverloadedStrings
+  - RankNTypes
+  - RecordWildCards
+  - ScopedTypeVariables
+  - TupleSections
+  - UndecidableInstances
+  - ViewPatterns
+  - QuasiQuotes
+
 ghc-options:
   - -Wall
   - -Wcompat
@@ -47,6 +73,7 @@ tests:
       - lima
       - text
       - data-default
+      - string-interpolate
 
 library:
   source-dirs: src
