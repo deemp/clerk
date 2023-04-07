@@ -24,23 +24,20 @@ The examples below demonstrate these features.
 
 The source code for this example is available [here](app/Example1.hs).
 
-<!-- LIMA_DISABLE
+### Extensions
 
--- {-# HLINT ignore "Redundant bracket" #-}
-{- FOURMOLU_ENABLE -}
+```haskell
 {-# LANGUAGE OverloadedStrings #-}
-
-LIMA_ENABLE -->
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE GADTs #-}
+```
 
 ### Imports
 
 We import the necessary stuff.
 
 ```haskell
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE GADTs #-}
-
-import Clerk
+import Clerk ( (.*), (.**), (.+), (./), as, fun, mkRef, ref, showFormula, val, Formula, Ref )
 import Data.Text (Text)
 ```
 
@@ -101,6 +98,7 @@ t3 :: Text
 t3 = showFormula $ as @Double (r4 .* r4 .* val 3) .+ r1 .** r2 ./ r3
 
 -- >>>t3
+-- "T6*T6*1.5e-323+B4^E6/G8"
 ```
 
 This `as` function should not be abused, though. If we need an `Int` instead of a `Double`, we can explicitly use an Excel function.
@@ -112,8 +110,8 @@ round_ = fun "ROUND"
 t4 :: Formula Int
 t4 = round_ [r1 .** r2 ./ r3]
 
--- >>>t4
--- Shouldn't be accessed for other constructors
+-- >>>:t t4
+-- t4 :: Formula Int
 ```
 
 <!-- FOURMOLU_DISABLE
