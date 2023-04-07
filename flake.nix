@@ -10,35 +10,25 @@
     my-devshell.url = "github:deemp/flakes?dir=devshell";
     flakes-tools.url = "github:deemp/flakes?dir=flakes-tools";
     workflows.url = "github:deemp/flakes?dir=workflows";
-    lima.url = "github:deemp/flakes?dir=lima";
+    lima_.url = "github:deemp/flakes?dir=source-flake/lima";
+    lima.follows = "lima_/lima";
     flake-compat = {
       url = "github:edolstra/flake-compat";
       flake = false;
     };
   };
-  outputs =
-    { self
-    , flake-utils
-    , flakes-tools
-    , nixpkgs
-    , my-codium
-    , drv-tools
-    , haskell-tools
-    , my-devshell
-    , workflows
-    , lima
-    , ...
-    }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs = inputs: inputs.flake-utils.lib.eachDefaultSystem (system:
     let
-      pkgs = nixpkgs.legacyPackages.${system};
+      pkgs = inputs.nixpkgs.legacyPackages.${system};
       inherit (pkgs.lib.attrsets) genAttrs mapAttrs';
-      inherit (my-codium.functions.${system}) writeSettingsJSON mkCodium;
-      inherit (drv-tools.functions.${system}) mkShellApps mkBin mkShellApp mapGenAttrs mapStrGenAttrs;
-      inherit (my-codium.configs.${system}) extensions settingsNix;
-      inherit (flakes-tools.functions.${system}) mkFlakesTools;
-      inherit (my-devshell.functions.${system}) mkCommands mkRunCommands mkShell;
-      inherit (workflows.functions.${system}) writeWorkflow run expr mkAccessors genAttrsId;
+      inherit (inputs.my-codium.functions.${system}) writeSettingsJSON mkCodium;
+      inherit (inputs.drv-tools.functions.${system}) mkShellApps mkBin mkShellApp mapGenAttrs mapStrGenAttrs;
+      inherit (inputs.my-codium.configs.${system}) extensions settingsNix;
+      inherit (inputs.flakes-tools.functions.${system}) mkFlakesTools;
+      inherit (inputs.my-devshell.functions.${system}) mkCommands mkRunCommands mkShell;
+      inherit (inputs.workflows.functions.${system}) writeWorkflow;
+      inherit (inputs.haskell-tools.functions.${system}) toolsGHC;
+      inherit (inputs) lima workflows;
 
       packageName = "clerk";
 
@@ -55,12 +45,11 @@
                   pkgs.bzip2
                 ] ++ (x.librarySystemDepends or [ ]);
                 testHaskellDepends = [
-                  (super.callCabal2nix "lima" "${lima.outPath}/lima" { })
+                  (super.callCabal2nix "lima" lima.outPath { })
                 ] ++ (x.testHaskellDepends or [ ]);
               });
           };
         };
-      inherit (haskell-tools.functions.${system}) toolsGHC;
       inherit (toolsGHC {
         version = ghcVersion;
         inherit override;
