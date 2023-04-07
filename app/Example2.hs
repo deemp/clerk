@@ -46,9 +46,7 @@ The tables that we'd like to construct are:
 - A vertical header
 - A horizontal header
 - A table with results of multiplication of the numbers from these headers
--}
 
-{-
 #### A vertical header
 
 <img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/vertical.png" width = "10%">

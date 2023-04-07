@@ -15,16 +15,21 @@ The library supports:
 
 The examples below demonstrate these features.
 
-<!-- FOURMOLU_DISABLE -->
+<!-- FOURMOLU_DISABLE
+-->
 
 ## Example 1
 
 **The goal**: demonstrate formula syntax.
 
 The source code for this example is available [here](app/Example1.hs).
+
 <!-- LIMA_DISABLE
+
 -- {-# HLINT ignore "Redundant bracket" #-}
 {- FOURMOLU_ENABLE -}
+{-# LANGUAGE OverloadedStrings #-}
+
 LIMA_ENABLE -->
 
 ### Imports
@@ -32,10 +37,15 @@ LIMA_ENABLE -->
 We import the necessary stuff.
 
 ```haskell
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE GADTs #-}
+
 import Clerk
 import Data.Text (Text)
 ```
+
 <!-- LIMA_DISABLE
+
 main :: IO ()
 main = undefined
 
@@ -80,7 +90,34 @@ t2 = showFormula $ r1 .* r2 .* val 3 .+ r1 .** r2 ./ r3
 -- "B4*E6*3.0+B4^E6/G8"
 ```
 
-<!-- FOURMOLU_DISABLE -->
+Of course, we can mix differently typed references in expressions when necessary.
+For this case, we have an unsafe `as` function.
+
+```haskell
+r4 :: Ref Int
+r4 = mkRef "T6"
+
+t3 :: Text
+t3 = showFormula $ as @Double (r4 .* r4 .* val 3) .+ r1 .** r2 ./ r3
+
+-- >>>t3
+```
+
+This `as` function should not be abused, though. If we need an `Int` instead of a `Double`, we can explicitly use an Excel function.
+
+```haskell
+round_ :: [Formula a] -> Formula Int
+round_ = fun "ROUND"
+
+t4 :: Formula Int
+t4 = round_ [r1 .** r2 ./ r3]
+
+-- >>>t4
+-- Shouldn't be accessed for other constructors
+```
+
+<!-- FOURMOLU_DISABLE
+-->
 
 ## Example 2
 
@@ -105,11 +142,16 @@ We'll need several language extensions.
 ```haskell
 {-# LANGUAGE ImportQualifiedPost #-}
 ```
+
 <!-- LIMA_DISABLE
+
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
+
 LIMA_ENABLE -->
-<!-- FOURMOLU_ENABLE -->
+
+<!-- FOURMOLU_ENABLE
+-->
 
 ### Imports
 
@@ -224,7 +266,8 @@ With formulas enabled, the sheet looks like this:
 
 <img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/demoFormulas.png" width = "80%">
 
-<!-- FOURMOLU_DISABLE -->
+<!-- FOURMOLU_DISABLE
+-->
 
 ## Example 3
 
@@ -258,7 +301,8 @@ We'll need several language extensions.
 {-# LANGUAGE ScopedTypeVariables #-}
 ```
 
-<!-- FOURMOLU_ENABLE -->
+<!-- FOURMOLU_ENABLE
+-->
 
 ### Imports
 
