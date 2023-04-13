@@ -15,8 +15,7 @@ The library supports:
 
 The examples below demonstrate these features.
 
-<!-- FOURMOLU_DISABLE
--->
+<!-- FOURMOLU_DISABLE -->
 
 ## Example 1
 
@@ -114,8 +113,7 @@ t4 = round_ [r1 .** r2 ./ r3]
 -- t4 :: Formula Int
 ```
 
-<!-- FOURMOLU_DISABLE
--->
+<!-- FOURMOLU_DISABLE -->
 
 ## Example 2
 
@@ -148,8 +146,7 @@ We'll need several language extensions.
 
 LIMA_ENABLE -->
 
-<!-- FOURMOLU_ENABLE
--->
+<!-- FOURMOLU_ENABLE -->
 
 ### Imports
 
@@ -264,8 +261,7 @@ With formulas enabled, the sheet looks like this:
 
 <img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/demoFormulas.png" width = "80%">
 
-<!-- FOURMOLU_DISABLE
--->
+<!-- FOURMOLU_DISABLE -->
 
 ## Example 3
 
@@ -300,8 +296,7 @@ We'll need several language extensions.
 {-# LANGUAGE NoOverloadedStrings #-}
 ```
 
-<!-- FOURMOLU_ENABLE
--->
+<!-- FOURMOLU_ENABLE -->
 
 ### Imports
 
