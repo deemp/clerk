@@ -503,7 +503,7 @@ with2decimalDigits fcTransform =
   fcTransform & X.formattedFormat %~ X.formatNumberFormat ?~ X.StdNumberFormat X.Nf2Decimal
 ```
 
-And we make a transform for centering the cell contents.
+And we make a transform for centering the cell content.
 
 ```haskell
 alignedCenter :: FCTransform

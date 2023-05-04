@@ -1,10 +1,10 @@
 module Main (main) where
 
 import Control.Monad (forM, (>=>))
-import Converter (Format (..), convertTo, def)
+import Converter (Format (Hs, Md), convertTo, def)
 import Data.String.Interpolate (i)
-import Data.Text qualified as T
-import Data.Text.IO qualified as T
+import Data.Text as T (intercalate)
+import Data.Text.IO as T (readFile, writeFile)
 
 main :: IO ()
 main = do

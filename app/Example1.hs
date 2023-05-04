@@ -18,7 +18,7 @@ The source code for this example is available [here](app/Example1.hs).
 We import the necessary stuff.
 -}
 
-import Clerk ( (.*), (.**), (.+), (./), as, fun, mkRef, ref, showFormula, val, Formula, Ref )
+import Clerk ( (.*), (.**), (.+), (./), as, fun, mkRef, ref, rowShowDefault, val, Formula, Ref )
 import Data.Text (Text)
 
 {- LIMA_DISABLE -}
@@ -41,14 +41,18 @@ Now, we pretend that there are values with given types and that we can get refer
 First, we make a couple of references to `Int` values.
 -}
 
-r1, r2, r3 :: Ref Double
-r1 = mkRef "B4"
-r2 = mkRef "E6"
-r3 = mkRef "G8"
+r1 :: Ref Double
+Right r1 = mkRef "B4"
+r2 :: Ref Double
+Right r2 = mkRef "E6"
+r3 :: Ref Double
+Right r3 = mkRef "G8"
 
 {-
 Next, we convert one of these references to a formula via `ref` and inspect its representation.
 -}
+
+showFormula = rowShowDefault
 
 t1 :: Text
 t1 = showFormula $ ref r2
@@ -73,7 +77,7 @@ For this case, we have an unsafe `as` function.
 -}
 
 r4 :: Ref Int
-r4 = mkRef "T6"
+Right r4 = mkRef "T6"
 
 t3 :: Text
 t3 = showFormula $ as @Double (r4 .* r4 .* val 3) .+ r1 .** r2 ./ r3

@@ -10,8 +10,6 @@
     my-devshell.url = "github:deemp/flakes?dir=devshell";
     flakes-tools.url = "github:deemp/flakes?dir=flakes-tools";
     workflows.url = "github:deemp/flakes?dir=workflows";
-    lima_.url = "github:deemp/flakes?dir=source-flake/lima";
-    lima.follows = "lima_/lima";
     flake-compat = {
       url = "github:edolstra/flake-compat";
       flake = false;
@@ -28,11 +26,11 @@
       inherit (inputs.my-devshell.functions.${system}) mkCommands mkRunCommands mkShell;
       inherit (inputs.workflows.functions.${system}) writeWorkflow;
       inherit (inputs.haskell-tools.functions.${system}) toolsGHC;
-      inherit (inputs) lima workflows;
+      inherit (inputs) workflows;
 
       packageName = "clerk";
 
-      ghcVersion = "925";
+      ghcVersion = "927";
       override =
         let inherit (pkgs.haskell.lib) doJailbreak dontCheck overrideCabal; in
         {
@@ -44,9 +42,9 @@
                   pkgs.expat
                   pkgs.bzip2
                 ] ++ (x.librarySystemDepends or [ ]);
-                testHaskellDepends = [
-                  (super.callCabal2nix "lima" lima.outPath { })
-                ] ++ (x.testHaskellDepends or [ ]);
+                libraryHaskellDepends = [
+                  super.xlsx_1_1_0_1
+                ];
               });
           };
         };
@@ -55,7 +53,7 @@
         inherit override;
         packages = (ps: [ ps.${packageName} ]);
       })
-        hls cabal ghcid hpack ghc implicit-hie;
+        cabal ghcid hpack ghc implicit-hie hls;
 
       scripts =
         mkShellApps (
@@ -76,7 +74,7 @@
         );
 
       buildPrefix = "buildWithGHC";
-      ghcVersions = [ "8107" "902" "925" ];
+      ghcVersions = [ "8107" "902" "927" ];
 
       cabalBuild = mkShellApps
         (mapGenAttrs
@@ -98,7 +96,6 @@
         cabal
         hpack
         hls
-        ghc
         ghcid
         implicit-hie
       ];

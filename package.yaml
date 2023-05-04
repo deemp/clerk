@@ -29,24 +29,21 @@ dependencies:
   - base >= 4.9 && < 5.0
 
 ghc-options:
-  - -Wall
-  - -Wcompat
-  - -Widentities
-  - -Wincomplete-record-updates
-  - -Wincomplete-uni-patterns
-  - -Wmissing-export-lists
-  - -Wmissing-home-modules
-  - -Wpartial-fields
-  - -Wredundant-constraints
+  - -Weverything
+  - -Wno-missing-kind-signatures
+  - -Wno-prepositive-qualified-module
+  - -Wno-redundant-constraints
+  - -Wno-missing-import-lists
+  - -Wno-implicit-prelude
+  - -Wno-missing-export-lists
+  - -Wno-missing-safe-haskell-mode
 
 tests:
   docs:
     main: test/Docs.hs
     dependencies:
-      - turtle
       - lima
       - text
-      - data-default
       - string-interpolate
     default-extensions:
       - ImportQualifiedPost
@@ -80,7 +77,6 @@ library:
     - FlexibleInstances
     - GADTs
     - GeneralizedNewtypeDeriving
-    - ImportQualifiedPost
     - InstanceSigs
     - KindSignatures
     - MultiParamTypeClasses
@@ -89,6 +85,7 @@ library:
     - RankNTypes
     - RecordWildCards
     - ScopedTypeVariables
+    - StandaloneDeriving
     - TupleSections
     - UndecidableInstances
     - ViewPatterns
@@ -113,4 +110,11 @@ executables:
     dependencies: *example2
   example4:
     main: app/Example4.hs
-    dependencies: *example2
+    dependencies:
+      - aeson
+      - clerk
+      - text
+      - xlsx
+      - lens-aeson
+      - lens
+      - pretty-simple
