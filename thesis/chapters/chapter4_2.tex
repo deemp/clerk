@@ -1,61 +1,8 @@
-\chapter{Implementation}
-\label{chap:impl}
+% LIMA_DISABLE
 
-\texttt{clerk} can be used to produce a styled spreadsheet with some data and formulas on it. These formulas are evaluated when the document is loaded into a target spreadsheet system.
+% module Chapter4_2 where
 
-The library supports the following features:
-
-\begin{itemize}
-  \item Typed cell references. Example: \texttt{Ref Double};
-  \item Type-safe arithmetic operations with them. Example: \texttt{(a :: Ref Double) + (b :: Ref Double)} produces a \texttt{Ref Double};
- \item Constructing expressions with given types. Example: \texttt{("SUM" [a .: b]):: Expr Double} translates to \texttt{SUM(A1:B1)} (actual value depends on the values of \texttt{a} and \texttt{b});
-  \item Conditional styles, formatting, column widths.
-\end{itemize}
-
-\Cref{sec:ex1} demonstrates the formula syntax and \Cref{sec:ex2} provides an example of working with the library's data types.
-
-\section{Example 1. Formulas}
-\label{sec:ex1}
-
-This section demonstrates the formula syntax via several examples.
-
-\subsection{Imports}
-
-These are the necessary imports.
-
-\begin{mycode}
-import Clerk
-import Data.Text (Text)
-import ForExamples (mkRef, showFormula)
-\end{mycode}
-
-\subsection{Sample formulas}
-
-Formulas consist of references, functions, and values.
-Here, I pretend that there are values with given types and that I can get references to them. I compose formulas using these references.
-
-\begin{mycode}
-r1 :: Ref Int
-r1 = mkRef 2 4
-
-r2 :: Ref Int
-r2 = mkRef 5 6
-
-r3 :: Ref Double
-r3 = mkRef 7 8
-
-t1 :: Text
-t1 = showFormula $ toFormula r2
-
--- >>>t1
--- "E6"
-
-t2 :: Text
-t2 = showFormula $ (r1 .* r2) .+ r1 .^ r2 ./ (ref r3)
-
--- >>>t2
--- "B4*E6+B4^E6/G8"
-\end{mycode}
+% LIMA_ENABLE
 
 \section{Example 2. Multiplication Table}
 \label{sec:ex2}
@@ -69,14 +16,12 @@ This section shows how to describe a spreadsheet with a multiplication table. Th
   \label{fig:mult}
 \end{figure}
 
-
 \begin{figure}[h]
   \centering
   \includegraphics[scale=0.3]{demoFormulas.png}
   \caption{Multiplication table with formulas}
   \label{fig:mult_formulas}
 \end{figure}
-
 
 The below sections describe how such a spreadsheet can be constructed.
 
@@ -87,7 +32,7 @@ These are the necessary imports.
 \begin{mycode}
 import Clerk
 import Control.Monad (forM, forM_, void)
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Lens.Micro ((&), (+~), (^.))
 \end{mycode}
 
@@ -199,54 +144,3 @@ Finally, I write the result and get a spreadsheet like the one at the beginning 
 main :: IO ()
 main = writeXlsx "example2.xlsx" [(T.pack "List 1", void sheet)]
 \end{mycode}
-
-% \begin{longtable}{c|c}
-% \caption[This is the title I want to appear in the List of Tables]{Simulation Parameters} \label{table:fousimulation_params} \\
-% \hline
-% A & B  \\
-% \hline
-% \endfirsthead
-% \multicolumn{2}{@{}l}{} \\
-% \hline
-% A & B \\
-% \hline
-% \endhead
-% \hline
-%  \textbf{Parameter} & \textbf{Value}\\
-%  \hline
-%  Number of vehicles & $|\mathcal{V}|$\\
-%  \hline
-%  Number of RSUs & $|\mathcal{U}|$\\
-%  \hline
-%  RSU coverage radius & 150 m\\
-%  \hline
-%  V2V communication radius & 30 m\\
-%  \hline
-%  Smart vehicle antenna height & 1.5 m\\
-%  \hline
-%  RSU antenna height & 25 m\\
-%  \hline
-%  Smart vehicle maximum speed & $v_{max}$ m/s\\
-%  \hline
-%  Smart vehicle minimum speed & $v_{min}$ m/s\\
-%  \hline
-%  Common smart vehicle cache capacities & $[50, 100, 150, 200, 250]$ mb\\
-%  \hline
-%  Common RSU cache capacities & $[5000,1000,1500,2000,2500]$ mb\\
-%  \hline
-%  Common backhaul rates & $[75, 100, 150]$ mb/s\\
-%  \hline
-% \end{longtable}
-
-% \begin{figure}[hbt]
-% \centering
-% \includegraphics[]{figs/inno.png}
-% \caption{One kernel at $x_s$ (\emph{dotted kernel}) or two kernels at
-% $x_i$ and $x_j$ (\textit{left and right}) lead to the same summed estimate
-% at $x_s$. This shows a figure consisting of different types of
-% lines. Elements of the figure described in the caption should be set in
-% italics, in parentheses, as shown in this sample caption.}
-% \label{fig:fouex}
-% \end{figure}
-
-% \ldots

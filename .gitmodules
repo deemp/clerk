@@ -1,0 +1,3 @@
+[submodule "clerk"]
+	path = nix-dev
+	url = https://github.com/deemp/clerk
