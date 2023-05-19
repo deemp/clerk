@@ -112,7 +112,29 @@
 
         writeSettings = writeSettingsJSON {
           inherit (settingsNix) haskell todo-tree files editor gitlens
-            git nix-ide workbench markdown-all-in-one markdown-language-features;
+            git nix-ide workbench markdown-all-in-one markdown-language-features
+            python;
+          pythonExtra = {
+            "python.defaultInterpreterPath" = ".venv/bin/python";
+          };
+          latexExtra = {
+            "latex-workshop.latex.tools" = [
+              {
+                "name" = "latexmk";
+                "command" = "latexmk";
+                "args" = [
+                  "-shell-escape"
+                  "-synctex=1"
+                  "-interaction=nonstopmode"
+                  "-file-line-error"
+                  "-pdf"
+                  "-outdir=%OUTDIR%"
+                  "%DOC%"
+                ];
+                "env" = { };
+              }
+            ];
+          };
         };
 
         inherit (mkFlakesTools [ "." ]) updateLocks pushToCachix;

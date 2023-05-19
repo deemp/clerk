@@ -31,10 +31,30 @@
     "gitlens.statusBar.enabled": false,
     "haskell.formattingProvider": "fourmolu",
     "haskell.manageHLS": "PATH",
+    "latex-workshop.latex.tools": [
+        {
+            "args": [
+                "-shell-escape",
+                "-synctex=1",
+                "-interaction=nonstopmode",
+                "-file-line-error",
+                "-pdf",
+                "-outdir=%OUTDIR%",
+                "%DOC%"
+            ],
+            "command": "latexmk",
+            "env": {},
+            "name": "latexmk"
+        }
+    ],
     "markdown.extension.orderedList.autoRenumber": false,
     "nix.enableLanguageServer": true,
     "nix.formatterPath": "nixpkgs-fmt",
     "nix.serverPath": "rnix-lsp",
+    "python.defaultInterpreterPath": ".venv/bin/python",
+    "python.formatting.provider": "black",
+    "python.linting.mypyCategorySeverity.error": "Error",
+    "python.linting.mypyEnabled": true,
     "todo-tree.filtering.excludeGlobs": [
         "**/vendor/**",
         "**/node_modules/**",
