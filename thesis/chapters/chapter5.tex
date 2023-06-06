@@ -97,7 +97,30 @@ To my knowledge, the library does not allow to specify the connections between n
 \section{Outer applications}
 \label{eval:outer-applications}
 
+The \texttt{clerk} library allows to produce correct by construction spreadsheets.
+I suppose that this property can make the library useful in real world systems.
 
+First, this library can be used as a part of data pipelines.
+The program using the \texttt{clerk} library can generate data-transforming spreadsheets.
+There will be regions for input data, output data, and formulas.
+The formulas will act onto input data to produce output data.
+Other programs may write to or read the outputs from such data-transforming spreadsheets.
+
+Second, such a library may be useful in areas that require correct computations.
+As far as I know from Haskell community chats, some financial and biotechnological organizations rely on Haskell.
+Moreover, some people use Excel for recording the results of scientific experiments.
+
+Third, it is possible to use \texttt{clerk} for generating reports.
+The library provides basic styling capabilities.
+When the library is used with a Haskell repl, the resulting spreadsheets can be generated rapidly.
+Thus, the spreadsheet editor may quickly observe the changes.
+
+Fourth, the library may be used by pixel art fans.
+It is quite trivial to fill the table cells with colors of pixels of an image.
+
+Fifth, the library can be used for teaching type-level programming in Haskell.
+More specifically, the library includes modules that provide type-level parsing capabilities.
+These modules enable compile-time cell address and color values checks.
 
 % \begin{longtable}{c|c}
 % \caption[This is the title I want to appear in the List of Tables]{Simulation Parameters} \label{table:fifsimulation_params} \\
