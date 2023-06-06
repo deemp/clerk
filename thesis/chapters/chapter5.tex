@@ -79,11 +79,17 @@ Third, these functions are statically typed. Their arguments may be documented u
 Currently, Microsoft Excel has support for automatic layout of data upon importing it \cite{excel_custom_types}.
 However, layout customization still should be done manually.
 
-There are libraries for several languages that derive the layout from user specification of spreadsheet elements and the connections between them.
 The \texttt{poi} library for Python can write spreadsheets based on user data \cite{wang_poi_nodate}.
-To my knowledge, the library does not allow to specify the connections between new eleemnts and previously built elements.
+The library seems to not allow to specify the connections between new elements and previously built elements.
 
+Such functionality, on the other hand, is present in the Kotlin library Geschikt \cite{noauthor_sikrinickgeshikt_nodate}.
+The library provides a declarative API to building Google Sheets.
+A user may create an cell object and then access its reference in the expressions that follow.
+The downside is that there seems to be no way to use a reference outside of a parent element.
 
+In \texttt{clerk}, it is possible to get a reference to a specific cell.
+It is the user's responsibility to return that reference from the function where the cell is created.
+The cell references can be
 
 \section{Discrepancies}
 \label{eval:discrepancies}
