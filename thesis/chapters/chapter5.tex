@@ -91,6 +91,13 @@ To my knowledge, the library does not allow to specify the connections between n
 \section{Limitations}
 \label{eval:limitations}
 
+First of all, currently, the eDSL is not usable by non-programmers.
+Perhaps the implementation of a graphical user interface to the eDSL may solve this problem.
+
+Next, another problem is that the library generates spreadsheets using the limited number of formatting tools provided by the underlying \texttt{xlsx} library.
+Thus, if a user edits a generated part of a spreadsheet, these edits will be removed upon the next spreadsheet generation.
+This limitation can be overcome by copying just the data from the generated parts into new sheets and applying formatting there.
+
 \section{Unexpected findings}
 \label{eval:unexpected}
 
