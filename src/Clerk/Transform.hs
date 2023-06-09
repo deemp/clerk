@@ -18,7 +18,7 @@ type FMTransform = FormattedMap -> FormattedMap
 type WSTransform = X.Worksheet -> X.Worksheet
 
 -- | Combined: a transform of a map of formats and a transform of a worksheet
-data Transform = Transform {fmTransform :: FMTransform, wsTransform :: WSTransform}
+data Transform = Transform {_fmTransform :: FMTransform, _wsTransform :: WSTransform}
 
 instance Semigroup Transform where
   (<>) :: Transform -> Transform -> Transform

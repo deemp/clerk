@@ -1,4 +1,3 @@
-{-# LANGUAGE StandaloneDeriving #-}
 {-# OPTIONS_GHC -Wno-missing-kind-signatures #-}
 {-# OPTIONS_GHC -Wno-prepositive-qualified-module #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
@@ -6,7 +5,7 @@
 -- | @Clerk@ library
 module Clerk (
   -- * Coords
-  Coords,
+  Coords (..),
   mkCoords,
   ToCoords (..),
   FromCoords (..),
@@ -16,7 +15,7 @@ module Clerk (
   Ref,
   row,
   col,
-  ref,
+  funRef,
   val,
 
   -- * Changing types
@@ -38,25 +37,18 @@ module Clerk (
   ToARGB (..),
 
   -- * Templates
-  Row,
-  RowI,
-  RowIO,
-  Template,
 
   -- * Columns
-  ColumnsProperties,
-  columnWidthFormatRef,
-  columnWidthRef,
-  columnWidth,
-  columnRef,
-  column,
+  module Clerk.Column,
 
   -- * Sheet builder
   Sheet,
-  placeN,
-  place1,
-  place,
+  SheetState (..),
+  module Clerk.Place,
   evalSheetDefault,
+
+  -- * Row builder
+  RowShow (..),
 
   -- * Expressions
   Expr,
@@ -84,7 +76,6 @@ module Clerk (
   FunctionName,
 
   -- * Cells
-  CellData,
   ToCellData (..),
 
   -- * xlsx
@@ -92,12 +83,7 @@ module Clerk (
   writeXlsx,
 
   -- * For examples
-  SheetState (..),
-  RowState,
-  RowShow (..),
-  evalRow,
-  mkRef,
-  rowShowDefault,
+  mkRefDefault,
 ) where
 
 import Clerk.Column
@@ -114,6 +100,7 @@ import Clerk.Row
 import Clerk.Sheet
 import Clerk.Transform
 import Clerk.Xlsx
+import Clerk.ForExamples
 
 -- TODO add modes to state
 -- Google Sheets, Excel, Tabular

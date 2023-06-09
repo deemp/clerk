@@ -18,7 +18,7 @@ The below sections describe how such a spreadsheet can be constructed.
 
 ### Extensions
 
-We'll need several language extensions.
+I'll need several language extensions.
 -}
 {-# LANGUAGE ImportQualifiedPost #-}
 {- LIMA_DISABLE -}
@@ -30,18 +30,19 @@ We'll need several language extensions.
 {-
 ### Imports
 
-We import the necessary stuff.
+I import the necessary stuff.
 -}
 
 import Clerk
 import Control.Monad (forM, forM_, void)
 import Data.Text qualified as T
 import Lens.Micro ((&), (+~), (^.))
+import Clerk.Row
 
 {-
 ### Tables
 
-The tables that we'd like to construct are:
+The tables that I'd like to construct are:
 
 - A vertical header
 - A horizontal header
@@ -57,58 +58,58 @@ In background, it writes a template of a horizontal block of cells - a **row**.
 This row is used for placing the input values onto a sheet.
 
 A vertical block of cells can be represented as several horizontal blocks of cells placed under each other.
-So, as a template, we use a `RowI` with one integer as an input.
+So, as a template, I use a `RowI` with one integer as an input.
 
-As we don't need any formatting, we use `blank` cells for templates.
+As I don't need any formatting, I use `blank` cells for templates.
 
-We place the rows for each input value and collect the references.
+I place the rows for each input value and collect the references.
 Each row is shifted relative to the input coordinates.
 -}
 
 mkVertical :: Coords -> [Int] -> Sheet [Ref Int]
 mkVertical coords numbers =
   forM (zip [0 ..] numbers) $ \(idx, number) ->
-    place1
+    placeIn
       (coords & row +~ idx + 2)
       number
-      ((columnRef blank (const number)) :: RowI Int (Ref Int))
+      ((columnF blank (const number)) :: RowI Int (Ref Int))
 
 {-
 #### A horizontal header
 
 <img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/horizontal.png" width = "80%">
 
-For a horizontal header, we make a row of numbers and collect the references to all its cells.
-As we don't care about the type of inputs, we use the `Row` type.
+For a horizontal header, I make a row of numbers and collect the references to all its cells.
+As I don't care about the type of inputs, I use the `Row` type.
 
-In the `Sheet` monad, we place this row starting at a specified coordinate.
+In the `Sheet` monad, I place this row starting at a specified coordinate.
 -}
 
 mkHorizontal :: Coords -> [Int] -> Sheet [Ref Int]
 mkHorizontal coords numbers =
   place
     (coords & col +~ 2)
-    ((forM numbers $ \n -> columnRef blank (const n)) :: Row [Ref Int])
+    ((forM numbers $ \n -> columnF blank (const n)) :: Row [Ref Int])
 
 {-
 #### Table builder
 
 <img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/table.png" width = "50%">
 
-For inner cells, we use single-cell rows for each input.
-As we don't need any info about these cells, we use the `Row ()` type.
+For inner cells, I use single-cell rows for each input.
+As I don't need any info about these cells, I use the `Row ()` type.
 -}
 
 mkTable :: [(Ref Int, Ref Int)] -> Sheet ()
 mkTable cs =
   forM_ cs $ \(r, c) -> do
     coords <- mkCoords (c ^. col) (r ^. row)
-    place coords ((column blank (const (r .* c))) :: Row ())
+    place coords ((columnF_ blank (const (r .* c))) :: Row ())
 
 {-
 ### Sheet
 
-Now, we combine all functions.
+Now, I combine all functions.
 -}
 
 sheet :: Sheet ()
@@ -122,7 +123,7 @@ sheet = do
 {-
 ### Result
 
-Finally, we can write the result and get a spreadsheet like the one at the beginning of [Example 2](#example-2).
+Finally, I can write the result and get a spreadsheet like the one at the beginning of [Example 2](#example-2).
 -}
 
 main :: IO ()

@@ -1,14 +1,18 @@
 module Clerk.Format where
 
-import Clerk.Row ( ToCellData(toCellData), FormatCell, dataCell )
+import Clerk.Row (FormatCell, ToCellData (toCellData), dataCell)
 import qualified Codec.Xlsx as X
 import qualified Codec.Xlsx.Formatted as X
+import Data.Text (Text)
 import qualified Data.Text as T
-import Lens.Micro ( (&), (.~), (?~) )
+import Data.Word (Word8)
+import Lens.Micro ((&), (.~), (?~))
+
+-- TODO use Color
 
 -- | something that can be turned into ARGB
 class ToARGB a where
-  toARGB :: a -> String
+  toARGB :: a -> Text
 
 -- | Make a 'FormatCell' for a single color
 --
@@ -26,7 +30,7 @@ mkColor color _ _ c = do
                       & X.fillPattern
                         ?~ ( X.def
                               & ( X.fillPatternFgColor
-                                    ?~ (X.def & X.colorARGB ?~ T.pack (toARGB color))
+                                    ?~ (X.def & X.colorARGB ?~ toARGB color)
                                 )
                               & ( X.fillPatternType
                                     ?~ X.PatternTypeSolid

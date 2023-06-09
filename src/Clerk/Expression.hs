@@ -11,12 +11,12 @@ newtype FunctionName = FunctionName {_functionName :: T.Text} deriving newtype (
 
 -- | Expressions
 data Expr t
-  = EBinaryOp {binOp :: BinaryOperator, arg1 :: Expr t, arg2 :: Expr t}
-  | EFunction {fName :: FunctionName, fArgs :: [Expr t]}
-  | ERef {r :: Ref t}
-  | ERange {ref1 :: Ref t, ref2 :: Ref t}
-  | EValue {value :: t}
-  | EUnaryOp {unaryOp :: UnaryOp, arg :: Expr t}
+  = EBinaryOperation {_binaryOperator :: BinaryOperator, _argLeft :: Expr t, _argRight :: Expr t}
+  | EFunction {_fName :: FunctionName, _fArgs :: [Expr t]}
+  | ERef {_ref :: Ref t}
+  | ERange {_refUpperLeft :: Ref t, _refLowerRight :: Ref t}
+  | EValue {_value :: t}
+  | EUnaryOperation {_unaryOperator :: UnaryOperator, _arg :: Expr t}
 
 data BinaryOperator
   = OpAdd
@@ -31,16 +31,16 @@ data BinaryOperator
   | OpEQ
   | OpNEQ
 
-data UnaryOp
+data UnaryOperator
   = OpNeg
 
 instance UnsafeChangeType Expr where
   unsafeChangeType :: Expr b -> Expr c
-  unsafeChangeType (EBinaryOp a b c) = EBinaryOp a (unsafeChangeType b) (unsafeChangeType c)
+  unsafeChangeType (EBinaryOperation a b c) = EBinaryOperation a (unsafeChangeType b) (unsafeChangeType c)
   unsafeChangeType (ERef (Ref a)) = ERef (Ref a)
   unsafeChangeType (EFunction n args) = EFunction n (unsafeChangeType <$> args)
   unsafeChangeType (ERange l r) = ERange (unsafeChangeType l) (unsafeChangeType r)
-  unsafeChangeType (EUnaryOp u v) = EUnaryOp u (unsafeCoerce v)
+  unsafeChangeType (EUnaryOperation u v) = EUnaryOperation u (unsafeCoerce v)
   unsafeChangeType (EValue v) = EValue (unsafeCoerce v)
 
 instance Show t => Show (Expr t) where
