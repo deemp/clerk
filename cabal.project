@@ -1,0 +1,6 @@
+packages: ./
+
+package *
+    ghc-options: -haddock
+
+tests: true
