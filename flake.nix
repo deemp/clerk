@@ -21,7 +21,7 @@
       inherit (pkgs.lib.attrsets) genAttrs mapAttrs';
       inherit (inputs.my-codium.functions.${system}) writeSettingsJSON mkCodium;
       inherit (inputs.drv-tools.functions.${system}) mkShellApps mkBin mkShellApp mapGenAttrs mapStrGenAttrs;
-      inherit (inputs.my-codium.configs.${system}) extensions settingsNix;
+      inherit (inputs.my-codium.configs.${system}) extensions extensionsCommon settingsNix settingsCommonNix;
       inherit (inputs.flakes-tools.functions.${system}) mkFlakesTools;
       inherit (inputs.my-devshell.functions.${system}) mkCommands mkRunCommands mkShell;
       inherit (inputs.workflows.functions.${system}) writeWorkflow;
@@ -30,7 +30,7 @@
 
       packageName = "clerk";
 
-      ghcVersion = "927";
+      ghcVersion = "928";
       override =
         let inherit (pkgs.haskell.lib) doJailbreak dontCheck overrideCabal; in
         {
@@ -44,7 +44,7 @@
                 ] ++ (x.librarySystemDepends or [ ]);
                 libraryHaskellDepends = [
                   super.xlsx_1_1_0_1
-                ];
+                ] ++ (x.libraryHaskellDepends or [ ]);
               });
           };
         };
@@ -74,7 +74,7 @@
         );
 
       buildPrefix = "buildWithGHC";
-      ghcVersions = [ "8107" "902" "927" ];
+      ghcVersions = [ "8107" "902" "928" "945" "962" ];
 
       cabalBuild = mkShellApps
         (mapGenAttrs
@@ -98,6 +98,7 @@
         hls
         ghcid
         implicit-hie
+        pkgs.haskellPackages.fourmolu_0_12_0_0
       ];
 
       packages = {
@@ -106,10 +107,9 @@
           runtimeDependencies = tools;
         };
 
-        writeSettings = writeSettingsJSON {
-          inherit (settingsNix) haskell todo-tree files editor gitlens
-            git nix-ide workbench markdown-all-in-one markdown-language-features;
-        };
+        writeSettings = writeSettingsJSON (settingsCommonNix // { inherit (settingsNix) haskell; extra = {
+          "haskell.plugin.fourmolu.config.external" = true;
+        };});
 
         inherit (mkFlakesTools [ "." ]) updateLocks pushToCachix;
 
