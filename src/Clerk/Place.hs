@@ -11,7 +11,7 @@
 module Clerk.Place where
 
 import Clerk.Coordinates
-import Clerk.Render (renderInputs, renderInputsK, renderTemplate)
+import Clerk.Render (renderInputs, renderInputsResults, renderTemplate)
 import Clerk.Row
 import Clerk.Sheet
 import Control.Monad
@@ -47,7 +47,7 @@ place_ coords_ = void <$> placeIn coords_ ()
 -- | Starting at a given coordinate, place a list of inputs according to row builders and return a result
 placeIxsInsFs :: (ToCellData output, ToCoords c, Integral index) => c -> [index] -> [input] -> [a -> RowIO input output a] -> a -> Sheet [a]
 placeIxsInsFs (toCoords -> state) is inputs fs a = do
-  transformResult <- renderInputsK is state renderTemplate inputs fs a
+  transformResult <- renderInputsResults is state renderTemplate inputs fs a
   tell (fst transformResult)
   pure (snd transformResult)
 

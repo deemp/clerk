@@ -29,14 +29,7 @@ dependencies:
   - base >= 4.9 && < 5.0
 
 ghc-options:
-  - -Weverything
-  - -Wno-missing-kind-signatures
-  - -Wno-prepositive-qualified-module
-  - -Wno-redundant-constraints
-  - -Wno-missing-import-lists
-  - -Wno-implicit-prelude
-  - -Wno-missing-export-lists
-  - -Wno-missing-safe-haskell-mode
+  - -Wall
 
 tests:
   docs:
@@ -63,6 +56,8 @@ library:
     - time
     - transformers
     - xlsx
+    - first-class-families
+    - generic-lens
   when:
     - condition: false
       other-modules: Paths_clerk
@@ -118,3 +113,7 @@ executables:
       - lens-aeson
       - lens
       - pretty-simple
+      - ilist
+      - monad-loops
+      - transformers
+      - mtl

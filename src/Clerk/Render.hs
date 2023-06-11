@@ -70,7 +70,7 @@ renderInputsResults ::
   RowState ->
   RenderTemplate input output ->
   ([input] -> [a -> RowIO input output a] -> a -> Sheet (Transform, [a]))
-renderInputsK is state render inputs fs a = do
+renderInputsResults is state render inputs fs a = do
   let
     newStates = (\inputIndex -> (state & row +~ fromIntegral inputIndex){_inputIndex = fromIntegral inputIndex}) <$> is
     ts = snd $
