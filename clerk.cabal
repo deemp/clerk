@@ -31,19 +31,25 @@ source-repository head
 library
   exposed-modules:
       Clerk
+      Clerk.AddressTyped
+      Clerk.ColorTyped
       Clerk.Column
       Clerk.Coordinates
       Clerk.Expression
+      Clerk.ForExamples
       Clerk.Format
       Clerk.Formula
       Clerk.Function
       Clerk.Internal
       Clerk.Operators
       Clerk.Place
+      Clerk.PlaceMonadic
+      Clerk.PlaceMonadicTry
       Clerk.Reference
       Clerk.Render
       Clerk.Row
       Clerk.Sheet
+      Clerk.Symbols
       Clerk.Transform
       Clerk.Xlsx
   hs-source-dirs:
@@ -71,12 +77,14 @@ library
       TupleSections
       UndecidableInstances
       ViewPatterns
-  ghc-options: -Weverything -Wno-missing-kind-signatures -Wno-prepositive-qualified-module -Wno-redundant-constraints -Wno-missing-import-lists -Wno-implicit-prelude -Wno-missing-export-lists -Wno-missing-safe-haskell-mode
+  ghc-options: -Wall
   build-depends:
       base >=4.9 && <5.0
     , bytestring
     , containers
     , data-default
+    , first-class-families
+    , generic-lens
     , microlens
     , mtl
     , text
@@ -89,7 +97,7 @@ executable example1
   main-is: app/Example1.hs
   other-modules:
       Paths_clerk
-  ghc-options: -Weverything -Wno-missing-kind-signatures -Wno-prepositive-qualified-module -Wno-redundant-constraints -Wno-missing-import-lists -Wno-implicit-prelude -Wno-missing-export-lists -Wno-missing-safe-haskell-mode
+  ghc-options: -Wall
   build-depends:
       base >=4.9 && <5.0
     , clerk
@@ -102,7 +110,7 @@ executable example2
   main-is: app/Example2.hs
   other-modules:
       Paths_clerk
-  ghc-options: -Weverything -Wno-missing-kind-signatures -Wno-prepositive-qualified-module -Wno-redundant-constraints -Wno-missing-import-lists -Wno-implicit-prelude -Wno-missing-export-lists -Wno-missing-safe-haskell-mode
+  ghc-options: -Wall
   build-depends:
       base >=4.9 && <5.0
     , clerk
@@ -115,7 +123,7 @@ executable example3
   main-is: app/Example3.hs
   other-modules:
       Paths_clerk
-  ghc-options: -Weverything -Wno-missing-kind-signatures -Wno-prepositive-qualified-module -Wno-redundant-constraints -Wno-missing-import-lists -Wno-implicit-prelude -Wno-missing-export-lists -Wno-missing-safe-haskell-mode
+  ghc-options: -Wall
   build-depends:
       base >=4.9 && <5.0
     , clerk
@@ -128,15 +136,19 @@ executable example4
   main-is: app/Example4.hs
   other-modules:
       Paths_clerk
-  ghc-options: -Weverything -Wno-missing-kind-signatures -Wno-prepositive-qualified-module -Wno-redundant-constraints -Wno-missing-import-lists -Wno-implicit-prelude -Wno-missing-export-lists -Wno-missing-safe-haskell-mode
+  ghc-options: -Wall
   build-depends:
       aeson
     , base >=4.9 && <5.0
     , clerk
+    , ilist
     , lens
     , lens-aeson
+    , monad-loops
+    , mtl
     , pretty-simple
     , text
+    , transformers
     , xlsx
   default-language: Haskell2010
 
@@ -150,7 +162,7 @@ test-suite docs
       QuasiQuotes
       ScopedTypeVariables
       OverloadedStrings
-  ghc-options: -Weverything -Wno-missing-kind-signatures -Wno-prepositive-qualified-module -Wno-redundant-constraints -Wno-missing-import-lists -Wno-implicit-prelude -Wno-missing-export-lists -Wno-missing-safe-haskell-mode
+  ghc-options: -Wall
   build-depends:
       base >=4.9 && <5.0
     , lima
