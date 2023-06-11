@@ -29,15 +29,18 @@ The source code for this example is available [here](app/Example1.hs).
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE DataKinds #-}
 ```
 
 ### Imports
 
-We import the necessary stuff.
+I import the necessary stuff.
 
 ```haskell
-import Clerk ( (.*), (.**), (.+), (./), as, fun, mkRef, ref, rowShowDefault, val, Formula, Ref )
+import Clerk ( (.*), (.**), (.+), (./), as, fun, mkRefDefault, funRef,  val, Formula, Ref )
+import Clerk.Row ( rowShowDefault )
 import Data.Text (Text)
+import Clerk.ForExamples
 ```
 
 <!-- LIMA_DISABLE
@@ -51,36 +54,29 @@ LIMA_ENABLE -->
 
 Formulas consist of references, functions, and values.
 
-We define a couple of helper functions just for this example.
-These function simplify working with references and formulas.
-
-Now, we pretend that there are values with given types and that we can get references to them.
-
-First, we make a couple of references to `Int` values.
+I make references to `Double` values
 
 ```haskell
 r1 :: Ref Double
-Right r1 = mkRef "B4"
+r1 = mkRefDefault @"B4"
 r2 :: Ref Double
-Right r2 = mkRef "E6"
+r2 = mkRefDefault @"E6"
 r3 :: Ref Double
-Right r3 = mkRef "G8"
+r3 = mkRefDefault @"G8"
 ```
 
-Next, we convert one of these references to a formula via `ref` and inspect its representation.
+Next, I convert one of these references to a formula via `funRef` and inspect the formula representation.
 
 ```haskell
-showFormula = rowShowDefault
-
 t1 :: Text
-t1 = showFormula $ ref r2
+t1 = showFormula $ funRef r2
 
 -- >>>t1
 -- "E6"
 ```
 
-Finally, we construct a longer expression and look at its representation.
-We convert a literal value to a formula via `val`.
+Finally, I construct a longer expression and look at its representation.
+I convert a literal value to a formula via `val`.
 
 ```haskell
 t2 :: Text
@@ -90,12 +86,12 @@ t2 = showFormula $ r1 .* r2 .* val 3 .+ r1 .** r2 ./ r3
 -- "B4*E6*3.0+B4^E6/G8"
 ```
 
-Of course, we can mix differently typed references in expressions when necessary.
-For this case, we have an unsafe `as` function.
+Of course, I can mix differently typed references in expressions when necessary.
+For this case, I have an unsafe `as` function.
 
 ```haskell
 r4 :: Ref Int
-Right r4 = mkRef "T6"
+r4 = mkRefDefault @"T6"
 
 t3 :: Text
 t3 = showFormula $ as @Double (r4 .* r4 .* val 3) .+ r1 .** r2 ./ r3
@@ -104,7 +100,7 @@ t3 = showFormula $ as @Double (r4 .* r4 .* val 3) .+ r1 .** r2 ./ r3
 -- "T6*T6*1.5e-323+B4^E6/G8"
 ```
 
-This `as` function should not be abused, though. If we need an `Int` instead of a `Double`, we can explicitly use an Excel function.
+This `as` function should not be abused, though. If I need an `Int` instead of a `Double`, I can explicitly use an Excel function.
 
 ```haskell
 round_ :: [Formula a] -> Formula Int
@@ -115,6 +111,11 @@ t4 = round_ [r1 .** r2 ./ r3]
 
 -- >>>:t t4
 -- t4 :: Formula Int
+
+t5 = showFormula t4
+
+-- TODO printing breaks HLS
+-- >>> t5
 ```
 
 <!-- FOURMOLU_DISABLE -->
@@ -137,7 +138,7 @@ The below sections describe how such a spreadsheet can be constructed.
 
 ### Extensions
 
-We'll need several language extensions.
+I'll need several language extensions.
 
 ```haskell
 {-# LANGUAGE ImportQualifiedPost #-}
@@ -154,18 +155,19 @@ LIMA_ENABLE -->
 
 ### Imports
 
-We import the necessary stuff.
+I import the necessary stuff.
 
 ```haskell
 import Clerk
 import Control.Monad (forM, forM_, void)
 import Data.Text qualified as T
 import Lens.Micro ((&), (+~), (^.))
+import Clerk.Row
 ```
 
 ### Tables
 
-The tables that we'd like to construct are:
+The tables that I'd like to construct are:
 
 - A vertical header
 - A horizontal header
@@ -181,58 +183,58 @@ In background, it writes a template of a horizontal block of cells - a **row**.
 This row is used for placing the input values onto a sheet.
 
 A vertical block of cells can be represented as several horizontal blocks of cells placed under each other.
-So, as a template, we use a `RowI` with one integer as an input.
+So, as a template, I use a `RowI` with one integer as an input.
 
-As we don't need any formatting, we use `blank` cells for templates.
+As I don't need any formatting, I use `blank` cells for templates.
 
-We place the rows for each input value and collect the references.
+I place the rows for each input value and collect the references.
 Each row is shifted relative to the input coordinates.
 
 ```haskell
 mkVertical :: Coords -> [Int] -> Sheet [Ref Int]
 mkVertical coords numbers =
   forM (zip [0 ..] numbers) $ \(idx, number) ->
-    place1
+    placeIn
       (coords & row +~ idx + 2)
       number
-      ((columnRef blank (const number)) :: RowI Int (Ref Int))
+      ((columnF blank (const number)) :: RowI Int (Ref Int))
 ```
 
 #### A horizontal header
 
 <img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/horizontal.png" width = "80%">
 
-For a horizontal header, we make a row of numbers and collect the references to all its cells.
-As we don't care about the type of inputs, we use the `Row` type.
+For a horizontal header, I make a row of numbers and collect the references to all its cells.
+As I don't care about the type of inputs, I use the `Row` type.
 
-In the `Sheet` monad, we place this row starting at a specified coordinate.
+In the `Sheet` monad, I place this row starting at a specified coordinate.
 
 ```haskell
 mkHorizontal :: Coords -> [Int] -> Sheet [Ref Int]
 mkHorizontal coords numbers =
   place
     (coords & col +~ 2)
-    ((forM numbers $ \n -> columnRef blank (const n)) :: Row [Ref Int])
+    ((forM numbers $ \n -> columnF blank (const n)) :: Row [Ref Int])
 ```
 
 #### Table builder
 
 <img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example2/table.png" width = "50%">
 
-For inner cells, we use single-cell rows for each input.
-As we don't need any info about these cells, we use the `Row ()` type.
+For inner cells, I use single-cell rows for each input.
+As I don't need any info about these cells, I use the `Row ()` type.
 
 ```haskell
 mkTable :: [(Ref Int, Ref Int)] -> Sheet ()
 mkTable cs =
   forM_ cs $ \(r, c) -> do
     coords <- mkCoords (c ^. col) (r ^. row)
-    place coords ((column blank (const (r .* c))) :: Row ())
+    place coords ((columnF_ blank (const (r .* c))) :: Row ())
 ```
 
 ### Sheet
 
-Now, we combine all functions.
+Now, I combine all functions.
 
 ```haskell
 sheet :: Sheet ()
@@ -246,7 +248,7 @@ sheet = do
 
 ### Result
 
-Finally, we can write the result and get a spreadsheet like the one at the beginning of [Example 2](#example-2).
+Finally, I can write the result and get a spreadsheet like the one at the beginning of [Example 2](#example-2).
 
 ```haskell
 main :: IO ()
@@ -285,7 +287,7 @@ The below sections describe how such a spreadsheet can be constructed.
 
 ### Extensions
 
-We'll need several language extensions.
+I'll need several language extensions.
 
 ```haskell
 -- to access the fields of records like a.b
@@ -298,6 +300,8 @@ We'll need several language extensions.
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoOverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds #-}
 ```
 
 <!-- FOURMOLU_ENABLE -->
@@ -308,6 +312,8 @@ And import the necessary stuff.
 
 ```haskell
 import Clerk
+import Clerk.ColorTyped (Color(..), hex)
+import Clerk.Row
 import Codec.Xlsx qualified as X
 import Codec.Xlsx.Formatted qualified as X
 import Data.Text qualified as T
@@ -316,7 +322,7 @@ import Lens.Micro ((%~), (&), (+~), (?~))
 
 ### Tables
 
-The tables that we'd like to construct are:
+The tables that I'd like to construct are:
 
 - A table per a constant's value (three of them)
 - A volume and pressure table
@@ -329,8 +335,8 @@ The tables that we'd like to construct are:
 
 In our case, each constant has the same type of the numeric value - `Double`.
 However, it might be the case that in another set of constants, they'll have different types.
-That's why, we'll construct a table with a single row per a constant and later place the constants' tables under each other.
-We'll store constant data in a record.
+That's why, I'll construct a table with a single row per a constant and later place the constants' tables under each other.
+I'll store constant data in a record.
 
 ```haskell
 data ConstantData a = ConstantData
@@ -341,7 +347,7 @@ data ConstantData a = ConstantData
   }
 ```
 
-Next, we group the constants.
+Next, I group the constants.
 
 ```haskell
 data Constants f = Constants
@@ -353,7 +359,7 @@ data Constants f = Constants
 type ConstantsInput = Constants ConstantData
 ```
 
-Following that, we record the constants data.
+Following that, I record the constants data.
 
 ```haskell
 constants :: ConstantsInput
@@ -365,26 +371,26 @@ constants =
     }
 ```
 
-Now, we can make a `RowI` for a constant input.
-We use a `RowI` because this row cares about the `i`nput type.
-We'll later use this row for each constant separately.
+Now, I can make a `RowI` for a constant input.
+I use a `RowI` because this row cares about the `i`nput type.
+I'll later use this row for each constant separately.
 
-We get a pair of outputs:
+I get a pair of outputs:
 
 - Top left cell of a constant's table. That is, the cell with that constant's name.
 - The value of the constant.
 
-Later, we'll use these outputs to relate the positions of tables on a sheet.
+Later, I'll use these outputs to relate the positions of tables on a sheet.
 
-Notice that we use styles like `lightBlue` here. These styles are defined in the [Styles](#styles) section.
+Notice that I use styles like `lightBlue` here. These styles are defined in the [Styles](#styles) section.
 
 ```haskell
 constant :: ToCellData a => RowI (ConstantData a) (Ref (), Ref a)
 constant = do
-  refTopLeft <- columnRef lightBlue constantName
-  column lightBlue constantSymbol
-  refValue <- columnRef (lightBlue .& with2decimalDigits) constantValue
-  column lightBlue constantUnits
+  refTopLeft <- columnF lightBlue constantName
+  columnF lightBlue constantSymbol
+  refValue <- columnF (lightBlue .& with2decimalDigits) constantValue
+  columnF lightBlue constantUnits
   return (refTopLeft, refValue)
 ```
 
@@ -392,7 +398,7 @@ constant = do
 
 <img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example3/valuesFormulas.png" width = "50%">
 
-To fill this table, we'll take some data and combine it with the constants.
+To fill this table, I'll take some data and combine it with the constants.
 
 ```haskell
 newtype Volume = Volume {volume :: Double}
@@ -401,7 +407,7 @@ volumeData :: [Volume]
 volumeData = Volume <$> [1 .. 10]
 ```
 
-To pass the constants references in a structured way, we make a helper type.
+To pass the constants references in a structured way, I make a helper type.
 
 ```haskell
 data ConstantsRefs = ConstantsRefs
@@ -411,21 +417,21 @@ data ConstantsRefs = ConstantsRefs
   }
 ```
 
-Next, we define a function to produce a row for volume and pressure.
+Next, I define a function to produce a row for volume and pressure.
 
 ```haskell
 values :: ConstantsRefs -> RowI Volume ()
 values ConstantsRefs{..} = do
-  refVolume <- columnRef alternatingColors volume
+  refVolume <- columnF alternatingColors volume
   let pressure' = refGasConstant .* refNumberOfMoles .* refTemperature ./ refVolume
-  column (alternatingColors .& with2decimalDigits) (const pressure')
+  columnF_ (alternatingColors .& with2decimalDigits) (const pressure')
 ```
 
 #### Constants' header
 
 <img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example3/constantsHeader.png" width = "50%">
 
-We won't use records here. Instead, we'll put the names of the columns straight into the `Row`.
+I won't use records here. Instead, I'll put the names of the columns straight into the `Row`.
 
 The outputs will be the coordinates of the top left cell and the top right cell of this table.
 
@@ -434,10 +440,10 @@ constantsHeader :: Row (Ref (), Ref ())
 constantsHeader = do
   let style :: FormatCell
       style = blue .& alignedCenter
-  refTopLeft <- columnWidthRef 20 style (const "constant")
-  columnWidth 8 style (const "symbol")
-  column style (const "value")
-  refTopRight <- columnWidthRef 13 style (const "units")
+  refTopLeft <- columnWF 20 style (const "constant")
+  columnWF_ 8 style (const "symbol")
+  columnF_ style (const "value")
+  refTopRight <- columnWF 13 style (const "units")
   return (refTopLeft, refTopRight)
 ```
 
@@ -445,45 +451,45 @@ constantsHeader = do
 
 <img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example3/valuesHeader.png" width = "50%">
 
-For this header, we'll also put the names of columns straight into a row.
+For this header, I'll also put the names of columns straight into a row.
 
 ```haskell
 valuesHeader :: Row (Ref ())
 valuesHeader = do
-  refTopLeft <- columnWidthRef 12 green (const "VOLUME (L)")
-  columnWidth 16 green (const "PRESSURE (atm)")
+  refTopLeft <- columnWF 12 green (const "VOLUME (L)")
+  columnWF_ 16 green (const "PRESSURE (atm)")
   return refTopLeft
 ```
 
 ### Sheet builder
 
-At last, we combine all rows.
+At last, I combine all rows.
 
 ```haskell
 sheet :: Sheet ()
 sheet = do
   start <- mkCoords 2 2
-  (constantsHeaderTL, constantsHeaderTR) <- place start constantsHeader
-  (gasTL, gas) <- place1 (constantsHeaderTL & row +~ 2) constants.gasConstant constant
-  (nMolesTL, nMoles) <- place1 (gasTL & row +~ 1) constants.numberOfMoles constant
-  temperature <- snd <$> place1 (nMolesTL & row +~ 1) constants.temperature constant
-  valuesHeaderTL <- place (constantsHeaderTR & col +~ 2) valuesHeader
-  placeN (valuesHeaderTL & row +~ 2) volumeData (values $ ConstantsRefs gas nMoles temperature)
+  (constantsHeaderTL, constantsHeaderTopRight) <- place start constantsHeader
+  (gasTopLeft, gas) <- placeIn (constantsHeaderTL & row +~ 2) constants.gasConstant constant
+  (nMolesTopLeft, nMoles) <- placeIn (gasTopLeft & row +~ 1) constants.numberOfMoles constant
+  temperature <- snd <$> placeIn (nMolesTopLeft & row +~ 1) constants.temperature constant
+  valuesHeaderTopLeft <- place (constantsHeaderTopRight & col +~ 2) valuesHeader
+  placeIns (valuesHeaderTopLeft & row +~ 2) volumeData (values $ ConstantsRefs gas nMoles temperature)
 ```
 
 ### Styles
 
-We used several styles to format the tables. This is how these styles are defined.
+I used several styles to format the tables. This is how these styles are defined.
 
 ```haskell
 data Colors = LightBlue | LightGreen | Blue | Green
 instance ToARGB Colors where
-  toARGB :: Colors -> String
-  toARGB = \case
-    LightBlue -> "90CCFFFF"
-    LightGreen -> "90CCFFCC"
-    Blue -> "FF99CCFF"
-    Green -> "FF00FF00"
+  toARGB :: Colors -> T.Text
+  toARGB = _color . (\case
+    LightBlue -> hex @"#90CCFFFF"
+    LightGreen -> hex @"#90CCFFCC"
+    Blue -> hex @"#FF99CCFF"
+    Green -> hex @"#FF00FF00")
 
 blue :: FormatCell
 blue = mkColor Blue
@@ -495,10 +501,10 @@ green :: FormatCell
 green = mkColor Green
 
 alternatingColors :: FormatCell
-alternatingColors coords index = mkColor (if even index then LightGreen else LightBlue) coords index
+alternatingColors index = mkColor (if even index then LightGreen else LightBlue) index
 ```
 
-Additionally, we compose an `FCTransform` for the number format.
+Additionally, I compose an `FCTransform` for the number format.
 Such a transform is used to accumulate cell formatting.
 
 ```haskell
@@ -507,7 +513,7 @@ with2decimalDigits fcTransform =
   fcTransform & X.formattedFormat %~ X.formatNumberFormat ?~ X.StdNumberFormat X.Nf2Decimal
 ```
 
-And we make a transform for centering the cell content.
+And I make a transform for centering the cell content.
 
 ```haskell
 alignedCenter :: FCTransform
@@ -516,7 +522,7 @@ alignedCenter = horizontalAlignment X.CellHorizontalAlignmentCenter
 
 ### Result
 
-Finally, we write the result and get the spreadsheet like the one at the beginning of [Example 3](#example-3).
+Finally, I write the result and get the spreadsheet like the one at the beginning of [Example 3](#example-3).
 
 ```haskell
 main :: IO ()
@@ -536,8 +542,58 @@ With formulas enabled, the sheet looks like this:
 <img src = "https://raw.githubusercontent.com/deemp/clerk/master/README/Example3/demoFormulas.png" width = "80%">
 
 ```haskell
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
+
+import Clerk
+import Clerk.Row
+import Clerk.Sheet (mkRef')
+import Control.Lens ((&), (+~))
+import Control.Monad (void)
+import Control.Monad.RWS (gets)
+
 main :: IO ()
-main = print "hello"
+main = writeXlsx "example4.xlsx" [("List 1", sheet 9 15)]
+
+colFun :: ToCellData output => output -> RowI input (Ref a)
+colFun = columnF blank . const
+
+colRef_ :: InputIndex -> RowIO input CellData ()
+colRef_ = void . colFun
+
+index :: RowO CellData InputIndex
+index = gets ((+ 1) . _inputIndex)
+
+row0 :: Int -> Int -> Row (Ref Int, Ref Int)
+row0 a b = do
+  colRef_ =<< index
+  r1 <- colFun a
+  r2 <- colFun b
+  pure (r1, r2)
+
+row1 :: (Ref Int, Ref Int) -> Row (Ref Int, Ref Int)
+row1 (a, b) =
+  do
+    colRef_ =<< index
+    r1 <- colFun (fun "MAX" [a, b] :: Formula Int)
+    r2 <- colFun (fun "MIN" [a, b] :: Formula Int)
+    pure (r1, r2)
+
+row3 :: (Ref Int, Ref Int) -> Row (Ref Int, Ref Int)
+row3 (a, b) = do
+  colRef_ =<< index
+  r1 <- colFun (funRef a)
+  r2 <- colFun (funRef b)
+  r3 <- colFun (fun "MOD" [r1, r2] :: Formula Int)
+  pure (r2, r3)
+
+sheet :: Int -> Int -> Sheet ()
+sheet a b = do
+  start <- mkRef' @"A1"
+  s1 <- place start (row0 a b)
+  placeIxsFs_ start [1 .. 6] (cycle [row1, row3]) s1
+  pure ()
 ```
 
 ## Contribute

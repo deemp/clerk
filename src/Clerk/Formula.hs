@@ -1,12 +1,12 @@
 module Clerk.Formula where
 
-import Clerk.Coordinates ( Coords )
-import Clerk.Expression ( Expr(ERef) )
-import Clerk.Internal ( UnsafeChangeType(unsafeChangeType) )
-import Clerk.Reference ( Ref(Ref) )
+import Clerk.Coordinates (Coords)
+import Clerk.Expression (Expr (ERef))
+import Clerk.Internal (UnsafeChangeType (unsafeChangeType))
+import Clerk.Reference (Ref (Ref))
 
 -- | Formula
-newtype Formula t = Formula {unFormula :: Expr t}
+newtype Formula t = Formula {_formula :: Expr t}
   deriving newtype (UnsafeChangeType)
 
 -- | Something that can be turned into a formula
@@ -14,12 +14,12 @@ class ToFormula a where
   toFormula :: a -> Formula b
 
 instance ToFormula (Ref a) where
-  toFormula :: Ref a -> Formula t
+  toFormula :: Ref a -> Formula b
   toFormula (Ref c) = Formula $ ERef (Ref c)
 
 -- | Convert a reference to a formula
-ref :: Ref a -> Formula a
-ref = toFormula
+funRef :: Ref a -> Formula a
+funRef = toFormula
 
 instance ToFormula Coords where
   toFormula :: Coords -> Formula t

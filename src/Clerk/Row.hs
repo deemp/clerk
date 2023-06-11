@@ -4,6 +4,7 @@ import Clerk.Coordinates
 import Clerk.Expression
 import Clerk.Formula
 import Clerk.Reference
+import Codec.Xlsx (RowIndex (unRowIndex))
 import qualified Codec.Xlsx as X
 import qualified Codec.Xlsx.Formatted as X
 import Control.Monad
@@ -13,21 +14,19 @@ import Control.Monad.Writer.Class (MonadWriter)
 import Data.Default (Default (def))
 import Data.Text (Text)
 import qualified Data.Text as T
+import GHC.Generics (Generic)
 import Lens.Micro
 
 -- Row ---------
 
--- | Index of an input
-type InputIndex = Int
-
 -- | Format a single cell based on its coordinates, index in an input list, and data
-type FormatCell = forall a b. (ToCoords a, ToCellData b) => a -> InputIndex -> b -> Row X.FormattedCell
+type FormatCell = forall a b. (ToCoords a, ToCellData b) => InputIndex -> a -> b -> Row X.FormattedCell
 
 -- | Template of a cell with content, style, column properties
 data CellTemplate input output = CellTemplate
-  { mkOutput :: input -> output
-  , fmtCell :: FormatCell
-  , columnsProperties :: Maybe X.ColumnsProperties
+  { _mkOutput :: input -> output
+  , _fmtCell :: FormatCell
+  , _columnsProperties :: Maybe X.ColumnsProperties
   }
 
 -- | Template for multiple cells
@@ -39,6 +38,7 @@ type RowState = Coords
 -- | A monad for describing a horizontal block of data - a @row@
 newtype RowIO input output a = Row
   {_rowIO :: StateT RowState (Writer (Template input output)) a}
+  deriving (Generic)
   deriving newtype (Functor, Applicative, Monad, MonadState RowState, MonadWriter (Template input output))
 
 -- | Row with a default 'CellData' output
@@ -51,16 +51,16 @@ type RowO output a = RowIO () output a
 type Row a = RowO CellData a
 
 -- | Run builder on given coordinates. Get a result and a template
-runBuilder :: RowIO input output a -> RowState -> (a, Template input output)
-runBuilder builder coord = runWriter (evalStateT (_rowIO builder) coord)
+runRow :: RowIO input output a -> RowState -> (a, Template input output)
+runRow builder state = runWriter (evalStateT (_rowIO builder) state)
 
 -- | Run builder on given coordinates. Get a template
 execRow :: RowIO input output a -> RowState -> Template input output
-execRow builder state = snd $ runBuilder builder state
+execRow builder state = snd $ runRow builder state
 
 -- | Run builder on given coordinates. Get a result
 evalRow :: RowIO input output a -> RowState -> a
-evalRow builder state = fst $ runBuilder builder state
+evalRow builder state = fst $ runRow builder state
 
 -- RowShow ---------
 
@@ -78,7 +78,7 @@ instance RowShow Coords where
             "'[" <> T.pack (cs & _coordsWorkbookPath) <> "]" <> (cs & (T.pack . _coordsWorksheetName)) <> "'!"
         | (cs & _coordsWorksheetName) /= (state & _coordsWorksheetName) = (cs & (T.pack . _coordsWorksheetName)) <> "!"
         | otherwise = ""
-    pure $ prefix <> toLetters (cs ^. col) <> T.pack (show (cs ^. row))
+    pure $ prefix <> toLetters (cs ^. col) <> T.pack (show (cs ^. row . to unRowIndex))
 
 showBinaryOperation :: (RowShow a, RowShow b) => a -> b -> T.Text -> Row T.Text
 showBinaryOperation arg1 arg2 operator = do
@@ -88,9 +88,9 @@ showBinaryOperation arg1 arg2 operator = do
 
 instance Show (Expr t) => RowShow (Expr t) where
   rowShow :: Expr t -> Row T.Text
-  rowShow (EBinaryOp{..}) =
-    showBinaryOperation arg1 arg2 $
-      case binOp of
+  rowShow (EBinaryOperation{..}) =
+    showBinaryOperation _argLeft _argRight $
+      case _binaryOperator of
         OpAdd -> "+"
         OpSubtract -> "-"
         OpMultiply -> "*"
@@ -110,9 +110,9 @@ instance Show (Expr t) => RowShow (Expr t) where
   rowShow (EFunction n args) = do
     d1 <- forM args rowShow
     pure $ (n & _functionName) <> "(" <> T.intercalate "," d1 <> ")"
-  rowShow (EUnaryOp{..}) =
-    case unaryOp of
-      OpNeg -> rowShow arg
+  rowShow (EUnaryOperation{..}) =
+    case _unaryOperator of
+      OpNeg -> rowShow _arg
   rowShow EValue{..} = pure $ T.pack $ show (EValue{..})
 
 instance Show (Expr t) => RowShow (Formula t) where
@@ -164,6 +164,9 @@ instance ToCellData Bool where
 instance ToCellData CellData where
   toCellData :: CellData -> Row CellData
   toCellData = pure
+
+instance ToCellData InputIndex where
+  toCellData (InputIndex i) = toCellData i
 
 instance Show (Expr a) => ToCellData (Expr a) where
   toCellData :: Expr a -> Row CellData

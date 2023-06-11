@@ -7,7 +7,7 @@ import Clerk.Reference (Ref)
 import Data.Kind (Type)
 
 mkOp2 :: (ToFormula a, ToFormula b) => BinaryOperator -> a -> b -> Formula t
-mkOp2 f c1 c2 = Formula $ EBinaryOp f (unFormula $ toFormula c1) (unFormula $ toFormula c2)
+mkOp2 f c1 c2 = Formula $ EBinaryOperation f (_formula $ toFormula c1) (_formula $ toFormula c2)
 
 mkNumOp2 :: (Num t, ToFormula a, ToFormula b) => BinaryOperator -> a -> b -> Formula t
 mkNumOp2 = mkOp2
@@ -72,7 +72,7 @@ infixr 8 .**
 type BoolOperator a b c = (Ord a, ToFormula (b a), ToFormula (c a)) => b a -> c a -> Formula Bool
 
 mkBoolOp2 :: (Ord a, ToFormula (b a), ToFormula (c a)) => BinaryOperator -> b a -> c a -> Formula Bool
-mkBoolOp2 f c1 c2 = Formula $ EBinaryOp f (unFormula $ toFormula c1) (unFormula $ toFormula c2)
+mkBoolOp2 f c1 c2 = Formula $ EBinaryOperation f (_formula $ toFormula c1) (_formula $ toFormula c2)
 
 -- | Construct a @less-than@ expression like @A1 < B1@
 (.<) :: BoolOperator a b c

@@ -1,15 +1,15 @@
 module Clerk.Function where
 
-import Clerk.Expression ( Expr(EFunction), FunctionName )
-import Clerk.Formula ( Formula(..), ToFormula(..) )
-import Clerk.Internal ( UnsafeChangeType(unsafeChangeType) )
+import Clerk.Expression (Expr (EFunction), FunctionName)
+import Clerk.Formula (Formula (..), ToFormula (..))
+import Clerk.Internal (UnsafeChangeType (unsafeChangeType))
 
 class MakeFunction t where
   makeFunction :: FunctionName -> [Formula s] -> t
 
 instance MakeFunction (Formula a) where
   makeFunction :: FunctionName -> [Formula s] -> Formula a
-  makeFunction name args = Formula $ EFunction name (unsafeChangeType . unFormula <$> args)
+  makeFunction name args = Formula $ EFunction name (unsafeChangeType . _formula <$> args)
 
 instance (Foldable f, MakeFunction t, ToFormula a) => MakeFunction (f a -> t) where
   makeFunction :: FunctionName -> [Formula s] -> f a -> t

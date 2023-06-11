@@ -11,15 +11,18 @@ The source code for this example is available [here](app/Example1.hs).
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE DataKinds #-}
 
 {-
 ### Imports
 
-We import the necessary stuff.
+I import the necessary stuff.
 -}
 
-import Clerk ( (.*), (.**), (.+), (./), as, fun, mkRef, ref, rowShowDefault, val, Formula, Ref )
+import Clerk ( (.*), (.**), (.+), (./), as, fun, mkRefDefault, funRef,  val, Formula, Ref )
+import Clerk.Row ( rowShowDefault )
 import Data.Text (Text)
+import Clerk.ForExamples
 
 {- LIMA_DISABLE -}
 
@@ -33,36 +36,29 @@ main = undefined
 
 Formulas consist of references, functions, and values.
 
-We define a couple of helper functions just for this example.
-These function simplify working with references and formulas.
-
-Now, we pretend that there are values with given types and that we can get references to them.
-
-First, we make a couple of references to `Int` values.
+I make references to `Double` values
 -}
 
 r1 :: Ref Double
-Right r1 = mkRef "B4"
+r1 = mkRefDefault @"B4"
 r2 :: Ref Double
-Right r2 = mkRef "E6"
+r2 = mkRefDefault @"E6"
 r3 :: Ref Double
-Right r3 = mkRef "G8"
+r3 = mkRefDefault @"G8"
 
 {-
-Next, we convert one of these references to a formula via `ref` and inspect its representation.
+Next, I convert one of these references to a formula via `funRef` and inspect the formula representation.
 -}
 
-showFormula = rowShowDefault
-
 t1 :: Text
-t1 = showFormula $ ref r2
+t1 = showFormula $ funRef r2
 
 -- >>>t1
 -- "E6"
 
 {-
-Finally, we construct a longer expression and look at its representation.
-We convert a literal value to a formula via `val`.
+Finally, I construct a longer expression and look at its representation.
+I convert a literal value to a formula via `val`.
 -}
 
 t2 :: Text
@@ -72,12 +68,12 @@ t2 = showFormula $ r1 .* r2 .* val 3 .+ r1 .** r2 ./ r3
 -- "B4*E6*3.0+B4^E6/G8"
 
 {-
-Of course, we can mix differently typed references in expressions when necessary.
-For this case, we have an unsafe `as` function.
+Of course, I can mix differently typed references in expressions when necessary.
+For this case, I have an unsafe `as` function.
 -}
 
 r4 :: Ref Int
-Right r4 = mkRef "T6"
+r4 = mkRefDefault @"T6"
 
 t3 :: Text
 t3 = showFormula $ as @Double (r4 .* r4 .* val 3) .+ r1 .** r2 ./ r3
@@ -86,7 +82,7 @@ t3 = showFormula $ as @Double (r4 .* r4 .* val 3) .+ r1 .** r2 ./ r3
 -- "T6*T6*1.5e-323+B4^E6/G8"
 
 {-
-This `as` function should not be abused, though. If we need an `Int` instead of a `Double`, we can explicitly use an Excel function.
+This `as` function should not be abused, though. If I need an `Int` instead of a `Double`, I can explicitly use an Excel function.
 -}
 
 round_ :: [Formula a] -> Formula Int
@@ -97,3 +93,8 @@ t4 = round_ [r1 .** r2 ./ r3]
 
 -- >>>:t t4
 -- t4 :: Formula Int
+
+t5 = showFormula t4
+
+-- TODO printing breaks HLS
+-- >>> t5

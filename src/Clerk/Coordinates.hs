@@ -9,12 +9,16 @@ import qualified Data.Text as T
 import GHC.Generics (Generic)
 import Lens.Micro (Lens', lens)
 
+-- | Index of an input
+newtype InputIndex = InputIndex Int deriving newtype (Num, Show, Integral, Enum, Real, Ord, Eq, Default)
+
 -- | Coords of a cell
 data Coords = Coords
   { _col :: ColumnIndex
   , _row :: RowIndex
   , _coordsWorksheetName :: String
   , _coordsWorkbookPath :: FilePath
+  , _inputIndex :: InputIndex
   }
   deriving stock (Generic, Show)
 
@@ -116,5 +120,8 @@ instance Show ColumnIndexTranslationError where
   show :: ColumnIndexTranslationError -> String
   show (ColumnIndexTranslationError{..}) = "Column index contains an invalid character at position: " <> show _atPosition
 
+unsafeColumnIndexFromString :: String -> ColumnIndex
+unsafeColumnIndexFromString x = fromIntegral $ foldl' (\res c -> res * alphabetSize + (ord c - ord 'A' + 1)) 0 x
+
 unsafeColumnIndexFromLetters :: T.Text -> ColumnIndex
-unsafeColumnIndexFromLetters (T.unpack -> x) = fromIntegral $ foldl' (\res c -> res * alphabetSize + (ord c - ord 'A' + 1)) 0 x
+unsafeColumnIndexFromLetters = unsafeColumnIndexFromString . T.unpack

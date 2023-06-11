@@ -1,10 +1,16 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
+
 module Clerk.Reference where
 
+import Clerk.AddressTyped
 import Clerk.Coordinates
 import Clerk.Internal
-import Data.Char
+import Codec.Xlsx (ColumnIndex, RowIndex)
 import Data.Default
-import qualified Data.Text as T
 
 -- | A typed reference to a cell.
 --
@@ -48,9 +54,3 @@ instance FromCoords (Ref a) where
 instance UnsafeChangeType Ref where
   unsafeChangeType :: Ref b -> Ref c
   unsafeChangeType (Ref c) = Ref c
-
-mkRef :: String -> Either ColumnIndexTranslationError (Ref a)
-mkRef s = _col >>= (\col' -> pure $ fromCoords def{_col = col', _row})
- where
-  _col = fromLetters $ T.pack $ takeWhile isAlpha s
-  _row = read $ dropWhile isAlpha s

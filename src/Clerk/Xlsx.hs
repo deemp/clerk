@@ -25,7 +25,7 @@ composeXlsx path sheetBuilders = workBookWithColumnWidths
       $ _sheet x
   workBookWithData =
     flip X.formatWorkbook X.def $
-      (\(name, tf) -> (name, (getTransform (T.unpack name) tf & fmTransform) X.def))
+      (\(name, tf) -> (name, (getTransform (T.unpack name) tf & _fmTransform) X.def))
         <$> sheetBuilders
   workBookWithColumnWidths =
     workBookWithData
@@ -35,7 +35,7 @@ composeXlsx path sheetBuilders = workBookWithColumnWidths
             ( \x (name, ws) ->
                 ( name
                 , ws
-                    & (getTransform (T.unpack name) x & wsTransform)
+                    & (getTransform (T.unpack name) x & _wsTransform)
                     & X.wsColumnsProperties %~ filter (isJust . X.cpWidth)
                 )
             )
