@@ -77,11 +77,16 @@ library:
     - MultiParamTypeClasses
     - NamedFieldPuns
     - OverloadedStrings
+    - PolyKinds
+    - QuantifiedConstraints
     - RankNTypes
     - RecordWildCards
     - ScopedTypeVariables
     - StandaloneDeriving
     - TupleSections
+    - TypeApplications
+    - TypeFamilies
+    - TypeOperators
     - UndecidableInstances
     - ViewPatterns
 
