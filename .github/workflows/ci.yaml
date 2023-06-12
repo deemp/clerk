@@ -25,7 +25,7 @@ jobs:
           git pull --rebase --autostash
 
           cd '.'
-          nix build --store /home/runner/nix .#updateLocks
+          nix run .#updateLocks
 
           git commit -a -m "action: Update flake locks" && git push || echo ""
       # - name: Write docs
