@@ -18,8 +18,8 @@ instance ToFormula (Ref a) where
   toFormula (Ref c) = Formula $ ERef (Ref c)
 
 -- | Convert a reference to a formula
-funRef :: Ref a -> Formula a
-funRef = toFormula
+formulaRef :: Ref a -> Formula a
+formulaRef = toFormula
 
 instance ToFormula Coords where
   toFormula :: Coords -> Formula t

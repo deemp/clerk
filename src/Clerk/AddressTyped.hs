@@ -1,24 +1,14 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
 
 module Clerk.AddressTyped where
 
 import Clerk.Coordinates
-import Clerk.Internal
 import Clerk.Symbols
 import Codec.Xlsx (ColumnIndex, RowIndex)
-import Data.Char
 import Data.Data
-import Data.Default
-import qualified Data.Text as T
 import Fcf (Eval, Exp, Fst, Snd, type (++))
 import Fcf.Class.Foldable
-import Fcf.Data.List (DropWhile, Span, TakeWhile)
+import Fcf.Data.List (Span)
 import GHC.Base
 import GHC.TypeLits as TL
 
@@ -109,7 +99,7 @@ exampleAddress = mkAddress @"AA123"
 -- The address must be a column index and a row number.
 -- The column index must have one or more uppercase letters.
 -- The row number must have one or more digits.
--- column: 
+-- column:
 -- row: 1
 -- rest: a
 -- In the expression: mkAddress @"A1a"
