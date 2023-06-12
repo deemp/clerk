@@ -4,88 +4,28 @@
 
 -- | @Clerk@ library
 module Clerk (
-  -- * Coords
-  Coords (..),
-  mkCoords,
-  ToCoords (..),
-  FromCoords (..),
-  CoordsLike,
-
-  -- * Cell references
-  Ref,
-  row,
-  col,
-  funRef,
-  val,
-
-  -- * Changing types
-  UnsafeChangeType (..),
-  as,
-
-  -- * Cell formatting
-  InputIndex,
-  FormatCell,
-  CellTemplate,
-  FormattedMap,
-  FMTransform,
-  WSTransform,
-  Transform,
-  FCTransform,
-  horizontalAlignment,
-  mkColor,
-  blank,
-  ToARGB (..),
-
-  -- * Templates
-
-  -- * Columns
+  module Clerk.AddressTyped,
+  module Clerk.ColorTyped,
   module Clerk.Column,
-
-  -- * Sheet builder
-  Sheet,
-  SheetState (..),
+  module Clerk.Coordinates,
+  module Clerk.Expression,
+  module Clerk.Format,
+  module Clerk.Formula,
+  module Clerk.Function,
+  module Clerk.Internal,
+  module Clerk.Operators,
   module Clerk.Place,
-  evalSheetDefault,
-
-  -- * Row builder
-  RowShow (..),
-
-  -- * Expressions
-  Expr,
-  Formula,
-  ToFormula (..),
-  NumOperator,
-  (.+),
-  (.-),
-  (.*),
-  (./),
-  (.:),
-  (.^),
-  (.^^),
-  (.**),
-  (.<),
-  (.>),
-  (.<=),
-  (.>=),
-  (.=),
-  (.<>),
-  (.&),
-  fun,
-  -- TODO work on default types
-  Range,
-  FunctionName,
-
-  -- * Cells
-  ToCellData (..),
-
-  -- * xlsx
-  composeXlsx,
-  writeXlsx,
-
-  -- * For examples
-  mkRefDefault,
+  module Clerk.Reference,
+  module Clerk.Render,
+  module Clerk.Row,
+  module Clerk.Sheet,
+  module Clerk.Symbols,
+  module Clerk.Transform,
+  module Clerk.Xlsx,
 ) where
 
+import Clerk.AddressTyped
+import Clerk.ColorTyped
 import Clerk.Column
 import Clerk.Coordinates
 import Clerk.Expression
@@ -96,11 +36,12 @@ import Clerk.Internal
 import Clerk.Operators
 import Clerk.Place
 import Clerk.Reference
+import Clerk.Render
 import Clerk.Row
 import Clerk.Sheet
+import Clerk.Symbols
 import Clerk.Transform
 import Clerk.Xlsx
-import Clerk.ForExamples
 
 -- TODO add modes to state
 -- Google Sheets, Excel, Tabular
