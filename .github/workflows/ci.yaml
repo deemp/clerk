@@ -70,7 +70,6 @@ jobs:
           - "902"
           - "928"
           - "945"
-          - "962"
   _3_push_to_cachix:
     name: Nix CI
     runs-on: ${{ matrix.os }}
