@@ -15,9 +15,7 @@ jobs:
         with:
           key: ${{ runner.os }}-nix-${{ hashfiles('./flake.nix', './flake.lock') }}-docs
           path: /home/runner/nix
-          restore-keys: |
-            ${{ runner.os }}-nix-${{ hashfiles('./flake.nix', './flake.lock') }}-docs
-            ${{ runner.os }}-nix-
+          restore-keys: ""
       - name: Config git for github-actions
         run: |
           git config user.name github-actions
