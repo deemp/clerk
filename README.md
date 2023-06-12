@@ -30,6 +30,7 @@ The source code for this example is available [here](app/Example1.hs).
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 ```
 
 ### Imports
@@ -37,16 +38,15 @@ The source code for this example is available [here](app/Example1.hs).
 I import the necessary stuff.
 
 ```haskell
-import Clerk ( (.*), (.**), (.+), (./), as, fun, mkRefDefault, funRef,  val, Formula, Ref )
-import Clerk.Row ( rowShowDefault )
+import Clerk ( (.*), (.**), (.+), (./), as, fun, formulaRef,  val, Formula, Ref )
 import Data.Text (Text)
-import Clerk.ForExamples
+import Examples.Helpers ( showFormula, mkRef )
 ```
 
 <!-- LIMA_DISABLE
 
 main :: IO ()
-main = undefined
+main = putStrLn "Hello, World!"
 
 LIMA_ENABLE -->
 
@@ -58,18 +58,18 @@ I make references to `Double` values
 
 ```haskell
 r1 :: Ref Double
-r1 = mkRefDefault @"B4"
+r1 = mkRef @"B4"
 r2 :: Ref Double
-r2 = mkRefDefault @"E6"
+r2 = mkRef @"E6"
 r3 :: Ref Double
-r3 = mkRefDefault @"G8"
+r3 = mkRef @"G8"
 ```
 
-Next, I convert one of these references to a formula via `funRef` and inspect the formula representation.
+Next, I convert one of these references to a formula via `formulaRef` and inspect the formula representation.
 
 ```haskell
 t1 :: Text
-t1 = showFormula $ funRef r2
+t1 = showFormula $ formulaRef r2
 
 -- >>>t1
 -- "E6"
@@ -91,7 +91,7 @@ For this case, I have an unsafe `as` function.
 
 ```haskell
 r4 :: Ref Int
-r4 = mkRefDefault @"T6"
+r4 = mkRef @"T6"
 
 t3 :: Text
 t3 = showFormula $ as @Double (r4 .* r4 .* val 3) .+ r1 .** r2 ./ r3
@@ -103,19 +103,20 @@ t3 = showFormula $ as @Double (r4 .* r4 .* val 3) .+ r1 .** r2 ./ r3
 This `as` function should not be abused, though. If I need an `Int` instead of a `Double`, I can explicitly use an Excel function.
 
 ```haskell
-round_ :: [Formula a] -> Formula Int
-round_ = fun "ROUND"
+round_ :: forall a. Formula a -> Formula Int
+round_ x = fun "ROUND" [x]
 
 t4 :: Formula Int
-t4 = round_ [r1 .** r2 ./ r3]
+t4 = round_ (r1 .** r2 ./ r3)
 
 -- >>>:t t4
 -- t4 :: Formula Int
 
+t5 :: Text
 t5 = showFormula t4
 
--- TODO printing breaks HLS
 -- >>> t5
+-- "ROUND(B4^E6/G8)"
 ```
 
 <!-- FOURMOLU_DISABLE -->
@@ -140,10 +141,6 @@ The below sections describe how such a spreadsheet can be constructed.
 
 I'll need several language extensions.
 
-```haskell
-{-# LANGUAGE ImportQualifiedPost #-}
-```
-
 <!-- LIMA_DISABLE
 
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
@@ -160,9 +157,8 @@ I import the necessary stuff.
 ```haskell
 import Clerk
 import Control.Monad (forM, forM_, void)
-import Data.Text qualified as T
+import qualified Data.Text as T
 import Lens.Micro ((&), (+~), (^.))
-import Clerk.Row
 ```
 
 ### Tables
@@ -296,8 +292,6 @@ I'll need several language extensions.
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoOverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
@@ -312,8 +306,6 @@ And import the necessary stuff.
 
 ```haskell
 import Clerk
-import Clerk.ColorTyped (Color(..), hex)
-import Clerk.Row
 import Codec.Xlsx qualified as X
 import Codec.Xlsx.Formatted qualified as X
 import Data.Text qualified as T
@@ -385,12 +377,12 @@ Later, I'll use these outputs to relate the positions of tables on a sheet.
 Notice that I use styles like `lightBlue` here. These styles are defined in the [Styles](#styles) section.
 
 ```haskell
-constant :: ToCellData a => RowI (ConstantData a) (Ref (), Ref a)
+constant :: (ToCellData a) => RowI (ConstantData a) (Ref (), Ref a)
 constant = do
   refTopLeft <- columnF lightBlue constantName
-  columnF lightBlue constantSymbol
+  columnF_ lightBlue constantSymbol
   refValue <- columnF (lightBlue .& with2decimalDigits) constantValue
-  columnF lightBlue constantUnits
+  columnF_ lightBlue constantUnits
   return (refTopLeft, refValue)
 ```
 
@@ -410,20 +402,16 @@ volumeData = Volume <$> [1 .. 10]
 To pass the constants references in a structured way, I make a helper type.
 
 ```haskell
-data ConstantsRefs = ConstantsRefs
-  { refGasConstant :: Ref Double
-  , refNumberOfMoles :: Ref Double
-  , refTemperature :: Ref Double
-  }
+type ConstantsRefs = Constants Ref
 ```
 
 Next, I define a function to produce a row for volume and pressure.
 
 ```haskell
 values :: ConstantsRefs -> RowI Volume ()
-values ConstantsRefs{..} = do
+values Constants{..} = do
   refVolume <- columnF alternatingColors volume
-  let pressure' = refGasConstant .* refNumberOfMoles .* refTemperature ./ refVolume
+  let pressure' = gasConstant .* numberOfMoles .* temperature ./ refVolume
   columnF_ (alternatingColors .& with2decimalDigits) (const pressure')
 ```
 
@@ -474,7 +462,7 @@ sheet = do
   (nMolesTopLeft, nMoles) <- placeIn (gasTopLeft & row +~ 1) constants.numberOfMoles constant
   temperature <- snd <$> placeIn (nMolesTopLeft & row +~ 1) constants.temperature constant
   valuesHeaderTopLeft <- place (constantsHeaderTopRight & col +~ 2) valuesHeader
-  placeIns (valuesHeaderTopLeft & row +~ 2) volumeData (values $ ConstantsRefs gas nMoles temperature)
+  placeIns (valuesHeaderTopLeft & row +~ 2) volumeData (values $ Constants gas nMoles temperature)
 ```
 
 ### Styles
@@ -482,26 +470,14 @@ sheet = do
 I used several styles to format the tables. This is how these styles are defined.
 
 ```haskell
-data Colors = LightBlue | LightGreen | Blue | Green
-instance ToARGB Colors where
-  toARGB :: Colors -> T.Text
-  toARGB = _color . (\case
-    LightBlue -> hex @"#90CCFFFF"
-    LightGreen -> hex @"#90CCFFCC"
-    Blue -> hex @"#FF99CCFF"
-    Green -> hex @"#FF00FF00")
-
-blue :: FormatCell
-blue = mkColor Blue
-
-lightBlue :: FormatCell
-lightBlue = mkColor LightBlue
-
-green :: FormatCell
-green = mkColor Green
+blue, lightBlue, green, lightGreen :: FormatCell
+blue = mkColor (hex @"#FF99CCFF")
+lightBlue = mkColor (hex @"#90CCFFFF")
+green = mkColor (hex @"#FF00FF00")
+lightGreen = mkColor (hex @"#90CCFFCC")
 
 alternatingColors :: FormatCell
-alternatingColors index = mkColor (if even index then LightGreen else LightBlue) index
+alternatingColors index = (if even index then lightGreen else lightBlue) index
 ```
 
 Additionally, I compose an `FCTransform` for the number format.
@@ -547,27 +523,24 @@ With formulas enabled, the sheet looks like this:
 {-# LANGUAGE TypeApplications #-}
 
 import Clerk
-import Clerk.Row
-import Clerk.Sheet (mkRef')
-import Control.Lens ((&), (+~))
 import Control.Monad (void)
 import Control.Monad.RWS (gets)
 
 main :: IO ()
 main = writeXlsx "example4.xlsx" [("List 1", sheet 9 15)]
 
-colFun :: ToCellData output => output -> RowI input (Ref a)
+colFun :: (ToCellData output) => output -> RowI input (Ref a)
 colFun = columnF blank . const
 
-colRef_ :: InputIndex -> RowIO input CellData ()
-colRef_ = void . colFun
+colIndex :: InputIndex -> RowIO input CellData ()
+colIndex = void . colFun
 
 index :: RowO CellData InputIndex
 index = gets ((+ 1) . _inputIndex)
 
 row0 :: Int -> Int -> Row (Ref Int, Ref Int)
 row0 a b = do
-  colRef_ =<< index
+  colIndex =<< index
   r1 <- colFun a
   r2 <- colFun b
   pure (r1, r2)
@@ -575,16 +548,16 @@ row0 a b = do
 row1 :: (Ref Int, Ref Int) -> Row (Ref Int, Ref Int)
 row1 (a, b) =
   do
-    colRef_ =<< index
+    colIndex =<< index
     r1 <- colFun (fun "MAX" [a, b] :: Formula Int)
     r2 <- colFun (fun "MIN" [a, b] :: Formula Int)
     pure (r1, r2)
 
 row3 :: (Ref Int, Ref Int) -> Row (Ref Int, Ref Int)
 row3 (a, b) = do
-  colRef_ =<< index
-  r1 <- colFun (funRef a)
-  r2 <- colFun (funRef b)
+  colIndex =<< index
+  r1 <- colFun (formulaRef a)
+  r2 <- colFun (formulaRef b)
   r3 <- colFun (fun "MOD" [r1, r2] :: Formula Int)
   pure (r2, r3)
 
@@ -592,7 +565,7 @@ sheet :: Int -> Int -> Sheet ()
 sheet a b = do
   start <- mkRef' @"A1"
   s1 <- place start (row0 a b)
-  placeIxsFs_ start [1 .. 6] (cycle [row1, row3]) s1
+  placeIxsFs_ start [1 :: Int .. 6] (cycle [row1, row3]) s1
   pure ()
 ```
 
@@ -629,3 +602,8 @@ This project provides a dev environment via a `Nix` flake.
     - [Prerequisites](https://github.com/deemp/flakes#prerequisites)
     - `Haskell` project [template](https://github.com/deemp/flakes/tree/main/templates/codium/haskell#readme)
     - [Haskell](https://github.com/deemp/flakes/blob/main/README/Haskell.md)
+
+1. If `Haskell Language Server` doesn't want to run code in `-- >>>` comments:
+   1. Check the Output of `HLS`.
+   1. Find there a directory name containing `hie-bios`.
+   1. Remove the `hie-bios/dist-clerk-*` directory.

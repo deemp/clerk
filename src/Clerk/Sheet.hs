@@ -1,6 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 
 module Clerk.Sheet where
 
@@ -32,7 +30,7 @@ mkCoords _col _row = do
   SheetState{_sheetWorkbookPath = _coordsWorkbookPath, _sheetWorksheetName = _coordsWorksheetName} <- get
   pure Coords{_col, _row, _inputIndex = 0, ..}
 
-mkCoords' :: forall address column row c a. Address' address column row c => Sheet Coords
+mkCoords' :: forall address column row c. Address' address column row c => Sheet Coords
 mkCoords' = mkCoords _col _row
  where
   (_col, _row) = mkAddress @address
@@ -43,7 +41,7 @@ mkRef _col _row = do
   SheetState{_sheetWorkbookPath = _coordsWorkbookPath, _sheetWorksheetName = _coordsWorksheetName} <- get
   pure $ Ref $ Coords{_col, _row, _inputIndex = 0, ..}
 
-mkRef' :: forall address column row c a. Address' address column row c => Sheet (Ref ())
+mkRef' :: forall address column row c. Address' address column row c => Sheet (Ref ())
 mkRef' = mkRef _col _row
  where
   (_col, _row) = mkAddress @address

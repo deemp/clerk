@@ -1,11 +1,11 @@
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
+
 module Clerk.Format where
 
 import Clerk.Row (FormatCell, ToCellData (toCellData), dataCell)
 import qualified Codec.Xlsx as X
 import qualified Codec.Xlsx.Formatted as X
 import Data.Text (Text)
-import qualified Data.Text as T
-import Data.Word (Word8)
 import Lens.Micro ((&), (.~), (?~))
 
 -- TODO use Color

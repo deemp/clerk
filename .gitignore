@@ -7,3 +7,4 @@ dist-newstyle
 .~lock*
 result
 dist
+tmp

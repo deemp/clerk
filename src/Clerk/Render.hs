@@ -1,5 +1,3 @@
-{-# LANGUAGE ScopedTypeVariables #-}
-
 module Clerk.Render where
 
 import Clerk.Coordinates

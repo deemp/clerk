@@ -1,24 +1,6 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
-
 module Clerk.Symbols where
 
-import Clerk.Coordinates
-import Clerk.Internal
-import Codec.Xlsx (ColumnIndex, RowIndex)
-import Data.Char
-import Data.Data
-import Data.Default
-import qualified Data.Text as T
-import Fcf (Eval, Exp, Fst, Snd, type (++))
-import Fcf.Class.Foldable
-import Fcf.Data.List (DropWhile, Span, TakeWhile)
-import GHC.Base
-import GHC.TypeLits as TL
+import GHC.TypeLits
 
 type family FromChars1 (cs :: [Char]) (res :: Symbol) :: Symbol where
   FromChars1 '[] res = res

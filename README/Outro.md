@@ -31,3 +31,8 @@ This project provides a dev environment via a `Nix` flake.
     - [Prerequisites](https://github.com/deemp/flakes#prerequisites)
     - `Haskell` project [template](https://github.com/deemp/flakes/tree/main/templates/codium/haskell#readme)
     - [Haskell](https://github.com/deemp/flakes/blob/main/README/Haskell.md)
+
+1. If `Haskell Language Server` doesn't want to run code in `-- >>>` comments:
+   1. Check the Output of `HLS`.
+   1. Find there a directory name containing `hie-bios`.
+   1. Remove the `hie-bios/dist-clerk-*` directory.

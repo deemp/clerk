@@ -30,6 +30,13 @@ dependencies:
 
 ghc-options:
   - -Wall
+  - -Wno-unticked-promoted-constructors
+  - -Wcompat
+  - -Wincomplete-record-updates
+  - -Wincomplete-uni-patterns
+  - -Wno-unticked-promoted-constructors
+  - -Wredundant-constraints
+  - -Wunused-packages
 
 tests:
   docs:
@@ -77,43 +84,41 @@ library:
     - MultiParamTypeClasses
     - NamedFieldPuns
     - OverloadedStrings
+    - PolyKinds
+    - QuantifiedConstraints
     - RankNTypes
     - RecordWildCards
     - ScopedTypeVariables
     - StandaloneDeriving
     - TupleSections
+    - TypeApplications
+    - TypeFamilies
+    - TypeOperators
     - UndecidableInstances
     - ViewPatterns
 
 executables:
   example1:
-    main: app/Example1.hs
+    main: Examples/Example1.hs
     dependencies:
       - clerk
       - microlens
       - text
       - data-default
   example2:
-    main: app/Example2.hs
+    main: Examples/Example2.hs
     dependencies: &example2
       - clerk
       - microlens
       - text
       - xlsx
   example3:
-    main: app/Example3.hs
+    main: Examples/Example3.hs
     dependencies: *example2
   example4:
-    main: app/Example4.hs
+    main: Examples/Example4.hs
     dependencies:
-      - aeson
       - clerk
-      - text
       - xlsx
-      - lens-aeson
-      - lens
-      - pretty-simple
-      - ilist
-      - monad-loops
       - transformers
       - mtl

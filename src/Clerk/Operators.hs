@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 module Clerk.Operators where
 
 import Clerk.Expression (BinaryOperator (..), Expr (..))

@@ -27,8 +27,6 @@ I'll need several language extensions.
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoOverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
@@ -42,8 +40,6 @@ And import the necessary stuff.
 -}
 
 import Clerk
-import Clerk.ColorTyped (Color(..), hex)
-import Clerk.Row
 import Codec.Xlsx qualified as X
 import Codec.Xlsx.Formatted qualified as X
 import Data.Text qualified as T
@@ -115,12 +111,12 @@ Later, I'll use these outputs to relate the positions of tables on a sheet.
 Notice that I use styles like `lightBlue` here. These styles are defined in the [Styles](#styles) section.
 -}
 
-constant :: ToCellData a => RowI (ConstantData a) (Ref (), Ref a)
+constant :: (ToCellData a) => RowI (ConstantData a) (Ref (), Ref a)
 constant = do
   refTopLeft <- columnF lightBlue constantName
-  columnF lightBlue constantSymbol
+  columnF_ lightBlue constantSymbol
   refValue <- columnF (lightBlue .& with2decimalDigits) constantValue
-  columnF lightBlue constantUnits
+  columnF_ lightBlue constantUnits
   return (refTopLeft, refValue)
 
 {-
@@ -140,20 +136,16 @@ volumeData = Volume <$> [1 .. 10]
 To pass the constants references in a structured way, I make a helper type.
 -}
 
-data ConstantsRefs = ConstantsRefs
-  { refGasConstant :: Ref Double
-  , refNumberOfMoles :: Ref Double
-  , refTemperature :: Ref Double
-  }
+type ConstantsRefs = Constants Ref
 
 {-
 Next, I define a function to produce a row for volume and pressure.
 -}
 
 values :: ConstantsRefs -> RowI Volume ()
-values ConstantsRefs{..} = do
+values Constants{..} = do
   refVolume <- columnF alternatingColors volume
-  let pressure' = refGasConstant .* refNumberOfMoles .* refTemperature ./ refVolume
+  let pressure' = gasConstant .* numberOfMoles .* temperature ./ refVolume
   columnF_ (alternatingColors .& with2decimalDigits) (const pressure')
 
 {-
@@ -204,7 +196,7 @@ sheet = do
   (nMolesTopLeft, nMoles) <- placeIn (gasTopLeft & row +~ 1) constants.numberOfMoles constant
   temperature <- snd <$> placeIn (nMolesTopLeft & row +~ 1) constants.temperature constant
   valuesHeaderTopLeft <- place (constantsHeaderTopRight & col +~ 2) valuesHeader
-  placeIns (valuesHeaderTopLeft & row +~ 2) volumeData (values $ ConstantsRefs gas nMoles temperature)
+  placeIns (valuesHeaderTopLeft & row +~ 2) volumeData (values $ Constants gas nMoles temperature)
 
 {-
 ### Styles
@@ -212,26 +204,14 @@ sheet = do
 I used several styles to format the tables. This is how these styles are defined.
 -}
 
-data Colors = LightBlue | LightGreen | Blue | Green
-instance ToARGB Colors where
-  toARGB :: Colors -> T.Text
-  toARGB = _color . (\case
-    LightBlue -> hex @"#90CCFFFF"
-    LightGreen -> hex @"#90CCFFCC"
-    Blue -> hex @"#FF99CCFF"
-    Green -> hex @"#FF00FF00")
-
-blue :: FormatCell
-blue = mkColor Blue
-
-lightBlue :: FormatCell
-lightBlue = mkColor LightBlue
-
-green :: FormatCell
-green = mkColor Green
+blue, lightBlue, green, lightGreen :: FormatCell
+blue = mkColor (hex @"#FF99CCFF")
+lightBlue = mkColor (hex @"#90CCFFFF")
+green = mkColor (hex @"#FF00FF00")
+lightGreen = mkColor (hex @"#90CCFFCC")
 
 alternatingColors :: FormatCell
-alternatingColors index = mkColor (if even index then LightGreen else LightBlue) index
+alternatingColors index = (if even index then lightGreen else lightBlue) index
 
 {-
 Additionally, I compose an `FCTransform` for the number format.
@@ -245,6 +225,7 @@ with2decimalDigits fcTransform =
 {-
 And I make a transform for centering the cell content.
 -}
+
 alignedCenter :: FCTransform
 alignedCenter = horizontalAlignment X.CellHorizontalAlignmentCenter
 

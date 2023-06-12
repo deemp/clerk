@@ -1,24 +1,14 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
 
 module Clerk.AddressTyped where
 
 import Clerk.Coordinates
-import Clerk.Internal
 import Clerk.Symbols
 import Codec.Xlsx (ColumnIndex, RowIndex)
-import Data.Char
 import Data.Data
-import Data.Default
-import qualified Data.Text as T
 import Fcf (Eval, Exp, Fst, Snd, type (++))
 import Fcf.Class.Foldable
-import Fcf.Data.List (DropWhile, Span, TakeWhile)
+import Fcf.Data.List (Span)
 import GHC.Base
 import GHC.TypeLits as TL
 
@@ -102,7 +92,7 @@ exampleAddress = mkAddress @"AA123"
 -- The first digit of the row number must be between 1 and 9.
 -- The address: A023
 -- In the expression: mkAddress @"A023"
--- In an equation for `it_a9Gk': it_a9Gk = mkAddress @"A023"
+-- In an equation for `it_a7VR': it_a7VR = mkAddress @"A023"
 
 -- >>> mkAddress @"A1a"
 -- Failed to parse the address.
@@ -113,4 +103,4 @@ exampleAddress = mkAddress @"AA123"
 -- row: 1
 -- rest: a
 -- In the expression: mkAddress @"A1a"
--- In an equation for `it_a19ZV': it_a19ZV = mkAddress @"A1a"
+-- In an equation for `it_a4U9': it_a4U9 = mkAddress @"A1a"

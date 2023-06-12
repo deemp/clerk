@@ -36,15 +36,12 @@ library
       Clerk.Column
       Clerk.Coordinates
       Clerk.Expression
-      Clerk.ForExamples
       Clerk.Format
       Clerk.Formula
       Clerk.Function
       Clerk.Internal
       Clerk.Operators
       Clerk.Place
-      Clerk.PlaceMonadic
-      Clerk.PlaceMonadicTry
       Clerk.Reference
       Clerk.Render
       Clerk.Row
@@ -52,6 +49,7 @@ library
       Clerk.Symbols
       Clerk.Transform
       Clerk.Xlsx
+      Examples.Helpers
   hs-source-dirs:
       src
   default-extensions:
@@ -70,14 +68,19 @@ library
       MultiParamTypeClasses
       NamedFieldPuns
       OverloadedStrings
+      PolyKinds
+      QuantifiedConstraints
       RankNTypes
       RecordWildCards
       ScopedTypeVariables
       StandaloneDeriving
       TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeOperators
       UndecidableInstances
       ViewPatterns
-  ghc-options: -Wall
+  ghc-options: -Wall -Wno-unticked-promoted-constructors -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wredundant-constraints -Wunused-packages
   build-depends:
       base >=4.9 && <5.0
     , bytestring
@@ -94,10 +97,10 @@ library
   default-language: Haskell2010
 
 executable example1
-  main-is: app/Example1.hs
+  main-is: Examples/Example1.hs
   other-modules:
       Paths_clerk
-  ghc-options: -Wall
+  ghc-options: -Wall -Wno-unticked-promoted-constructors -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wredundant-constraints -Wunused-packages
   build-depends:
       base >=4.9 && <5.0
     , clerk
@@ -107,10 +110,10 @@ executable example1
   default-language: Haskell2010
 
 executable example2
-  main-is: app/Example2.hs
+  main-is: Examples/Example2.hs
   other-modules:
       Paths_clerk
-  ghc-options: -Wall
+  ghc-options: -Wall -Wno-unticked-promoted-constructors -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wredundant-constraints -Wunused-packages
   build-depends:
       base >=4.9 && <5.0
     , clerk
@@ -120,10 +123,10 @@ executable example2
   default-language: Haskell2010
 
 executable example3
-  main-is: app/Example3.hs
+  main-is: Examples/Example3.hs
   other-modules:
       Paths_clerk
-  ghc-options: -Wall
+  ghc-options: -Wall -Wno-unticked-promoted-constructors -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wredundant-constraints -Wunused-packages
   build-depends:
       base >=4.9 && <5.0
     , clerk
@@ -133,21 +136,14 @@ executable example3
   default-language: Haskell2010
 
 executable example4
-  main-is: app/Example4.hs
+  main-is: Examples/Example4.hs
   other-modules:
       Paths_clerk
-  ghc-options: -Wall
+  ghc-options: -Wall -Wno-unticked-promoted-constructors -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wredundant-constraints -Wunused-packages
   build-depends:
-      aeson
-    , base >=4.9 && <5.0
+      base >=4.9 && <5.0
     , clerk
-    , ilist
-    , lens
-    , lens-aeson
-    , monad-loops
     , mtl
-    , pretty-simple
-    , text
     , transformers
     , xlsx
   default-language: Haskell2010
@@ -162,7 +158,7 @@ test-suite docs
       QuasiQuotes
       ScopedTypeVariables
       OverloadedStrings
-  ghc-options: -Wall
+  ghc-options: -Wall -Wno-unticked-promoted-constructors -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wredundant-constraints -Wunused-packages
   build-depends:
       base >=4.9 && <5.0
     , lima

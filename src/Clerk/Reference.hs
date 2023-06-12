@@ -6,11 +6,8 @@
 
 module Clerk.Reference where
 
-import Clerk.AddressTyped
-import Clerk.Coordinates
-import Clerk.Internal
-import Codec.Xlsx (ColumnIndex, RowIndex)
-import Data.Default
+import Clerk.Coordinates (Coords, FromCoords (..), ToCoords (..))
+import Clerk.Internal (UnsafeChangeType (..))
 
 -- | A typed reference to a cell.
 --

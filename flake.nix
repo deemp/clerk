@@ -74,7 +74,13 @@
         );
 
       buildPrefix = "buildWithGHC";
-      ghcVersions = [ "8107" "902" "928" "945" "962" ];
+      ghcVersions = [
+        # "8107"
+        "902"
+        "928"
+        # "945"
+        # "962"
+      ];
 
       cabalBuild = mkShellApps
         (mapGenAttrs
@@ -107,9 +113,11 @@
           runtimeDependencies = tools;
         };
 
-        writeSettings = writeSettingsJSON (settingsCommonNix // { inherit (settingsNix) haskell; extra = {
+        writeSettings = writeSettingsJSON (settingsCommonNix // {
+          inherit (settingsNix) haskell; extra = {
           "haskell.plugin.fourmolu.config.external" = true;
-        };});
+        };
+        });
 
         inherit (mkFlakesTools [ "." ]) updateLocks pushToCachix;
 
@@ -152,3 +160,4 @@
     ];
   };
 }
+
