@@ -76,7 +76,7 @@ columnIO = columnF blank
 columnIO_ :: forall input output. ToCellData output => (input -> output) -> RowI input ()
 columnIO_ mkOutput = void (columnF blank mkOutput)
 
--- | A column that ignores the input. Returns a 'Ref'
+-- | A column that ignores the input. Returns a 'Ref'.
 columnO :: forall a input output. ToCellData output => output -> RowI input (Ref a)
 columnO output = columnF blank (const output)
 
