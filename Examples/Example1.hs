@@ -12,22 +12,20 @@ The source code for this example is available [here](app/Example1.hs).
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE DataKinds #-}
-
+{-# LANGUAGE ScopedTypeVariables #-}
 {-
 ### Imports
 
 I import the necessary stuff.
 -}
 
-import Clerk ( (.*), (.**), (.+), (./), as, fun, mkRefDefault, funRef,  val, Formula, Ref )
-import Clerk.Row ( rowShowDefault )
+import Clerk ( (.*), (.**), (.+), (./), as, fun, formulaRef,  val, Formula, Ref )
 import Data.Text (Text)
-import Clerk.ForExamples
-
+import Examples.Helpers ( showFormula, mkRef )
 {- LIMA_DISABLE -}
 
 main :: IO ()
-main = undefined
+main = putStrLn "Hello, World!"
 
 {- LIMA_ENABLE -}
 
@@ -40,18 +38,18 @@ I make references to `Double` values
 -}
 
 r1 :: Ref Double
-r1 = mkRefDefault @"B4"
+r1 = mkRef @"B4"
 r2 :: Ref Double
-r2 = mkRefDefault @"E6"
+r2 = mkRef @"E6"
 r3 :: Ref Double
-r3 = mkRefDefault @"G8"
+r3 = mkRef @"G8"
 
 {-
-Next, I convert one of these references to a formula via `funRef` and inspect the formula representation.
+Next, I convert one of these references to a formula via `formulaRef` and inspect the formula representation.
 -}
 
 t1 :: Text
-t1 = showFormula $ funRef r2
+t1 = showFormula $ formulaRef r2
 
 -- >>>t1
 -- "E6"
@@ -73,7 +71,7 @@ For this case, I have an unsafe `as` function.
 -}
 
 r4 :: Ref Int
-r4 = mkRefDefault @"T6"
+r4 = mkRef @"T6"
 
 t3 :: Text
 t3 = showFormula $ as @Double (r4 .* r4 .* val 3) .+ r1 .** r2 ./ r3
@@ -85,16 +83,17 @@ t3 = showFormula $ as @Double (r4 .* r4 .* val 3) .+ r1 .** r2 ./ r3
 This `as` function should not be abused, though. If I need an `Int` instead of a `Double`, I can explicitly use an Excel function.
 -}
 
-round_ :: [Formula a] -> Formula Int
-round_ = fun "ROUND"
+round_ :: forall a. Formula a -> Formula Int
+round_ x = fun "ROUND" [x]
 
 t4 :: Formula Int
-t4 = round_ [r1 .** r2 ./ r3]
+t4 = round_ (r1 .** r2 ./ r3)
 
 -- >>>:t t4
 -- t4 :: Formula Int
 
+t5 :: Text
 t5 = showFormula t4
 
--- TODO printing breaks HLS
 -- >>> t5
+-- "ROUND(B4^E6/G8)"

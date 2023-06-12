@@ -20,7 +20,6 @@ The below sections describe how such a spreadsheet can be constructed.
 
 I'll need several language extensions.
 -}
-{-# LANGUAGE ImportQualifiedPost #-}
 {- LIMA_DISABLE -}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
@@ -35,9 +34,8 @@ I import the necessary stuff.
 
 import Clerk
 import Control.Monad (forM, forM_, void)
-import Data.Text qualified as T
+import qualified Data.Text as T
 import Lens.Micro ((&), (+~), (^.))
-import Clerk.Row
 
 {-
 ### Tables
