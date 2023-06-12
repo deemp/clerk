@@ -21,12 +21,12 @@ We import the necessary stuff.
 import Clerk ( (.*), (.**), (.+), (./), as, fun, mkRef, ref, showFormula, val, Formula, Ref )
 import Data.Text (Text)
 
-{- LIMA_DISABLE -}
+{- D -}
 
 main :: IO ()
 main = undefined
 
-{- LIMA_ENABLE -}
+{- E -}
 
 {-
 ### Formulas

@@ -41,12 +41,12 @@ import Clerk ( (.*), (.**), (.+), (./), as, fun, mkRef, ref, showFormula, val, F
 import Data.Text (Text)
 ```
 
-<!-- LIMA_DISABLE
+<!-- D
 
 main :: IO ()
 main = undefined
 
-LIMA_ENABLE -->
+E -->
 
 ### Formulas
 
@@ -141,12 +141,12 @@ We'll need several language extensions.
 {-# LANGUAGE ImportQualifiedPost #-}
 ```
 
-<!-- LIMA_DISABLE
+<!-- D
 
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
 
-LIMA_ENABLE -->
+E -->
 
 <!-- FOURMOLU_ENABLE
 -->

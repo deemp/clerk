@@ -1,0 +1,179 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.35.2.
+--
+-- see: https://github.com/sol/hpack
+
+name:           convert
+version:        0.2.0.3
+synopsis:       Declaratively describe spreadsheets
+description:    convert clerk modules to Tex
+category:       spreadsheet
+homepage:       https://github.com/deemp/convert#readme
+bug-reports:    https://github.com/deemp/convert/issues
+author:         Danila Danko, Nickolay Kudasov
+maintainer:     Danila Danko
+copyright:      Danila Danko, Nickolay Kudasov
+license:        BSD3
+build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/deemp/convert
+
+library
+  exposed-modules:
+      Chapters.Chapter4_1
+      Chapters.Chapter4_2
+      Chapters.Chapter4_3
+      Chapters.Chapter4_4
+      Convert
+  other-modules:
+      Paths_convert
+  hs-source-dirs:
+      src
+  default-extensions:
+      ConstraintKinds
+      DataKinds
+      DeriveAnyClass
+      DeriveGeneric
+      DerivingVia
+      DuplicateRecordFields
+      FlexibleContexts
+      FlexibleInstances
+      GADTs
+      GeneralizedNewtypeDeriving
+      InstanceSigs
+      ImportQualifiedPost
+      OverloadedRecordDot
+      KindSignatures
+      MultiParamTypeClasses
+      NamedFieldPuns
+      OverloadedStrings
+      PolyKinds
+      QuantifiedConstraints
+      RankNTypes
+      RecordWildCards
+      ScopedTypeVariables
+      StandaloneDeriving
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeOperators
+      UndecidableInstances
+      ViewPatterns
+      ExplicitNamespaces
+      QuantifiedConstraints
+  ghc-options: -Wall
+  build-depends:
+      aeson
+    , base >=4.9 && <5.0
+    , clerk
+    , lens
+    , lens-aeson
+    , lima
+    , microlens
+    , mtl
+    , string-interpolate
+    , text
+    , transformers
+    , xlsx
+  default-language: Haskell2010
+
+test-suite hs-tex
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Paths_convert
+  hs-source-dirs:
+      test/HsToTex
+  default-extensions:
+      ConstraintKinds
+      DataKinds
+      DeriveAnyClass
+      DeriveGeneric
+      DerivingVia
+      DuplicateRecordFields
+      FlexibleContexts
+      FlexibleInstances
+      GADTs
+      GeneralizedNewtypeDeriving
+      InstanceSigs
+      ImportQualifiedPost
+      OverloadedRecordDot
+      KindSignatures
+      MultiParamTypeClasses
+      NamedFieldPuns
+      OverloadedStrings
+      PolyKinds
+      QuantifiedConstraints
+      RankNTypes
+      RecordWildCards
+      ScopedTypeVariables
+      StandaloneDeriving
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeOperators
+      UndecidableInstances
+      ViewPatterns
+      ExplicitNamespaces
+      QuantifiedConstraints
+      QuasiQuotes
+      ScopedTypeVariables
+      OverloadedStrings
+  ghc-options: -Wall
+  build-depends:
+      base >=4.9 && <5.0
+    , convert
+    , lima
+  default-language: Haskell2010
+
+test-suite tex-hs
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Paths_convert
+  hs-source-dirs:
+      test/TexToHs
+  default-extensions:
+      ConstraintKinds
+      DataKinds
+      DeriveAnyClass
+      DeriveGeneric
+      DerivingVia
+      DuplicateRecordFields
+      FlexibleContexts
+      FlexibleInstances
+      GADTs
+      GeneralizedNewtypeDeriving
+      InstanceSigs
+      ImportQualifiedPost
+      OverloadedRecordDot
+      KindSignatures
+      MultiParamTypeClasses
+      NamedFieldPuns
+      OverloadedStrings
+      PolyKinds
+      QuantifiedConstraints
+      RankNTypes
+      RecordWildCards
+      ScopedTypeVariables
+      StandaloneDeriving
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeOperators
+      UndecidableInstances
+      ViewPatterns
+      ExplicitNamespaces
+      QuantifiedConstraints
+      QuasiQuotes
+      ScopedTypeVariables
+      OverloadedStrings
+  ghc-options: -Wall
+  build-depends:
+      base >=4.9 && <5.0
+    , convert
+    , lima
+  default-language: Haskell2010

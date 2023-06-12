@@ -8,13 +8,13 @@
 {-# LANGUAGE NoOverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE DataKinds #-}
-
-% d
+{- d -}
 
 module Chapters.Chapter4_3 where
 
-% SINGLE_LINE e
+{- e -}
 
+{-
 \chapter{Implementation}
 \label{chap:impl}
 
@@ -49,26 +49,35 @@ With formulas enabled, I obtained a spreadsheet as in \Cref{fig:volumePressureFo
 \subsection{Extensions}
 
 I enabled several language extensions so that the compiler could recognize the necessary language features.
+-}
 
-% SINGLE_LINE FOURMOLU_DISABLE
+{- FOURMOLU_DISABLE -}
 
+{-
 \begin{mycode}
+-}
 
-
+{-
 \end{mycode}
+-}
 
-% SINGLE_LINE FOURMOLU_ENABLE
+{- FOURMOLU_ENABLE -}
 
+{-
 \subsection{Imports}
 
 Next, I imported the necessary Modules.
 
 \begin{mycode}
+-}
+
 import Clerk
 import Codec.Xlsx qualified as X
 import Codec.Xlsx.Formatted qualified as X
 import Data.Text qualified as T
 import Lens.Micro ((%~), (&), (+~), (?~))
+
+{-
 \end{mycode}
 
 \subsection{Tables}
@@ -93,17 +102,23 @@ In my case, each constant had the same type of the numeric value - `Double`.
 That is why, I constructed a table with a single row per a constant and later placed the constants' tables under each other. I stored constant data in a record.
 
 \begin{mycode}
+-}
+
 data ConstantData a = ConstantData
   { constantName :: String
   , constantSymbol :: String
   , constantValue :: a
   , constantUnits :: String
   }
+
+{-
 \end{mycode}
 
 Next, I grouped the constants into a record. The parameter \texttt{f} may be an arbitrary type of kind \texttt{* -> *}.
 
 \begin{mycode}
+-}
+
 data Constants f = Constants
   { gasConstant :: f Double
   , numberOfMoles :: f Double
@@ -111,11 +126,15 @@ data Constants f = Constants
   }
 
 type ConstantsInput = Constants ConstantData
+
+{-
 \end{mycode}
 
 Following that, I recorded the constants data.
 
 \begin{mycode}
+-}
+
 constants :: ConstantsInput
 constants =
   Constants
@@ -126,6 +145,8 @@ constants =
     , temperature =
         ConstantData "TEMPERATURE(K)" "T" 273.2 "K"
     }
+
+{-
 \end{mycode}
 
 Now, I made a \texttt{RowI} for a constant input.
@@ -142,6 +163,8 @@ Later, I would use these outputs to relate the positions of tables on a sheet.
 Here, I used \texttt{lightBlue} from the \Cref{sec:styles}.
 
 \begin{mycode}
+-}
+
 constant :: (ToCellData a) => RowI (ConstantData a) (Ref (), Ref a)
 constant = do
   refTopLeft <- columnF lightBlue constantName
@@ -149,6 +172,8 @@ constant = do
   refValue <- columnF (lightBlue .& with2decimalDigits) constantValue
   columnF_ lightBlue constantUnits
   return (refTopLeft, refValue)
+
+{-
 \end{mycode}
 
 \subsubsection{Volume and pressure values}
@@ -163,26 +188,39 @@ constant = do
 I used the data and combined it with the constants to fill table \Cref{fig:valuesFormulas}
 
 \begin{mycode}
+-}
+
 newtype Volume = Volume {volume :: Double}
 
 volumeData :: [Volume]
 volumeData = Volume <$> [1 .. 10]
+
+{-
 \end{mycode}
 
 I made a helper type to pass the constants references in a structured way.
 
 \begin{mycode}
+-}
+
 type ConstantsRefs = Constants Ref
+
+{-
 \end{mycode}
 
 Next, I defined a function to produce a row for volume and pressure.
 
 \begin{mycode}
+-}
+
 values :: ConstantsRefs -> RowI Volume ()
 values Constants{..} = do
   refVolume <- columnF alternatingColors volume
   let pressure' = gasConstant .* numberOfMoles .* temperature ./ refVolume
   columnF_ (alternatingColors .& with2decimalDigits) (const pressure')
+
+
+{-
 \end{mycode}
 
 \subsubsection{Constants' header}
@@ -197,6 +235,8 @@ values Constants{..} = do
 I did not use records here. Instead, I put the names of the columns straight into the `Row`. The outputs were the coordinates of the top left cell and the top right cell of this table.
 
 \begin{mycode}
+-}
+
 constantsHeader :: Row (Ref (), Ref ())
 constantsHeader = do
   let style :: FormatCell
@@ -206,6 +246,8 @@ constantsHeader = do
   columnF_ style (const "value")
   refTopRight <- columnWF 13 style (const "units")
   return (refTopLeft, refTopRight)
+
+{-
 \end{mycode}
 
 \subsubsection{Volume \& Pressure header}
@@ -220,11 +262,15 @@ constantsHeader = do
 For this header, I also put the names of columns straight into a row.
 
 \begin{mycode}
+-}
+
 valuesHeader :: Row (Ref ())
 valuesHeader = do
   refTopLeft <- columnWF 12 green (const "VOLUME (L)")
   columnWF_ 16 green (const "PRESSURE (atm)")
   return refTopLeft
+
+{-
 \end{mycode}
 
 \subsection{Sheet builder}
@@ -232,6 +278,8 @@ valuesHeader = do
 Finally, I combined all rows.
 
 \begin{mycode}
+-}
+
 sheet :: Sheet ()
 sheet = do
   start <- mkCoords 2 2
@@ -241,6 +289,9 @@ sheet = do
   temperature <- snd <$> placeIn (nMolesTopLeft & row +~ 1) constants.temperature constant
   valuesHeaderTopLeft <- place (constantsHeaderTopRight & col +~ 2) valuesHeader
   placeIns (valuesHeaderTopLeft & row +~ 2) volumeData (values $ Constants gas nMoles temperature)
+
+
+{-
 \end{mycode}
 
 \subsection{Styles}
@@ -249,6 +300,8 @@ sheet = do
 Below, I list the expressions used for sheet styling.
 
 \begin{mycode}
+-}
+
 blue, lightBlue, green, lightGreen :: FormatCell
 blue = mkColor (hex @"#FF99CCFF")
 lightBlue = mkColor (hex @"#90CCFFFF")
@@ -257,20 +310,31 @@ lightGreen = mkColor (hex @"#90CCFFCC")
 
 alternatingColors :: FormatCell
 alternatingColors index = (if even index then lightGreen else lightBlue) index
+
+{-
 \end{mycode}
 
 Additionally, I composed an \texttt{FCTransform} for the number format.
 Such a transform was used to accumulate cell formatting.
 
 \begin{mycode}
+-}
+
 with2decimalDigits :: FCTransform
 with2decimalDigits fcTransform =
   fcTransform & X.formattedFormat %~ X.formatNumberFormat ?~ X.StdNumberFormat X.Nf2Decimal
+
+{-
 \end{mycode}
 
 Finally, I made a transform for centering the cell contents.
 
 \begin{mycode}
+-}
+
 alignedCenter :: FCTransform
 alignedCenter = horizontalAlignment X.CellHorizontalAlignmentCenter
+
+{-
 \end{mycode}
+-}

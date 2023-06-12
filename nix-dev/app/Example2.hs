@@ -21,10 +21,10 @@ The below sections describe how such a spreadsheet can be constructed.
 We'll need several language extensions.
 -}
 {-# LANGUAGE ImportQualifiedPost #-}
-{- LIMA_DISABLE -}
+{- D -}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
-{- LIMA_ENABLE -}
+{- E -}
 {- FOURMOLU_ENABLE -}
 
 {-

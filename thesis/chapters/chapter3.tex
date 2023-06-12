@@ -1,4 +1,4 @@
-% LIMA_DISABLE
+% D
 
 % {- FOURMOLU_DISABLE -}
 % {-# OPTIONS_GHC -Wno-redundant-constraints #-}
@@ -129,7 +129,7 @@
 % import Lens.Micro (Lens', lens, (%~), (&), (+~), (.~), (?~), (^.))
 % import Unsafe.Coerce (unsafeCoerce)
 
-% LIMA_ENABLE
+% E
 
 This chapter describes low-level details of the \texttt{clerk} library implementation. First, the used types and their purpose are explained. Following that, the main helper functions are presented. Finally, a simple example is given to demonstrate the capabilities of \texttt{clerk}.
 
@@ -147,11 +147,11 @@ Here are the necessary imports.
 The core type of the library is \texttt{Row}. This is a monad for construction of a template for a row of data. It keeps track of the coordinates of the current cell via the \texttt{StateT Coords m a} transformer. It writes the new cells into a template via the \texttt{Writer (Template input output) a}.
 
 \begin{mycode}
-newtype RowIO input output a = Row
-  {unRow :: StateT RowState (Writer (Template input output)) a}
+  newtype RowIO input output a = Row
+    {unRow :: StateT RowState (Writer (Template input output)) a}
   deriving newtype (Functor, Applicative, Monad, MonadState RowState, MonadWriter (Template input output))
 
-type RowState = Coords
+  type RowState = Coords
 \end{mycode}
 
 The row templates are applied to a list of inputs, producing a template for a table.
@@ -163,33 +163,33 @@ In this table, each cell has an address, data, and formatting. A special type is
 The \texttt{Coords} denote the address of a cell. This data type has a \texttt{Num} instance that provides cell arithmetics with them like shifts along sheet axes in the directions given as another \texttt{Coords}. Additionally, this type has a \texttt{Show} instance that translates it into valid spreadsheet addresses.
 
 \begin{mycode}
-data Coords = Coords
-  { _col :: Int
-  , _row :: Int
-  , _coordsWorksheetName :: T.Text
-  , _coordsWorkbookPath :: FilePath
-  }
+  data Coords = Coords
+    { _col :: Int
+      , _row :: Int
+      , _coordsWorksheetName :: T.Text
+      , _coordsWorkbookPath :: FilePath
+    }
   deriving (Generic, Default, Show)
 \end{mycode}
 
 Typeclasses \texttt{ToCoords} and \texttt{FromCoords} allow to generalize working with data that is convertible to and from \texttt{Coords}. Based on these typeclasses, a pair of lenses is provided for convenient work with \texttt{Coords}-like data types.
 
 \begin{mycode}
-row :: IsCoords a => Lens' a Int
-col :: IsCoords a => Lens' a Int
+  row :: IsCoords a => Lens' a Int
+  col :: IsCoords a => Lens' a Int
 \end{mycode}
 
 Such data types include \texttt{Ref}s, which are addresses of cells plus a phantom type to allow type-safe operations. For example, for a \texttt{Ref Int}, arithmetic operations are only allowed with another \texttt{Ref Int}. \texttt{Ref} inherits the \texttt{Num} instance of \texttt{Coords}.
 
 \begin{mycode}
-newtype Ref a = Ref {unRef :: Coords}
+  newtype Ref a = Ref {unRef :: Coords}
   deriving (Num) via Coords
 \end{mycode}
 
 The phantom type transformations are made possible via the \texttt{UnsafeChangeType} class.
 
 \begin{mycode}
-class UnsafeChangeType (a :: Type -> Type) where
+  class UnsafeChangeType (a :: Type -> Type) where
   unsafeChangeType :: forall c b. a b -> a c
 \end{mycode}
 
@@ -199,7 +199,7 @@ class UnsafeChangeType (a :: Type -> Type) where
 When building a template, all \texttt{input}s are translated into \texttt{CellData}, which unites the data types from \texttt{xlsx}.
 
 \begin{mycode}
-data CellData
+  data CellData
   = CellFormula X.CellFormula
   | CellValue X.CellValue
   | CellComment X.Comment
@@ -210,13 +210,13 @@ data CellData
 That is why, one can use a type synonym for building row templates.
 
 \begin{mycode}
-type RowI input a = RowIO input CellData a
+  type RowI input a = RowIO input CellData a
 \end{mycode}
 
 There is a typeclass \texttt{ToCellData} that allows to work with arbitrary types convertible to \texttt{CellData}.
 
 \begin{mycode}
-class Show a => ToCellData a where
+  class Show a => ToCellData a where
   toCellData :: a -> Row CellData
 \end{mycode}
 
@@ -226,17 +226,17 @@ class Show a => ToCellData a where
 To store the additional information about a cell, a \texttt{CellTemplate} type is introduced.
 
 \begin{mycode}
-data CellTemplate input output = CellTemplate
-  { mkOutput :: input -> output
-  , fmtCell :: FormatCell
-  , columnsProperties :: Maybe X.ColumnsProperties
-  }
+  data CellTemplate input output = CellTemplate
+    { mkOutput :: input -> output
+      , fmtCell :: FormatCell
+      , columnsProperties :: Maybe X.ColumnsProperties
+    }
 \end{mycode}
 
 The \texttt{FormatCell} type synonym denotes a function that produces a formatted cell based on that cell's address, index in the input list, and the data.
 
 \begin{mycode}
-type FormatCell =
+  type FormatCell =
   forall a b.
   (ToCoords a, ToCellData b) =>
   (a -> InputIndex -> b -> Row X.FormattedCell)
@@ -248,7 +248,7 @@ type FormatCell =
 The spreadsheet formulas are modeled via recursive data types and have a phantom type to store the resulting type of a formula.
 
 \begin{mycode}
-data Expr t
+  data Expr t
   = EBinaryOp {binOp :: BinaryOperator, arg1 :: Expr t, arg2 :: Expr t}
   | EFunction {fName :: T.Text, fArgs :: [Expr t]}
   | ERef {r :: Ref t}
@@ -256,7 +256,7 @@ data Expr t
   | EValue {value :: t}
   | EUnaryOp {unaryOp :: UnaryOp, arg :: Expr t}
 
-data BinaryOperator
+  data BinaryOperator
   = OpAdd
   | OpSubtract
   | OpMultiply
@@ -269,14 +269,14 @@ data BinaryOperator
   | OpEQ
   | OpNEQ
 
-data UnaryOp
+  data UnaryOp
   = OpNeg
 \end{mycode}
 
 To introduce the new functionality on top of \texttt{Expr}, the \texttt{Formula} is used.
 
 \begin{mycode}
-newtype Formula t = Formula {unFormula :: Expr t}
+  newtype Formula t = Formula {unFormula :: Expr t}
   deriving newtype (UnsafeChangeType)
 \end{mycode}
 
@@ -290,30 +290,30 @@ These operators resemble ones from spreadsheet systems and have the same fixitie
 
 \begin{itemize}
   \item For constructing ranges
-  \begin{mycode}
-(.:) :: forall (a :: Type) (b :: Type). Ref a -> Ref b -> Formula Range
-  \end{mycode}
+        \begin{mycode}
+          (.:) :: forall (a :: Type) (b :: Type). Ref a -> Ref b -> Formula Range
+        \end{mycode}
   \item Arithmetic operators
-  \begin{mycode}
-type NumOperator a b c d e = (Num a, Num c, ToFormula (d a), ToFormula (e b)) => d a -> e b -> Formula c
-(.+) :: NumOperator a a a d e
-(.-) :: NumOperator a a a d e
-(./) :: (Fractional a) => NumOperator a a a d e
-(.*) :: NumOperator a a a d e
-(.^) :: (Num a, Integral b) => NumOperator a b a d e
-(.^^) :: (Fractional a, Integral b) => NumOperator a b a d e
-(.**) :: (Floating a) => NumOperator a a a d e
-  \end{mycode}
+        \begin{mycode}
+          type NumOperator a b c d e = (Num a, Num c, ToFormula (d a), ToFormula (e b)) => d a -> e b -> Formula c
+          (.+) :: NumOperator a a a d e
+          (.-) :: NumOperator a a a d e
+          (./) :: (Fractional a) => NumOperator a a a d e
+          (.*) :: NumOperator a a a d e
+          (.^) :: (Num a, Integral b) => NumOperator a b a d e
+          (.^^) :: (Fractional a, Integral b) => NumOperator a b a d e
+          (.**) :: (Floating a) => NumOperator a a a d e
+        \end{mycode}
   \item Operators that produce boolean values
-  \begin{mycode}
-type BoolOperator a b c = (Ord a, ToFormula (b a), ToFormula (c a)) => b a -> c a -> Formula Bool
-(.<) :: BoolOperator a b c
-(.>) :: BoolOperator a b c
-(.<=) :: BoolOperator a b c
-(.>=) :: BoolOperator a b c
-(.=) :: BoolOperator a b c
-(.<>) :: BoolOperator a b c
-  \end{mycode}
+        \begin{mycode}
+          type BoolOperator a b c = (Ord a, ToFormula (b a), ToFormula (c a)) => b a -> c a -> Formula Bool
+          (.<) :: BoolOperator a b c
+          (.>) :: BoolOperator a b c
+          (.<=) :: BoolOperator a b c
+          (.>=) :: BoolOperator a b c
+          (.=) :: BoolOperator a b c
+          (.<>) :: BoolOperator a b c
+        \end{mycode}
 \end{itemize}
 
 \subsubsection{Functions}
@@ -321,15 +321,15 @@ type BoolOperator a b c = (Ord a, ToFormula (b a), ToFormula (c a)) => b a -> c 
 A user may want to construct custom functions. It is made possible via another typeclass and a helper method. To set the types of arguments, a user can specify the type \texttt{t}.
 
 \begin{mycode}
-type FunName = T.Text
+  type FunName = T.Text
 
-class MakeFunction t where
+  class MakeFunction t where
   makeFunction :: FunName -> [Formula s] -> t
 
-fun :: MakeFunction t => FunName -> t
+  fun :: MakeFunction t => FunName -> t
 \end{mycode}
 
-% LIMA_DISABLE
+% D
 
 % instance Default T.Text where
 %   def :: T.Text
@@ -1058,4 +1058,4 @@ fun :: MakeFunction t => FunName -> t
 % showFormula :: RowShow a => a -> Text
 % showFormula a = evalRow (rowShow a) def
 
-% LIMA_ENABLE
+% E

@@ -1,4 +1,4 @@
-{- LIMA_DISABLE -}
+{- D -}
 
 {- FOURMOLU_DISABLE -}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
@@ -129,7 +129,7 @@ import GHC.Generics (Generic)
 import Lens.Micro (Lens', lens, (%~), (&), (+~), (.~), (?~), (^.))
 import Unsafe.Coerce (unsafeCoerce)
 
-{- LIMA_ENABLE -}
+{- E -}
 
 {-
 This chapter describes low-level details of the \texttt{clerk} library implementation. First, the used types and their purpose are explained. Following that, the main helper functions are presented. Finally, a simple example is given to demonstrate the capabilities of \texttt{clerk}.
@@ -188,8 +188,8 @@ Typeclasses \texttt{ToCoords} and \texttt{FromCoords} allow to generalize workin
 \begin{mycode}
 -}
 
-row :: IsCoords a => Lens' a Int
-col :: IsCoords a => Lens' a Int
+row :: (IsCoords a) => Lens' a Int
+col :: (IsCoords a) => Lens' a Int
 
 {-
 \end{mycode}
@@ -249,7 +249,7 @@ There is a typeclass \texttt{ToCellData} that allows to work with arbitrary type
 \begin{mycode}
 -}
 
-class Show a => ToCellData a where
+class (Show a) => ToCellData a where
   toCellData :: a -> Row CellData
 
 {-
@@ -391,13 +391,13 @@ type FunName = T.Text
 class MakeFunction t where
   makeFunction :: FunName -> [Formula s] -> t
 
-fun :: MakeFunction t => FunName -> t
+fun :: (MakeFunction t) => FunName -> t
 
 {-
 \end{mycode}
 -}
 
-{- LIMA_DISABLE -}
+{- D -}
 
 instance Default T.Text where
   def :: T.Text
@@ -428,7 +428,7 @@ instance FromCoords Coords where
   fromCoords = id
 
 -- | Show in context of a row
-class Show a => RowShow a where
+class (Show a) => RowShow a where
   rowShow :: a -> Row T.Text
 
 instance RowShow Coords where
@@ -550,7 +550,7 @@ col = lens getter setter
 -- | Change the type of something. Use with caution!
 
 -- | UNSAFELY change the type of something wrapped
-as :: forall c b a. UnsafeChangeType a => a b -> a c
+as :: forall c b a. (UnsafeChangeType a) => a b -> a c
 as = unsafeChangeType
 
 instance UnsafeChangeType Ref where
@@ -599,7 +599,7 @@ class ToARGB a where
 -- | Make a 'FormatCell' for a single color
 --
 -- @show@ on the input should translate into an @ARGB@ color. See 'XS.Color'
-mkColor :: ToARGB a => a -> FormatCell
+mkColor :: (ToARGB a) => a -> FormatCell
 mkColor color _ _ c = do
   cd <- toCellData c
   pure $
@@ -674,7 +674,7 @@ type RenderTemplate m input output = (Monad m, ToCellData output) => RowState ->
 type RenderInputs m input output a = (Monad m, ToCellData output) => [input] -> RowIO input output a -> Sheet (Transform, a)
 
 -- | Render inputs starting at given coords and using a row. Return the result calculated using the topmost row
-renderInputs :: ToCellData output => RowState -> RenderTemplate Sheet input output -> RenderInputs Sheet input output a
+renderInputs :: (ToCellData output) => RowState -> RenderTemplate Sheet input output -> RenderInputs Sheet input output a
 renderInputs state render inputs row_ = do
   let
     ts =
@@ -766,23 +766,23 @@ columnWidthFormatRef width fmtCell mkOutput = do
   pure cell
 
 -- | A column with a given width and cell format. Returns a cell reference
-columnWidthRef :: ToCellData output => Double -> FormatCell -> (input -> output) -> RowI input (Ref a)
+columnWidthRef :: (ToCellData output) => Double -> FormatCell -> (input -> output) -> RowI input (Ref a)
 columnWidthRef width fmtCell mkOutput = do
   state <- get
   columnWidthFormatRef (Just width) fmtCell (fst . runWriter . flip evalStateT state . unRow . toCellData . mkOutput)
 
 -- | A column with a given width and cell format
-columnWidth :: ToCellData output => Double -> FormatCell -> (input -> output) -> RowI input ()
+columnWidth :: (ToCellData output) => Double -> FormatCell -> (input -> output) -> RowI input ()
 columnWidth width fmtCell mkOutput = void (columnWidthRef width fmtCell mkOutput)
 
 -- | A column with a given cell format. Returns a cell reference
-columnRef :: ToCellData output => FormatCell -> (input -> output) -> RowI input (Ref a)
+columnRef :: (ToCellData output) => FormatCell -> (input -> output) -> RowI input (Ref a)
 columnRef fmtCell mkOutput = do
   state <- get
   columnWidthFormatRef Nothing fmtCell (fst . runWriter . flip evalStateT state . unRow . toCellData . mkOutput)
 
 -- | A column with a given cell format
-column :: ToCellData output => FormatCell -> (input -> output) -> RowI input ()
+column :: (ToCellData output) => FormatCell -> (input -> output) -> RowI input ()
 column fmtCell mkOutput = void (columnRef fmtCell mkOutput)
 
 {- FOURMOLU_DISABLE -}
@@ -850,7 +850,7 @@ instance ToFormula (Formula a) where
   toFormula (Formula f) = Formula $ unsafeChangeType f
 
 -- TODO dangerous?
-instance {-# OVERLAPPABLE #-} Show a => ToFormula a where
+instance {-# OVERLAPPABLE #-} (Show a) => ToFormula a where
   toFormula :: a -> Formula b
   toFormula = Formula . EValue . unsafeCoerce
 
@@ -874,7 +874,7 @@ data Range
 infixr 5 .:
 
 -- | Convert a value to a formula
-val :: Show a => a -> Formula a
+val :: (Show a) => a -> Formula a
 val a = Formula $ EValue a
 
 -- | A type for numeric operators
@@ -947,13 +947,13 @@ infix 4 .=
 
 infix 4 .<>
 
-instance Show t => Show (Expr t) where
-  show :: Show t => Expr t -> String
+instance (Show t) => Show (Expr t) where
+  show :: (Show t) => Expr t -> String
   show (EValue v) = show v
   show _ = error "Shouldn't be accessed for other constructors"
 
-instance Show (Expr t) => RowShow (Expr t) where
-  rowShow :: Show (Expr t) => Expr t -> Row T.Text
+instance (Show (Expr t)) => RowShow (Expr t) where
+  rowShow :: (Show (Expr t)) => Expr t -> Row T.Text
   rowShow (EBinaryOp{..}) =
     showOp2 arg1 arg2 $
       case binOp of
@@ -1005,12 +1005,12 @@ instance (Foldable f, MakeFunction t, ToFormula a) => MakeFunction (f a -> t) wh
 -- | Construct a function like @SUM(A1,B1)@
 fun n = makeFunction n []
 
-instance Show (Expr t) => Show (Formula t) where
-  show :: Show (Expr t) => Formula t -> String
+instance (Show (Expr t)) => Show (Formula t) where
+  show :: (Show (Expr t)) => Formula t -> String
   show (Formula f) = show f
 
-instance Show (Expr t) => RowShow (Formula t) where
-  rowShow :: Show (Expr t) => Formula t -> Row T.Text
+instance (Show (Expr t)) => RowShow (Formula t) where
+  rowShow :: (Show (Expr t)) => Formula t -> Row T.Text
   rowShow (Formula f) = rowShow f
 
 {- FOURMOLU_DISABLE -}
@@ -1057,7 +1057,7 @@ instance ToCellData CellData where
   toCellData :: CellData -> Row CellData
   toCellData = pure
 
-instance Show (Expr a) => ToCellData (Expr a) where
+instance (Show (Expr a)) => ToCellData (Expr a) where
   toCellData :: Expr a -> Row CellData
   toCellData e_ = do
     e <- rowShow e_
@@ -1123,7 +1123,7 @@ mkRef s = fromCoords def{_col, _row}
   _col = fromLetters $ T.pack $ takeWhile isAlpha s
   _row = read $ dropWhile isAlpha s
 
-showFormula :: RowShow a => a -> Text
+showFormula :: (RowShow a) => a -> Text
 showFormula a = evalRow (rowShow a) def
 
-{- LIMA_ENABLE -}
+{- E -}

@@ -57,11 +57,11 @@ I enabled several language extensions so that the compiler could recognize the n
 
 {- FOURMOLU_ENABLE -}
 
-{- LIMA_DISABLE -}
+{- D -}
 
 module Chapter4_3 where
 
-{- LIMA_ENABLE -}
+{- E -}
 
 {-
 \subsection{Imports}
@@ -165,7 +165,7 @@ Here, I used \texttt{lightBlue} from the \Cref{sec:styles}.
 \begin{mycode}
 -}
 
-constant :: ToCellData a => RowI (ConstantData a) (Ref (), Ref a)
+constant :: (ToCellData a) => RowI (ConstantData a) (Ref (), Ref a)
 constant = do
   refTopLeft <- columnRef lightBlue constantName
   column lightBlue constantSymbol

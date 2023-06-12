@@ -1,8 +1,6 @@
-{- D -}
-
-module Chapter4_1 where
-
-{- E -}
+{- d -}
+module Chapters.Chapter4_1 where
+{- e -}
 
 {-
 \chapter{Implementation}
@@ -33,9 +31,9 @@ These are the necessary imports.
 \begin{mycode}
 -}
 
-import Clerk
+import Clerk hiding (mkRef)
 import Data.Text (Text)
-
+import Examples.Helpers(mkRef, showFormula)
 {-
 \end{mycode}
 
@@ -47,27 +45,61 @@ Here, I pretend that there are values with given types and that I can get refere
 \begin{mycode}
 -}
 
-r1 :: Ref Int
-r1 = mkRef "B4"
+r1 :: Ref Double
+r1 = mkRef @"B4"
 
-r2 :: Ref Int
-r2 = mkRef "E6"
+r2 :: Ref Double
+r2 = mkRef @"E6"
 
-r3 :: Ref Int
-r3 = mkRef "G8"
+r3 :: Ref Double
+r3 = mkRef @"G8"
 
 t1 :: Text
-t1 = showFormula $ ref r2
+t1 = showFormula $ formulaRef r2
 
 -- >>>t1
 -- "E6"
 
+{-
+Finally, I construct a longer expression and look at its representation.
+I convert a literal value to a formula via `val`.
+-}
+
 t2 :: Text
-t2 = showFormula $ (r1 .* r2) .+ r1 .^ r2 .- r3
+t2 = showFormula $ r1 .* r2 .* val 3 .+ (r1 .** r2) ./ r3
 
 -- >>>t2
--- "B4*E6+B4^E6/G8"
+-- "B4*E6*3.0+B4^E6/G8"
 
 {-
-\end{mycode}
+Of course, I can mix differently typed references in expressions when necessary.
+For this case, I have an unsafe `as` function.
 -}
+
+r4 :: Ref Double
+r4 = mkRef @"T6"
+
+t3 :: Text
+t3 = showFormula $ as @Double ((r4 .* r4 .* val 3) .+ r1 .** r2 ./ r3)
+
+-- >>>t3
+-- "T6*T6*1.5e-323+B4^E6/G8"
+
+{-
+This `as` function should not be abused, though. If I need an `Int` instead of a `Double`, I can explicitly use an Excel function.
+-}
+
+round_ :: forall a. Formula a -> Formula Int
+round_ x = fun "ROUND" [x]
+
+t4 :: Formula Int
+t4 = round_ (r1 .** r2 ./ r3)
+
+-- >>>:t t4
+-- t4 :: Formula Int
+
+t5 :: Text
+t5 = showFormula t4
+
+-- >>> t5
+-- "ROUND(B4^E6/G8)"

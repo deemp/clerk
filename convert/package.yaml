@@ -1,0 +1,94 @@
+name: convert
+version: 0.2.0.3
+github: "deemp/convert"
+license: BSD3
+author: "Danila Danko, Nickolay Kudasov"
+maintainer: "Danila Danko"
+copyright: "Danila Danko, Nickolay Kudasov"
+category: "spreadsheet"
+synopsis: "Declaratively describe spreadsheets"
+
+# extra-source-files:
+#   - README.md
+#   - CHANGELOG.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            value
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description: | 
+  convert clerk modules to Tex
+
+dependencies:
+  - base >= 4.9 && < 5.0
+
+ghc-options:
+  - -Wall
+
+library:
+  source-dirs: src
+  dependencies:
+    - aeson
+    - clerk
+    - lens
+    - lens-aeson
+    - lima
+    - microlens
+    - mtl
+    - string-interpolate
+    - text
+    - transformers
+    - xlsx
+
+default-extensions:
+  - ConstraintKinds
+  - DataKinds
+  - DeriveAnyClass
+  - DeriveGeneric
+  - DerivingVia
+  - DuplicateRecordFields
+  - FlexibleContexts
+  - FlexibleInstances
+  - GADTs
+  - GeneralizedNewtypeDeriving
+  - InstanceSigs
+  - ImportQualifiedPost
+  - OverloadedRecordDot
+  - KindSignatures
+  - MultiParamTypeClasses
+  - NamedFieldPuns
+  - OverloadedStrings
+  - PolyKinds
+  - QuantifiedConstraints
+  - RankNTypes
+  - RecordWildCards
+  - ScopedTypeVariables
+  - StandaloneDeriving
+  - TupleSections
+  - TypeApplications
+  - TypeFamilies
+  - TypeOperators
+  - UndecidableInstances
+  - ViewPatterns
+  - ExplicitNamespaces
+  - QuantifiedConstraints
+
+tests:
+  hs-tex:
+    main: Main.hs
+    source-dirs: test/HsToTex
+    dependencies: &testDependencies
+      - convert
+      - lima
+    default-extensions: &testExtensions
+      - QuasiQuotes
+      - ScopedTypeVariables
+      - OverloadedStrings
+  tex-hs:
+    main: Main.hs
+    source-dirs: test/TexToHs
+    dependencies: *testDependencies
+    default-extensions: *testExtensions

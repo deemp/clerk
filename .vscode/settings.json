@@ -2,11 +2,29 @@
     "[haskell]": {
         "editor.defaultFormatter": "haskell.haskell"
     },
+    "[json]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
+    },
+    "[jsonc]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
+    },
     "[markdown]": {
         "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
     },
     "editor.formatOnSave": true,
     "editor.tabSize": 2,
+    "errorLens.enabled": true,
+    "errorLens.enabledDiagnosticLevels": [
+        "info",
+        "warning",
+        "hint",
+        "error"
+    ],
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.patterns": {
+        "*.res": "${capture}.mjs, ${capture}.js, ${capture}.cmi, ${capture}.cmt, ${capture}.cmj",
+        "*.resi": "${capture}.res"
+    },
     "files.associations": {
         "*.html": "html",
         "*.jinja": "jinja-html",
@@ -31,6 +49,7 @@
     "gitlens.statusBar.enabled": false,
     "haskell.formattingProvider": "fourmolu",
     "haskell.manageHLS": "PATH",
+    "haskell.plugin.fourmolu.config.external": true,
     "latex-workshop.latex.tools": [
         {
             "args": [
@@ -55,6 +74,7 @@
     "python.formatting.provider": "black",
     "python.linting.mypyCategorySeverity.error": "Error",
     "python.linting.mypyEnabled": true,
+    "terminal.integrated.scrollback": 100000,
     "todo-tree.filtering.excludeGlobs": [
         "**/vendor/**",
         "**/node_modules/**",

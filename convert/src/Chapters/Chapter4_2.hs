@@ -1,8 +1,6 @@
-{- D -}
-
-module Chapter4_2 where
-
-{- E -}
+{- d -}
+module Chapters.Chapter4_2 where
+{- e -}
 
 {-
 \section{Example 2. Multiplication Table}
@@ -35,7 +33,7 @@ These are the necessary imports.
 
 import Clerk
 import Control.Monad (forM, forM_, void)
-import Data.Text qualified as T
+import qualified Data.Text as T
 import Lens.Micro ((&), (+~), (^.))
 
 {-
@@ -79,10 +77,10 @@ Each row is shifted relative to the input coordinates.
 mkVertical :: Coords -> [Int] -> Sheet [Ref Int]
 mkVertical coords numbers =
   forM (zip [0 ..] numbers) $ \(idx, number) ->
-    place1
+    placeIn
       (coords & row +~ idx + 2)
       number
-      ((columnRef blank (const number)) :: RowI Int (Ref Int))
+      ((columnF blank (const number)) :: RowI Int (Ref Int))
 
 {-
 \end{mycode}
@@ -108,7 +106,7 @@ mkHorizontal :: Coords -> [Int] -> Sheet [Ref Int]
 mkHorizontal coords numbers =
   place
     (coords & col +~ 2)
-    ((forM numbers $ \n -> columnRef blank (const n)) :: Row [Ref Int])
+    ((forM numbers $ \n -> columnF blank (const n)) :: Row [Ref Int])
 
 {-
 \end{mycode}
@@ -134,7 +132,7 @@ mkTable :: [(Ref Int, Ref Int)] -> Sheet ()
 mkTable cs =
   forM_ cs $ \(r, c) -> do
     coords <- mkCoords (c ^. col) (r ^. row)
-    place coords ((column blank (const (r .* c))) :: Row ())
+    place coords ((columnF_ blank (const (r .* c))) :: Row ())
 
 {-
 \end{mycode}
