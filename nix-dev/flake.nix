@@ -77,7 +77,7 @@
         );
 
       buildPrefix = "buildWithGHC";
-      ghcVersions = [ "8107" "902" "925" ];
+      ghcVersions = [ "8107" "902" "928" ];
 
       cabalBuild = mkShellApps
         (mapGenAttrs
