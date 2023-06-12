@@ -76,7 +76,7 @@
       buildPrefix = "buildWithGHC";
       ghcVersions = [
         # "8107"
-        "902"
+        # "902"
         "928"
         # "945"
         # "962"
