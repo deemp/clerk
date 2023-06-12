@@ -102,15 +102,15 @@ exampleAddress = mkAddress @"AA123"
 -- The first digit of the row number must be between 1 and 9.
 -- The address: A023
 -- In the expression: mkAddress @"A023"
--- In an equation for `it_a9Gk': it_a9Gk = mkAddress @"A023"
+-- In an equation for `it_a7VR': it_a7VR = mkAddress @"A023"
 
 -- >>> mkAddress @"A1a"
 -- Failed to parse the address.
 -- The address must be a column index and a row number.
 -- The column index must have one or more uppercase letters.
 -- The row number must have one or more digits.
--- column:
+-- column: 
 -- row: 1
 -- rest: a
 -- In the expression: mkAddress @"A1a"
--- In an equation for `it_a19ZV': it_a19ZV = mkAddress @"A1a"
+-- In an equation for `it_a4U9': it_a4U9 = mkAddress @"A1a"
