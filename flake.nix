@@ -114,9 +114,10 @@
         };
 
         writeSettings = writeSettingsJSON (settingsCommonNix // {
-          inherit (settingsNix) haskell; extra = {
-          "haskell.plugin.fourmolu.config.external" = true;
-        };
+          inherit (settingsNix) haskell;
+          extra = {
+            "haskell.plugin.fourmolu.config.external" = true;
+          };
         });
 
         inherit (mkFlakesTools [ "." ]) updateLocks pushToCachix;
