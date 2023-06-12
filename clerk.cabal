@@ -43,8 +43,6 @@ library
       Clerk.Internal
       Clerk.Operators
       Clerk.Place
-      Clerk.PlaceMonadic
-      Clerk.PlaceMonadicTry
       Clerk.Reference
       Clerk.Render
       Clerk.Row
