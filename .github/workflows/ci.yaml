@@ -38,8 +38,8 @@ jobs:
       #     nix run .#writeDocs
 
       #     git commit -a -m "action: Write docs" && git push || echo ""
-      - name: Collect garbage in /nix/store
-        run: nix store gc
+      # - name: Collect garbage in /nix/store
+      #   run: nix store gc
   # _2_build_with_ghc:
   #   name: Build with GHC
   #   runs-on: ubuntu-20.04
