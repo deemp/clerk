@@ -15,7 +15,9 @@ jobs:
         with:
           key: ${{ runner.os }}-nix-${{ hashfiles('./flake.nix', './flake.lock') }}-docs
           path: /home/runner/nix
-          restore-keys: ""
+          restore-keys: |
+            ${{ runner.os }}-nix-${{ hashfiles('./flake.nix', './flake.lock') }}-docs
+            ${{ runner.os }}-nix-
       - name: Config git for github-actions
         run: |
           git config user.name github-actions
@@ -24,87 +26,92 @@ jobs:
         run: |
           git pull --rebase --autostash
 
-          cd '.'
           nix build .#updateLocks
           nix run .#updateLocks
 
           git commit -a -m "action: Update flake locks" && git push || echo ""
-      # - name: Write docs
-      #   run: |
-      #     git pull --rebase --autostash
+      - name: Write docs
+        run: |
+          git pull --rebase --autostash
 
-      #     cd '.'
-      #     nix run .#writeDocs
+          nix build .#writeDocs
+          nix run .#writeDocs
 
-      #     git commit -a -m "action: Write docs" && git push || echo ""
+          git commit -a -m "action: Write docs" && git push || echo ""
       - name: Collect garbage in /nix/store
-        run: nix store --store /home/runner/nix gc
-  # _2_build_with_ghc:
-  #   name: Build with GHC
-  #   runs-on: ubuntu-20.04
-  #   steps:
-  #     - name: Checkout this repo
-  #       uses: actions/checkout@v3
-  #     - name: Install Nix
-  #       uses: cachix/install-nix-action@v20
-  #       with:
-  #         extra_nix_config: "access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}\nsubstituters = https://cache.nixos.org/ https://cache.iog.io https://nix-community.cachix.org https://deemp.cachix.org \ntrusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= deemp.cachix.org-1:9shDxyR2ANqEPQEEYDL/xIOnoPwxHot21L5fiZnFL18=\nstore = /home/runner/nix\nkeep-outputs = true\nkeep-derivations = true\n"
-  #         install_url: https://releases.nixos.org/nix/nix-2.16.1/install
-  #     - name: Restore and cache Nix store
-  #       uses: actions/cache@v3.3.0
-  #       with:
-  #         key: ${{ runner.os }}-nix-${{ hashfiles('./flake.nix', './flake.lock') }}-ghc
-  #         path: /home/runner/nix
-  #         restore-keys: |
-  #           ${{ runner.os }}-nix-${{ hashfiles('./flake.nix', './flake.lock') }}-ghc
-  #           ${{ runner.os }}-nix-
-  #     - name: Build with ghc${{ matrix.ghc }}
-  #       run: nix run .#buildWithGHC${{ matrix.ghc }}
-  #     - name: Collect garbage in /nix/store
-  #       run: nix store gc
-  #   strategy:
-  #     matrix:
-  #       ghc:
-  #         - "902"
-  #         - "928"
-  # _3_push_to_cachix:
-  #   name: Nix CI
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #     - name: Checkout this repo
-  #       uses: actions/checkout@v3
-  #     - name: Install Nix
-  #       uses: cachix/install-nix-action@v20
-  #       with:
-  #         extra_nix_config: "access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}\nsubstituters = https://cache.nixos.org/ https://cache.iog.io https://nix-community.cachix.org https://deemp.cachix.org \ntrusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= deemp.cachix.org-1:9shDxyR2ANqEPQEEYDL/xIOnoPwxHot21L5fiZnFL18=\nstore = ${{ matrix.store }}\nkeep-outputs = true\nkeep-derivations = true\n"
-  #         install_url: https://releases.nixos.org/nix/nix-2.16.1/install
-  #     - name: Restore and cache Nix store
-  #       uses: actions/cache@v3.3.0
-  #       with:
-  #         key: ${{ runner.os }}-nix-${{ hashfiles('./flake.nix', './flake.lock') }}-cachix
-  #         path: ${{ matrix.store }}
-  #         restore-keys: |
-  #           ${{ runner.os }}-nix-${{ hashfiles('./flake.nix', './flake.lock') }}-cachix
-  #           ${{ runner.os }}-nix-
-  #     - name: Log in to Cachix
-  #       run: nix run nixpkgs#cachix -- authtoken ${{ secrets.CACHIX_AUTH_TOKEN }}
-  #     - env:
-  #         CACHIX_CACHE: ${{ secrets.CACHIX_CACHE }}
-  #       name: Push flakes to Cachix
-  #       run: nix run .#pushToCachix
-  #     - name: Collect garbage in /nix/store
-  #       run: nix store gc
-  #   strategy:
-  #     matrix:
-  #       include:
-  #         - os: macos-11
-  #           store: auto
-  #         - os: macos-12
-  #           store: auto
-  #         - os: ubuntu-20.04
-  #           store: /home/runner/nix
-  #         - os: ubuntu-22.04
-  #           store: /home/runner/nix
+        run: nix store gc
+  _2_build_with_ghc:
+    name: Build with GHC
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v3
+      - name: Install Nix
+        uses: cachix/install-nix-action@v20
+        with:
+          extra_nix_config: "access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}\nsubstituters = https://cache.nixos.org/ https://cache.iog.io https://nix-community.cachix.org https://deemp.cachix.org \ntrusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= deemp.cachix.org-1:9shDxyR2ANqEPQEEYDL/xIOnoPwxHot21L5fiZnFL18=\nstore = /home/runner/nix\nkeep-outputs = true\nkeep-derivations = true\n"
+          install_url: https://releases.nixos.org/nix/nix-2.16.1/install
+      - name: Restore and cache Nix store
+        uses: actions/cache@v3.3.0
+        with:
+          key: ${{ runner.os }}-nix-${{ hashfiles('./flake.nix', './flake.lock') }}-ghc
+          path: /home/runner/nix
+          restore-keys: |
+            ${{ runner.os }}-nix-${{ hashfiles('./flake.nix', './flake.lock') }}-ghc
+            ${{ runner.os }}-nix-
+      - name: Build with ghc${{ matrix.ghc }}
+        run: |
+          nix build .#buildWithGHC${{ matrix.ghc }}
+          nix run .#buildWithGHC${{ matrix.ghc }}
+      - name: Collect garbage in /nix/store
+        run: nix store gc
+    strategy:
+      matrix:
+        ghc:
+          - "902"
+          - "928"
+  _3_push_to_cachix:
+    name: Nix CI
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v3
+      - name: Install Nix
+        uses: cachix/install-nix-action@v20
+        with:
+          extra_nix_config: "access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}\nsubstituters = https://cache.nixos.org/ https://cache.iog.io https://nix-community.cachix.org https://deemp.cachix.org \ntrusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ= deemp.cachix.org-1:9shDxyR2ANqEPQEEYDL/xIOnoPwxHot21L5fiZnFL18=\nstore = ${{ matrix.store }}\nkeep-outputs = true\nkeep-derivations = true\n"
+          install_url: https://releases.nixos.org/nix/nix-2.16.1/install
+      - name: Restore and cache Nix store
+        uses: actions/cache@v3.3.0
+        with:
+          key: ${{ runner.os }}-nix-${{ hashfiles('./flake.nix', './flake.lock') }}-cachix
+          path: ${{ matrix.store }}
+          restore-keys: |
+            ${{ runner.os }}-nix-${{ hashfiles('./flake.nix', './flake.lock') }}-cachix
+            ${{ runner.os }}-nix-
+      - name: Log in to Cachix
+        run: |
+          nix build nixpkgs#cachix
+          nix run nixpkgs#cachix -- authtoken ${{ secrets.CACHIX_AUTH_TOKEN }}
+      - env:
+          CACHIX_CACHE: ${{ secrets.CACHIX_CACHE }}
+        name: Push flakes to Cachix
+        run: |
+          nix build .#pushToCachix
+          nix run .#pushToCachix
+      - name: Collect garbage in /nix/store
+        run: nix store gc
+    strategy:
+      matrix:
+        include:
+          - os: macos-11
+            store: auto
+          - os: macos-12
+            store: auto
+          - os: ubuntu-20.04
+            store: /home/runner/nix
+          - os: ubuntu-22.04
+            store: /home/runner/nix
 name: Nix CI
 "on":
   pull_request: {}

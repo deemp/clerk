@@ -38,7 +38,7 @@ nixCI // {
           let ghc = expr names.matrix.ghc; in
           {
             name = "Build with ghc${ghc}";
-            run = ''nix run .#${buildPrefix}${ghc}'';
+            run = run.nixRun "${buildPrefix}${ghc}";
           }
         )
         steps.nixStoreCollectGarbage
