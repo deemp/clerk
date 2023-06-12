@@ -4,8 +4,8 @@ let
   job2 = "_2_build_with_ghc";
   job3 = "_3_push_to_cachix";
   inherit (workflows.configs.${system}) nixCI steps os oss on nixStore;
-  inherit (workflows.functions.${system}) run expr mkAccessors genAttrsId installNix nixCI_;
-  names = mkAccessors { matrix = genAttrsId [ "os" "ghc" ]; };
+  inherit (workflows.functions.${system}) run expr mkAccessors genAttrsId installNix nixCI_ cacheNixDirs;
+  names = mkAccessors { matrix = genAttrsId [ "os" "ghc" "store" ]; };
 in
 nixCI // {
   jobs = {
@@ -16,6 +16,7 @@ nixCI // {
         [
           steps.checkout
           (installNix { store = nixStore.linux; })
+          (cacheNixDirs { keySuffix = "docs"; store = nixStore.linux; restoreOnly = false; })
           steps.configGitAsGHActions
           steps.updateLocksAndCommit
           {
@@ -32,10 +33,7 @@ nixCI // {
       steps = [
         steps.checkout
         (installNix { store = nixStore.linux; })
-        {
-          name = "Pull repo";
-          run = "git pull --rebase --autostash";
-        }
+        (cacheNixDirs { keySuffix = "ghc"; store = nixStore.linux; restoreOnly = false; })
         (
           let ghc = expr names.matrix.ghc; in
           {
