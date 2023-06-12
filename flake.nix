@@ -47,7 +47,7 @@
                   super.xlsx_1_1_0_1
                 ] ++ (x.libraryHaskellDepends or [ ]);
               });
-            "${convert}" = super.callCabal2nix convert ./${convert} { };
+            "${convert}" = super.callCabal2nix convert ./${convert} { inherit (self) clerk; };
           };
         };
 
