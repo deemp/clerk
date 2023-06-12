@@ -87,24 +87,24 @@ library:
 
 executables:
   example1:
-    main: app/Example1.hs
+    main: Examples/Example1.hs
     dependencies:
       - clerk
       - microlens
       - text
       - data-default
   example2:
-    main: app/Example2.hs
+    main: Examples/Example2.hs
     dependencies: &example2
       - clerk
       - microlens
       - text
       - xlsx
   example3:
-    main: app/Example3.hs
+    main: Examples/Example3.hs
     dependencies: *example2
   example4:
-    main: app/Example4.hs
+    main: Examples/Example4.hs
     dependencies:
       - aeson
       - clerk
