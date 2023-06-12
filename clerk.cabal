@@ -68,18 +68,18 @@ library
       MultiParamTypeClasses
       NamedFieldPuns
       OverloadedStrings
+      PolyKinds
+      QuantifiedConstraints
       RankNTypes
       RecordWildCards
       ScopedTypeVariables
       StandaloneDeriving
       TupleSections
-      UndecidableInstances
-      ViewPatterns
-      PolyKinds
-      QuantifiedConstraints
       TypeApplications
       TypeFamilies
       TypeOperators
+      UndecidableInstances
+      ViewPatterns
   ghc-options: -Wall -Wno-unticked-promoted-constructors -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wredundant-constraints -Wunused-packages
   build-depends:
       base >=4.9 && <5.0
@@ -141,16 +141,9 @@ executable example4
       Paths_clerk
   ghc-options: -Wall -Wno-unticked-promoted-constructors -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wredundant-constraints -Wunused-packages
   build-depends:
-      aeson
-    , base >=4.9 && <5.0
+      base >=4.9 && <5.0
     , clerk
-    , ilist
-    , lens
-    , lens-aeson
-    , monad-loops
     , mtl
-    , pretty-simple
-    , text
     , transformers
     , xlsx
   default-language: Haskell2010

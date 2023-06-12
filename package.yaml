@@ -118,14 +118,7 @@ executables:
   example4:
     main: Examples/Example4.hs
     dependencies:
-      - aeson
       - clerk
-      - text
       - xlsx
-      - lens-aeson
-      - lens
-      - pretty-simple
-      - ilist
-      - monad-loops
       - transformers
       - mtl
