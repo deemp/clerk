@@ -25,7 +25,7 @@ jobs:
           git pull --rebase --autostash
 
           cd '.'
-          nix build .#updateLocks
+          nix build --store /home/runner/nix .#updateLocks
 
           git commit -a -m "action: Update flake locks" && git push || echo ""
       # - name: Write docs
@@ -36,8 +36,8 @@ jobs:
       #     nix run .#writeDocs
 
       #     git commit -a -m "action: Write docs" && git push || echo ""
-      # - name: Collect garbage in /nix/store
-      #   run: nix store gc
+      - name: Collect garbage in /nix/store
+        run: nix store --store /home/runner/nix gc
   # _2_build_with_ghc:
   #   name: Build with GHC
   #   runs-on: ubuntu-20.04
