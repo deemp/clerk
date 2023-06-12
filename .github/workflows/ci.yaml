@@ -68,7 +68,6 @@ jobs:
     strategy:
       matrix:
         ghc:
-          - "902"
           - "928"
   _3_push_to_cachix:
     name: Nix CI
