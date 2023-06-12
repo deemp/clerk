@@ -30,6 +30,13 @@ dependencies:
 
 ghc-options:
   - -Wall
+  - -Wno-unticked-promoted-constructors
+  - -Wcompat
+  - -Wincomplete-record-updates
+  - -Wincomplete-uni-patterns
+  - -Wno-unticked-promoted-constructors
+  - -Wredundant-constraints
+  - -Wunused-packages
 
 tests:
   docs:
