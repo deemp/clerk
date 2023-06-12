@@ -36,7 +36,6 @@ library
       Clerk.Column
       Clerk.Coordinates
       Clerk.Expression
-      Clerk.ForExamples
       Clerk.Format
       Clerk.Formula
       Clerk.Function
