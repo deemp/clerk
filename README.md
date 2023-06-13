@@ -94,10 +94,10 @@ r4 :: Ref Int
 r4 = mkRef @"T6"
 
 t3 :: Text
-t3 = showFormula $ as @Double (r4 .* r4 .* val 3) .+ r1 .** r2 ./ r3
+t3 = showFormula $ as @Double (r4 .* r4) .+ r1 .** r2 ./ r3
 
 -- >>>t3
--- "T6*T6*1.5e-323+B4^E6/G8"
+-- "T6*T6+B4^E6/G8"
 ```
 
 This `as` function should not be abused, though. If I need an `Int` instead of a `Double`, I can explicitly use an Excel function.
