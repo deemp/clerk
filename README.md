@@ -529,7 +529,7 @@ import Control.Monad.RWS (gets)
 main :: IO ()
 main = writeXlsx "example4.xlsx" [("List 1", sheet 9 15)]
 
-colFormula :: (ToCellData output) => output -> RowI input (Ref a)
+colFormula :: ToCellData output => output -> RowI input (Ref a)
 colFormula = columnF blank . const
 
 colIndex :: InputIndex -> RowIO input CellData ()
