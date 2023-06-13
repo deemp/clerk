@@ -23,10 +23,10 @@ chapterSuffixes :: [String]
 chapterSuffixes = ["4_1", "4_2", "4_3", "4_4"]
 
 chapterTex :: String -> FilePath
-chapterTex x = [i|../thesis/chapters/chapter#{x}.tex|]
+chapterTex x = [i|../thesis/chapters/chapter4-#{x}.tex|]
 
 chapterHs :: String -> FilePath
-chapterHs x = [i|src/Chapters/Chapter#{x}.hs|]
+chapterHs x = [i|src/Chapters/Chapter4/Example#{x}/Main.hs|]
 
 selectChapter :: Format -> (String -> FilePath)
 selectChapter = \case
