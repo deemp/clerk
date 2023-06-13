@@ -16,8 +16,8 @@ config =
     & dedent ?~ "d"
     & enable ?~ "E"
     & disable ?~ "D"
-    & texHaskellCodeStart ?~ "\\begin{mycode}"
-    & texHaskellCodeEnd ?~ "\\end{mycode}"
+    & texHaskellCodeStart ?~ "\\begin{minted}"
+    & texHaskellCodeEnd ?~ "\\end{minted}"
 
 chapterSuffixes :: [String]
 chapterSuffixes = ["4_1", "4_2", "4_3", "4_4"]
