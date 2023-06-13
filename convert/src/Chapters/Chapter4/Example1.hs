@@ -1,9 +1,3 @@
-{- D -}
-
-module Chapters.Chapter4.Example1 where
-
-{- E -}
-
 {-
 \chapter{Examples}
 \label{chap:impl}
@@ -12,7 +6,7 @@ This chapter presents several examples of the \clerk library usage.
 
 The library was used to produce styled spreadsheets with data and formulas on it. The formulas were evaluated when the document was loaded into a target spreadsheet system.
 
-The library supported the following features:
+The library supported the following features that I described in the corresponding sections:
 
 \begin{itemize}
   \item Typed cell references (\cref{example1:typedReferences});
@@ -21,8 +15,6 @@ The library supported the following features:
   \item Conditional styles, formatting, column widths;
   \item Context-aware formula rendering.
 \end{itemize}
-
-\Cref{sec:ex1} demonstrates the formula syntax and \Cref{sec:ex2} provides an example of working with the library data types.
 
 \section{Example 1. Formulas}
 \label{sec:ex1}
@@ -40,7 +32,6 @@ I constructed a EBNF of a rendered cell formula (\Cref{example1:ebnf}) and made 
   \item a \hs{<string>} is an ordinary string in a spreadsheet system (\hs{"abc"});
   \item \hs{<cell formula>} is a formula interpretable by a spreadsheet system (\hs{=A1+B2});
 \end{itemize}
-
 
 \begin{figure}[h]
   \begin{multicols}{2}
@@ -76,7 +67,36 @@ I constructed a EBNF of a rendered cell formula (\Cref{example1:ebnf}) and made 
   \label{example1:ebnf}
 \end{figure}
 
+\subsection{Language extensions}
 
+I enabled several language extensions (\cref{example1:extensions}).
+
+\begin{itemize}
+  \item
+\end{itemize}
+
+\begin{listing}[!h]
+  \begin{minted}{haskell}
+-}
+
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds #-}
+
+{-
+\end{minted}
+\caption{Language extensions}
+\label{example1:extensions}
+\end{listing}
+-}
+
+{- D -}
+
+module Chapters.Chapter4.Example1 where
+
+{- E -}
+
+{-
 \subsection{Imports}
 
 First, I imported the necessary modules (\cref{example1:imports}).
@@ -91,14 +111,13 @@ Instead, I imported from the module \hs{Examples.Helpers} several functions that
 
 import Clerk hiding (mkRef)
 import Data.Text (Text)
-import Examples.Helpers(mkRef, showFormula)
+import Examples.Helpers (mkRef, showFormula)
 
 {-
 \end{minted}
   \caption{Imports}
   \label{example1:imports}
 \end{listing}
-
 
 \subsection{Typed cell references}
 
@@ -193,7 +212,7 @@ s3 :: Text
 s3 = showFormula $ f4 .^ as @Int f2
 
 -- >>>t3
--- "((T6)*(T6))^((((B4)*(E6))*(4613937818241073152))+(((B4)^(E6))/(G8)))"    
+-- "((T6)*(T6))^((((B4)*(E6))*(4613937818241073152))+(((B4)^(E6))/(G8)))"
 
 {-
 \end{minted}
