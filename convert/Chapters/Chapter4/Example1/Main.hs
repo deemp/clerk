@@ -90,11 +90,11 @@ I enabled several language extensions (\cref{example1:extensions}).
 \end{listing}
 -}
 
-{- D -}
+-- {- D -}
 
-module Chapters.Chapter4.Example1 where
+-- module Example1 where
 
-{- E -}
+-- {- E -}
 
 {-
 \subsection{Imports}
@@ -118,7 +118,15 @@ import Examples.Helpers (mkRef, showFormula)
   \caption{Imports}
   \label{example1:imports}
 \end{listing}
+-}
 
+{- D -}
+  
+main = undefined
+
+{- E -}
+
+{-
 \subsection{Typed cell references}
 
 The \clerk library supports typed cell references. Such a cell reference contains the coordinates of a cell within a spreadsheet and the type of a value in that cell.

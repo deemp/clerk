@@ -43,38 +43,74 @@ library:
     - transformers
     - xlsx
 
-default-extensions:
-  - ConstraintKinds
-  - DataKinds
-  - DeriveAnyClass
-  - DeriveGeneric
-  - DerivingVia
-  - DuplicateRecordFields
-  - FlexibleContexts
-  - FlexibleInstances
-  - GADTs
-  - GeneralizedNewtypeDeriving
-  - InstanceSigs
-  - ImportQualifiedPost
-  - OverloadedRecordDot
-  - KindSignatures
-  - MultiParamTypeClasses
-  - NamedFieldPuns
-  - OverloadedStrings
-  - PolyKinds
-  - QuantifiedConstraints
-  - RankNTypes
-  - RecordWildCards
-  - ScopedTypeVariables
-  - StandaloneDeriving
-  - TupleSections
-  - TypeApplications
-  - TypeFamilies
-  - TypeOperators
-  - UndecidableInstances
-  - ViewPatterns
-  - ExplicitNamespaces
-  - QuantifiedConstraints
+# default-extensions:
+  # - ConstraintKinds
+  # - DataKinds
+  # - DeriveAnyClass
+  # - DeriveGeneric
+  # - DerivingVia
+  # - DuplicateRecordFields
+  # - FlexibleContexts
+  # - FlexibleInstances
+  # - GADTs
+  # - GeneralizedNewtypeDeriving
+  # - InstanceSigs
+  # - ImportQualifiedPost
+  # - OverloadedRecordDot
+  # - KindSignatures
+  # - MultiParamTypeClasses
+  # - NamedFieldPuns
+  # - OverloadedStrings
+  # - PolyKinds
+  # - QuantifiedConstraints
+  # - RankNTypes
+  # - RecordWildCards
+  # - ScopedTypeVariables
+  # - StandaloneDeriving
+  # - TupleSections
+  # - TypeApplications
+  # - TypeFamilies
+  # - TypeOperators
+  # - UndecidableInstances
+  # - ViewPatterns
+  # - ExplicitNamespaces
+  # - QuantifiedConstraints
+
+# TODO move chapters to executables
+# so that the converter can be built without building the chapters
+executables:
+  chapter3-1:
+    main: Chapters/Chapter3/Intro/Main.hs
+    dependencies:
+      - clerk
+      - text
+  chapter4-1:
+    main: Chapters/Chapter4/Example1/Main.hs
+    dependencies:
+      - clerk
+      - text
+  chapter4-2:
+    main: Chapters/Chapter4/Example2/Main.hs
+    dependencies:
+      - clerk
+      - text
+      - microlens
+  chapter4-3:
+    main: Chapters/Chapter4/Example3/Main.hs
+    dependencies:
+      - clerk
+      - text
+      - microlens
+      - xlsx
+  chapter4-4:
+    main: Chapters/Chapter4/Example4/Main.hs
+    dependencies:
+      - clerk
+      - text
+      - microlens
+      - xlsx
+      - mtl
+      - transformers
 
 tests:
   hs-tex:

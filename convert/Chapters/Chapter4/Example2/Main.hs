@@ -45,11 +45,11 @@ First, I enabled several language extensions.
 \end{listing}
 -}
 
-{- D -}
+-- {- D -}
 
-module Chapters.Chapter4.Example2 where
+-- module Example2 where
 
-{- E -}
+-- {- E -}
 
 {-
 \subsection{Imports}
@@ -73,7 +73,15 @@ import Lens.Micro ((&), (+~), (^.))
   \caption{Imports}
   \label{example2:imports}
 \end{listing}
+-}
 
+-- {- D -}
+  
+-- main = undefined
+
+-- {- E -}
+
+{-
 \subsection{Tables}
 
 \newcommand{\vh}{Vertical Header}
