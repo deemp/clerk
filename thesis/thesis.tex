@@ -65,11 +65,12 @@
 \usepackage{anyfontsize}
 \usepackage{mathptmx}
 \usepackage{t1enc}
-
+\usepackage{syntax}
 \usepackage{chngcntr}
 \usepackage{upgreek} 
 \usepackage{bm}
 % \usepackage{hyperref}
+\usepackage{multicol}
 \usepackage{setspace}
 \usepackage{booktabs}
 \usepackage{multirow}
@@ -91,18 +92,38 @@
 \usepackage{cleveref}
 \crefname{table}{table}{tables}
 \Crefname{table}{Table}{Tables}
-\crefname{figure}{figure}{figures}
-\Crefname{figure}{Figure}{Figures}
+\crefname{figure}{Fig.}{figures}
+\Crefname{figure}{Fig.}{Figures}
+\crefname{listing}{List.}{List.}
+\Crefname{listing}{List.}{List.}
 
-\usepackage{minted}
-\newminted[mycode]{haskell}{
-    % frame=lines,
-    framesep=2mm,
-    baselinestretch=1.2,
-    % bgcolor=LightGray,
-    fontsize=\small,
-    % linenos
+% --- START --- minted
+
+% https://github.com/latextemplates/IEEE/blob/main/paper-conference-minted.tex
+\usepackage[newfloat]{minted}
+\setminted{
+  % Add line numbers, can be added per listing 
+  % linenos=true,
+  % Line numbers not flowing out of the margin
+  numbersep=12pt,
+  xleftmargin=19pt,
+  breaklines=true,
+  breakbytoken=true,
+  % For the very long tokens, use
+  % "breakanywhere, breakbytokenanywhere=false"
+  % on the listing level. Otherwise breakanywhere will not have any effect.
+  breakbytokenanywhere=true
 }
+\renewcommand{\theFancyVerbLine}{\textcolor{gray}{\arabic{FancyVerbLine}}}
+
+\captionsetup[listing]{labelfont={normalfont}, name={List.}, labelsep=period}
+\counterwithout{listing}{chapter}
+
+\newcommand{\hs}{\mintinline[fontsize=\normalsize]{haskell}}
+
+\newcommand{\clerk}{\texttt{clerk} }
+
+% --- END --- minted
 
 \setcounter{secnumdepth}{4}
 \captionsetup[table]{labelfont={normalfont}, name={TABLE}, labelsep={newline}}
@@ -154,13 +175,18 @@
 \newpage
 %\include{chapters/abstract}
 % Depend on above part
-\setcounter{page}{6}
+\setcounter{page}{1}
 % \include{chapters/chapter1}
 %\include{chapters/chapter2}
-%\include{chapters/chapter3}
-%\include{chapters/chapter4}
+% \include{chapters/chapter3}
+% \include{chapters/chap}
+\include{chapters/chapter4/example1.tex}
+\include{chapters/chapter4/example2.tex}
+\include{chapters/chapter4/example3.tex}
+% \include{chapters/chapter4-3.tex}
 % \include{chapters/chapter4-cont}
-\include{chapters/chapter5}
+% \include{chapters/chap}
+% \include{chapters/chapter5}
 %\include{chapters/chapter6}
 
 
