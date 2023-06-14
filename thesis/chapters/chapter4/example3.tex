@@ -1,34 +1,13 @@
-{-# LANGUAGE LambdaCase #-}
+\section{Example 3. Volume and Pressure table}
 
-{-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE NoOverloadedStrings #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE DataKinds #-}
+Sometimes, a user may want to style her generated spreadsheet.
+This example shows how to model a problem domain and style the generated spreadsheet.
 
-% d
+\subsection{The goal}
 
-module Chapters.Chapter4_3 where
+The goal was to generate a spreadsheet that calculated the pressure data given volume data and several constants.
 
-% SINGLE_LINE e
-
-\chapter{Implementation}
-\label{chap:impl}
-
-\Crefname{equation}{Eq.}{Eqs.}
-\Crefname{figure}{Fig.}{Figs.}
-\Crefname{tabular}{Tab.}{Tabs.}
-
-\texttt{clerk} produces a styled spreadsheet with some data and formulas on it. These formulas are evaluated when the document is loaded into a target spreadsheet system.
-\Cref{sec:ex3} demonstrates construction of a table for volume and pressure. \Cref{sec:styles} provides the expressions for styling the tables.
-
-\section{Example 3. Volume and pressure}
-\label{sec:ex3}
-
-This sections describes the generation of a spreadsheet which calculates the pressure data given some volume data and constants. The program produces an \texttt{xlsx} file that looks as in \Cref{fig:volumePressure}.
+The final spreadsheet had the form as in \Cref{fig:volumePressure}.
 
 \begin{figure}[h]
   \centering
@@ -46,30 +25,44 @@ With formulas enabled, I obtained a spreadsheet as in \Cref{fig:volumePressureFo
   \label{fig:volumePressureFormulas}
 \end{figure}
 
-\subsection{Extensions}
+\subsection{Language Extensions}
 
-I enabled several language extensions so that the compiler could recognize the necessary language features.
+First, I enabled several language extensions.
+\begin{itemize}
+  \item \hs{DataKinds} allowed to promote values to type level.
+  \item \hs{DuplicateRecordFields} allowed to use the same field names in multiple record data types.
+  \item \hs{ImportQualifiedPost} allowed to use module imports of a specific form.
+  \item \hs{OverloadedRecordDot} allowed to use the \hs{.} operator for accessing the record fields.
+  \item \hs{RecordWildCards} allowed to omit the field names in records in certain cases.
+\end{itemize}
 
-% SINGLE_LINE FOURMOLU_DISABLE
-
-\begin{mycode}
-
-
-\end{mycode}
-
-% SINGLE_LINE FOURMOLU_ENABLE
+\begin{listing}[!h]
+  \begin{minted}{haskell}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeApplications #-}
+\end{minted}
+\caption{Language extensions}
+\label{example3:extensions}
+\end{listing}
 
 \subsection{Imports}
 
 Next, I imported the necessary Modules.
 
-\begin{mycode}
+\begin{listing}[!h]
+  \begin{minted}{haskell}
 import Clerk
 import Codec.Xlsx qualified as X
 import Codec.Xlsx.Formatted qualified as X
-import Data.Text qualified as T
 import Lens.Micro ((%~), (&), (+~), (?~))
-\end{mycode}
+\end{minted}
+\caption{Imports}
+\label{example3:imports}
+\end{listing}
 
 \subsection{Tables}
 
@@ -92,18 +85,23 @@ The tables that I was going to construct were:
 In my case, each constant had the same type of the numeric value - `Double`.
 That is why, I constructed a table with a single row per a constant and later placed the constants' tables under each other. I stored constant data in a record.
 
-\begin{mycode}
+\begin{listing}[!h]
+  \begin{minted}{haskell}
 data ConstantData a = ConstantData
   { constantName :: String
   , constantSymbol :: String
   , constantValue :: a
   , constantUnits :: String
   }
-\end{mycode}
+\end{minted}
+\caption{Constant data}
+\label{example3:constantData}
+\end{listing}
 
 Next, I grouped the constants into a record. The parameter \texttt{f} may be an arbitrary type of kind \texttt{* -> *}.
 
-\begin{mycode}
+\begin{listing}[!h]
+  \begin{minted}{haskell}
 data Constants f = Constants
   { gasConstant :: f Double
   , numberOfMoles :: f Double
@@ -111,11 +109,15 @@ data Constants f = Constants
   }
 
 type ConstantsInput = Constants ConstantData
-\end{mycode}
+\end{minted}
+\caption{Constants}
+\label{example3:constants}
+\end{listing}
 
 Following that, I recorded the constants data.
 
-\begin{mycode}
+\begin{listing}[!h]
+  \begin{minted}{haskell}
 constants :: ConstantsInput
 constants =
   Constants
@@ -126,7 +128,10 @@ constants =
     , temperature =
         ConstantData "TEMPERATURE(K)" "T" 273.2 "K"
     }
-\end{mycode}
+\end{minted}
+\caption{Constant values}
+\label{example3:constantValues}
+\end{listing}
 
 Now, I made a \texttt{RowI} for a constant input.
 I used a \texttt{RowI} because this row requires the input type.
@@ -141,15 +146,19 @@ Later, I would use these outputs to relate the positions of tables on a sheet.
 
 Here, I used \texttt{lightBlue} from the \Cref{sec:styles}.
 
-\begin{mycode}
-constant :: (ToCellData a) => RowI (ConstantData a) (Ref (), Ref a)
+\begin{listing}[!h]
+  \begin{minted}{haskell}
+constant :: ToCellData a => RowI (ConstantData a) (Ref (), Ref a)
 constant = do
   refTopLeft <- columnF lightBlue constantName
   columnF_ lightBlue constantSymbol
   refValue <- columnF (lightBlue .& with2decimalDigits) constantValue
   columnF_ lightBlue constantUnits
   return (refTopLeft, refValue)
-\end{mycode}
+\end{minted}
+\caption{Language extensions}
+\label{example3:constantCode}
+\end{listing}
 
 \subsubsection{Volume and pressure values}
 
@@ -162,28 +171,40 @@ constant = do
 
 I used the data and combined it with the constants to fill table \Cref{fig:valuesFormulas}
 
-\begin{mycode}
+\begin{listing}[!h]
+  \begin{minted}{haskell}
 newtype Volume = Volume {volume :: Double}
 
 volumeData :: [Volume]
 volumeData = Volume <$> [1 .. 10]
-\end{mycode}
+\end{minted}
+\caption{Language extensions}
+\label{example3:volumeData}
+\end{listing}
 
 I made a helper type to pass the constants references in a structured way.
 
-\begin{mycode}
+\begin{listing}[!h]
+  \begin{minted}{haskell}
 type ConstantsRefs = Constants Ref
-\end{mycode}
+\end{minted}
+\caption{Constant references}
+\label{example3:constantRefs}
+\end{listing}
 
 Next, I defined a function to produce a row for volume and pressure.
 
-\begin{mycode}
+\begin{listing}[!h]
+  \begin{minted}{haskell}
 values :: ConstantsRefs -> RowI Volume ()
 values Constants{..} = do
   refVolume <- columnF alternatingColors volume
   let pressure' = gasConstant .* numberOfMoles .* temperature ./ refVolume
   columnF_ (alternatingColors .& with2decimalDigits) (const pressure')
-\end{mycode}
+\end{minted}
+\caption{Values}
+\label{example3:valuesCode}
+\end{listing}
 
 \subsubsection{Constants' header}
 
@@ -196,7 +217,8 @@ values Constants{..} = do
 
 I did not use records here. Instead, I put the names of the columns straight into the `Row`. The outputs were the coordinates of the top left cell and the top right cell of this table.
 
-\begin{mycode}
+\begin{listing}[!h]
+  \begin{minted}{haskell}
 constantsHeader :: Row (Ref (), Ref ())
 constantsHeader = do
   let style :: FormatCell
@@ -206,7 +228,10 @@ constantsHeader = do
   columnF_ style (const "value")
   refTopRight <- columnWF 13 style (const "units")
   return (refTopLeft, refTopRight)
-\end{mycode}
+\end{minted}
+\caption{Language extensions}
+\label{example3:extensions}
+\end{listing}
 
 \subsubsection{Volume \& Pressure header}
 
@@ -219,19 +244,24 @@ constantsHeader = do
 
 For this header, I also put the names of columns straight into a row.
 
-\begin{mycode}
+\begin{listing}[!h]
+  \begin{minted}{haskell}
 valuesHeader :: Row (Ref ())
 valuesHeader = do
   refTopLeft <- columnWF 12 green (const "VOLUME (L)")
   columnWF_ 16 green (const "PRESSURE (atm)")
   return refTopLeft
-\end{mycode}
+\end{minted}
+\caption{Language extensions}
+\label{example3:extensions}
+\end{listing}
 
 \subsection{Sheet builder}
 
 Finally, I combined all rows.
 
-\begin{mycode}
+\begin{listing}[!h]
+  \begin{minted}{haskell}
 sheet :: Sheet ()
 sheet = do
   start <- mkCoords 2 2
@@ -241,14 +271,18 @@ sheet = do
   temperature <- snd <$> placeIn (nMolesTopLeft & row +~ 1) constants.temperature constant
   valuesHeaderTopLeft <- place (constantsHeaderTopRight & col +~ 2) valuesHeader
   placeIns (valuesHeaderTopLeft & row +~ 2) volumeData (values $ Constants gas nMoles temperature)
-\end{mycode}
+\end{minted}
+\caption{Language extensions}
+\label{example3:extensions}
+\end{listing}
 
 \subsection{Styles}
 \label{sec:styles}
 
 Below, I list the expressions used for sheet styling.
 
-\begin{mycode}
+\begin{listing}[!h]
+  \begin{minted}{haskell}
 blue, lightBlue, green, lightGreen :: FormatCell
 blue = mkColor (hex @"#FF99CCFF")
 lightBlue = mkColor (hex @"#90CCFFFF")
@@ -257,20 +291,31 @@ lightGreen = mkColor (hex @"#90CCFFCC")
 
 alternatingColors :: FormatCell
 alternatingColors index = (if even index then lightGreen else lightBlue) index
-\end{mycode}
+\end{minted}
+\caption{Language extensions}
+\label{example3:extensions}
+\end{listing}
 
 Additionally, I composed an \texttt{FCTransform} for the number format.
 Such a transform was used to accumulate cell formatting.
 
-\begin{mycode}
+\begin{listing}[!h]
+  \begin{minted}{haskell}
 with2decimalDigits :: FCTransform
 with2decimalDigits fcTransform =
   fcTransform & X.formattedFormat %~ X.formatNumberFormat ?~ X.StdNumberFormat X.Nf2Decimal
-\end{mycode}
+\end{minted}
+\caption{Language extensions}
+\label{example3:extensions}
+\end{listing}
 
 Finally, I made a transform for centering the cell contents.
 
-\begin{mycode}
+\begin{listing}[!h]
+  \begin{minted}{haskell}
 alignedCenter :: FCTransform
 alignedCenter = horizontalAlignment X.CellHorizontalAlignmentCenter
-\end{mycode}
+\end{minted}
+\caption{Language extensions}
+\label{example3:extensions}
+\end{listing}
