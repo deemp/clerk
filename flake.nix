@@ -2,12 +2,12 @@
   inputs = {
     nixpkgs_.url = "github:deemp/flakes?dir=source-flake/nixpkgs";
     nixpkgs.follows = "nixpkgs_/nixpkgs";
-    codium.url = "github:deemp/flakes?dir=codium";
+    my-codium.url = "github:deemp/flakes?dir=codium";
     drv-tools.url = "github:deemp/flakes?dir=drv-tools";
     flake-utils_.url = "github:deemp/flakes?dir=source-flake/flake-utils";
     flake-utils.follows = "flake-utils_/flake-utils";
     haskell-tools.url = "github:deemp/flakes?dir=language-tools/haskell";
-    devshell.url = "github:deemp/flakes?dir=devshell";
+    my-devshell.url = "github:deemp/flakes?dir=devshell";
     flakes-tools.url = "github:deemp/flakes?dir=flakes-tools";
     workflows.url = "github:deemp/flakes?dir=workflows";
     flake-compat = {
@@ -19,24 +19,23 @@
     let
       pkgs = inputs.nixpkgs.legacyPackages.${system};
       inherit (pkgs.lib.attrsets) genAttrs mapAttrs';
-      inherit (inputs.codium.functions.${system}) writeSettingsJSON mkCodium;
+      inherit (inputs.my-codium.functions.${system}) writeSettingsJSON mkCodium;
       inherit (inputs.drv-tools.functions.${system}) mkShellApps mkBin mkShellApp mapGenAttrs mapStrGenAttrs;
-      inherit (inputs.codium.configs.${system}) extensions extensionsCommon settingsNix settingsCommonNix;
+      inherit (inputs.my-codium.configs.${system}) extensions extensionsCommon settingsNix settingsCommonNix;
       inherit (inputs.flakes-tools.functions.${system}) mkFlakesTools;
-      inherit (inputs.devshell.functions.${system}) mkCommands mkRunCommands mkShell;
+      inherit (inputs.my-devshell.functions.${system}) mkCommands mkRunCommands mkShell;
       inherit (inputs.workflows.functions.${system}) writeWorkflow;
       inherit (inputs.haskell-tools.functions.${system}) toolsGHC;
       inherit (inputs) workflows;
 
-      clerk = "clerk";
-      convert = "convert";
+      packageName = "clerk";
 
       ghcVersion = "928";
       override =
         let inherit (pkgs.haskell.lib) doJailbreak dontCheck overrideCabal; in
         {
           overrides = self: super: {
-            "${clerk}" = overrideCabal (super.callCabal2nix clerk ./${clerk} { })
+            "${packageName}" = overrideCabal (super.callCabal2nix packageName ./. { })
               (x: {
                 librarySystemDepends = [
                   pkgs.zlib
@@ -47,63 +46,101 @@
                   super.xlsx_1_1_0_1
                 ] ++ (x.libraryHaskellDepends or [ ]);
               });
-            "${convert}" = super.callCabal2nix convert ./${convert} { inherit (self) clerk; };
           };
         };
+      inherit (toolsGHC {
+        version = ghcVersion;
+        inherit override;
+        packages = (ps: [ ps.${packageName} ]);
+      })
+        cabal ghcid hpack ghc implicit-hie hls;
 
-      hpkgs = pkgs.haskell.packages."ghc${ghcVersion}";
+      scripts =
+        mkShellApps (
+          {
+            writeDocs = {
+              text = ''${cabal}/bin/cabal v1-test docs'';
+            };
+          }
+          //
+          (mapStrGenAttrs
+            (x: {
+              "example${x}" = {
+                text = "${cabal}/bin/cabal run example${x}";
+                description = "Get `example-${x}.xlsx`";
+              };
+            }) [ 1 2 3 4 ]
+          )
+        );
 
-      devShells.shellFor = (hpkgs.override override).shellFor {
-        packages = ps: [ ps.${clerk} ps.${convert} ];
-      };
+      buildPrefix = "buildWithGHC";
+      ghcVersions = [
+        # "8107"
+        # "902"
+        "928"
+        # "945"
+        # "962"
+      ];
+
+      cabalBuild = mkShellApps
+        (mapGenAttrs
+          (version: {
+            "${buildPrefix}${version}" =
+              let inherit (toolsGHC {
+                inherit version override; packages = (ps: [ ps.${packageName} ]);
+              }) cabal; in
+              {
+                name = "cabal-build";
+                text = "${cabal}/bin/cabal v1-build ${packageName}";
+              };
+          })
+          ghcVersions
+        )
+      ;
 
       tools = [
-        pkgs.cabal-install
-        pkgs.hpack
-        hpkgs.implicit-hie
-        hpkgs.haskell-language-server
+        cabal
+        hpack
+        hls
+        ghcid
+        implicit-hie
         pkgs.haskellPackages.fourmolu_0_12_0_0
-        pkgs.poetry
       ];
 
       packages = {
+        codium = mkCodium {
+          extensions = { inherit (extensions) nix haskell misc github markdown; };
+          runtimeDependencies = tools;
+        };
+
         writeSettings = writeSettingsJSON (settingsCommonNix // {
-          inherit (settingsNix) haskell python;
+          inherit (settingsNix) haskell;
           extra = {
             "haskell.plugin.fourmolu.config.external" = true;
-            "python.defaultInterpreterPath" = ".venv/bin/python3";
-            "latex-workshop.latex.tools" = [
-              {
-                "name" = "latexmk";
-                "command" = "latexmk";
-                "args" = [
-                  "-shell-escape"
-                  "-synctex=1"
-                  "-interaction=nonstopmode"
-                  "-file-line-error"
-                  "-pdf"
-                  "-outdir=%OUTDIR%"
-                  "%DOC%"
-                ];
-                "env" = { };
-              }
-            ];
           };
         });
-      };
 
-      # TODO add script to write docs
+        inherit (mkFlakesTools [ "." ]) updateLocks pushToCachix;
+
+        writeWorkflows = writeWorkflow "ci" (
+          import ./nix-files/workflow.nix {
+            inherit system workflows scripts buildPrefix ghcVersions;
+          }
+        );
+      } // cabalBuild // scripts;
 
       devShells = {
         default = mkShell {
           packages = tools;
-          packagesFrom = [ devShells.shellFor ];
           bash.extra = ''export LANG=C'';
-          commands = mkCommands "tools" tools;
+          commands =
+            mkCommands "tools" tools
+            ++ mkRunCommands "ide" { "codium ." = packages.codium; inherit (packages) writeSettings; }
+            ++ mkRunCommands "infra" { inherit (packages) writeWorkflows; }
+            ++ mkRunCommands "test" { inherit (packages) example2 example3; }
+            ++ mkRunCommands "scripts" { inherit (packages) writeDocs; };
         };
       };
-
-      packages = { };
     in
     {
       inherit packages devShells;
@@ -111,11 +148,13 @@
 
   nixConfig = {
     extra-substituters = [
+      "https://haskell-language-server.cachix.org"
       "https://nix-community.cachix.org"
       "https://cache.iog.io"
       "https://deemp.cachix.org"
     ];
     extra-trusted-public-keys = [
+      "haskell-language-server.cachix.org-1:juFfHrwkOxqIOZShtC4YC1uT1bBcq2RSvC7OMKx0Nz8="
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
       "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="
       "deemp.cachix.org-1:9shDxyR2ANqEPQEEYDL/xIOnoPwxHot21L5fiZnFL18="

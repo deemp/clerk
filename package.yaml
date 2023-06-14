@@ -1,0 +1,124 @@
+name: clerk
+version: 0.2.0.3
+github: "deemp/clerk"
+license: BSD3
+author: "Danila Danko, Nickolay Kudasov"
+maintainer: "Danila Danko"
+copyright: "Danila Danko, Nickolay Kudasov"
+category: "spreadsheet"
+synopsis: "Declaratively describe spreadsheets"
+
+extra-source-files:
+  - README.md
+  - CHANGELOG.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            value
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description: |
+  `clerk` provides a Haskell library for declaratively describing the spreadsheets.
+  `clerk` is built on top of the [xlsx](https://hackage.haskell.org/package/xlsx) package
+  and extends upon the [work](https://youtu.be/1xGoa-zEOrQ) of Nickolay Kudasov.
+  See the [README](https://github.com/deemp/clerk#readme) for an example of `clerk` usage and further info.
+
+dependencies:
+  - base >= 4.9 && < 5.0
+
+ghc-options:
+  - -Wall
+  - -Wno-unticked-promoted-constructors
+  - -Wcompat
+  - -Wincomplete-record-updates
+  - -Wincomplete-uni-patterns
+  - -Wno-unticked-promoted-constructors
+  - -Wredundant-constraints
+  - -Wunused-packages
+
+tests:
+  docs:
+    main: test/Docs.hs
+    dependencies:
+      - lima
+      - text
+      - string-interpolate
+    default-extensions:
+      - ImportQualifiedPost
+      - QuasiQuotes
+      - ScopedTypeVariables
+      - OverloadedStrings
+
+library:
+  source-dirs: src
+  dependencies:
+    - bytestring
+    - containers
+    - data-default
+    - microlens
+    - mtl
+    - text
+    - time
+    - transformers
+    - xlsx
+    - first-class-families
+    - generic-lens
+  when:
+    - condition: false
+      other-modules: Paths_clerk
+  default-extensions:
+    - ConstraintKinds
+    - DataKinds
+    - DeriveAnyClass
+    - DeriveGeneric
+    - DerivingVia
+    - DuplicateRecordFields
+    - FlexibleContexts
+    - FlexibleInstances
+    - GADTs
+    - GeneralizedNewtypeDeriving
+    - InstanceSigs
+    - KindSignatures
+    - MultiParamTypeClasses
+    - NamedFieldPuns
+    - OverloadedStrings
+    - PolyKinds
+    - QuantifiedConstraints
+    - RankNTypes
+    - RecordWildCards
+    - ScopedTypeVariables
+    - StandaloneDeriving
+    - TupleSections
+    - TypeApplications
+    - TypeFamilies
+    - TypeOperators
+    - UndecidableInstances
+    - ViewPatterns
+
+executables:
+  example1:
+    main: Examples/Example1.hs
+    dependencies:
+      - clerk
+      - microlens
+      - text
+      - data-default
+  example2:
+    main: Examples/Example2.hs
+    dependencies: &example2
+      - clerk
+      - microlens
+      - text
+      - xlsx
+  example3:
+    main: Examples/Example3.hs
+    dependencies: *example2
+  example4:
+    main: Examples/Example4.hs
+    dependencies:
+      - clerk
+      - xlsx
+      - transformers
+      - mtl

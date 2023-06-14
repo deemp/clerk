@@ -1,0 +1,167 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.35.2.
+--
+-- see: https://github.com/sol/hpack
+
+name:           clerk
+version:        0.2.0.3
+synopsis:       Declaratively describe spreadsheets
+description:    `clerk` provides a Haskell library for declaratively describing the spreadsheets.
+                `clerk` is built on top of the [xlsx](https://hackage.haskell.org/package/xlsx) package
+                and extends upon the [work](https://youtu.be/1xGoa-zEOrQ) of Nickolay Kudasov.
+                See the [README](https://github.com/deemp/clerk#readme) for an example of `clerk` usage and further info.
+category:       spreadsheet
+homepage:       https://github.com/deemp/clerk#readme
+bug-reports:    https://github.com/deemp/clerk/issues
+author:         Danila Danko, Nickolay Kudasov
+maintainer:     Danila Danko
+copyright:      Danila Danko, Nickolay Kudasov
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/deemp/clerk
+
+library
+  exposed-modules:
+      Clerk
+      Clerk.AddressTyped
+      Clerk.ColorTyped
+      Clerk.Column
+      Clerk.Coordinates
+      Clerk.Expression
+      Clerk.Format
+      Clerk.Formula
+      Clerk.Function
+      Clerk.Internal
+      Clerk.Operators
+      Clerk.Place
+      Clerk.Reference
+      Clerk.Render
+      Clerk.Row
+      Clerk.Sheet
+      Clerk.Symbols
+      Clerk.Transform
+      Clerk.Xlsx
+      Examples.Helpers
+  hs-source-dirs:
+      src
+  default-extensions:
+      ConstraintKinds
+      DataKinds
+      DeriveAnyClass
+      DeriveGeneric
+      DerivingVia
+      DuplicateRecordFields
+      FlexibleContexts
+      FlexibleInstances
+      GADTs
+      GeneralizedNewtypeDeriving
+      InstanceSigs
+      KindSignatures
+      MultiParamTypeClasses
+      NamedFieldPuns
+      OverloadedStrings
+      PolyKinds
+      QuantifiedConstraints
+      RankNTypes
+      RecordWildCards
+      ScopedTypeVariables
+      StandaloneDeriving
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeOperators
+      UndecidableInstances
+      ViewPatterns
+  ghc-options: -Wall -Wno-unticked-promoted-constructors -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wredundant-constraints -Wunused-packages
+  build-depends:
+      base >=4.9 && <5.0
+    , bytestring
+    , containers
+    , data-default
+    , first-class-families
+    , generic-lens
+    , microlens
+    , mtl
+    , text
+    , time
+    , transformers
+    , xlsx
+  default-language: Haskell2010
+
+executable example1
+  main-is: Examples/Example1.hs
+  other-modules:
+      Paths_clerk
+  ghc-options: -Wall -Wno-unticked-promoted-constructors -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wredundant-constraints -Wunused-packages
+  build-depends:
+      base >=4.9 && <5.0
+    , clerk
+    , data-default
+    , microlens
+    , text
+  default-language: Haskell2010
+
+executable example2
+  main-is: Examples/Example2.hs
+  other-modules:
+      Paths_clerk
+  ghc-options: -Wall -Wno-unticked-promoted-constructors -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wredundant-constraints -Wunused-packages
+  build-depends:
+      base >=4.9 && <5.0
+    , clerk
+    , microlens
+    , text
+    , xlsx
+  default-language: Haskell2010
+
+executable example3
+  main-is: Examples/Example3.hs
+  other-modules:
+      Paths_clerk
+  ghc-options: -Wall -Wno-unticked-promoted-constructors -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wredundant-constraints -Wunused-packages
+  build-depends:
+      base >=4.9 && <5.0
+    , clerk
+    , microlens
+    , text
+    , xlsx
+  default-language: Haskell2010
+
+executable example4
+  main-is: Examples/Example4.hs
+  other-modules:
+      Paths_clerk
+  ghc-options: -Wall -Wno-unticked-promoted-constructors -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wredundant-constraints -Wunused-packages
+  build-depends:
+      base >=4.9 && <5.0
+    , clerk
+    , mtl
+    , transformers
+    , xlsx
+  default-language: Haskell2010
+
+test-suite docs
+  type: exitcode-stdio-1.0
+  main-is: test/Docs.hs
+  other-modules:
+      Paths_clerk
+  default-extensions:
+      ImportQualifiedPost
+      QuasiQuotes
+      ScopedTypeVariables
+      OverloadedStrings
+  ghc-options: -Wall -Wno-unticked-promoted-constructors -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wredundant-constraints -Wunused-packages
+  build-depends:
+      base >=4.9 && <5.0
+    , lima
+    , string-interpolate
+    , text
+  default-language: Haskell2010

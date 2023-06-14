@@ -1,9 +1,0 @@
-.stack-work/
-*~
-.direnv
-.vscode
-example*.xlsx
-dist-newstyle
-.~lock*
-result
-dist

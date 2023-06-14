@@ -1,3 +1,3 @@
-haddock-style: multi-line
+haddock-style: single-line
 indentation: 2
 single-constraint-parens: never
