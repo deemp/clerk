@@ -63,6 +63,7 @@
         hpkgs.implicit-hie
         hpkgs.haskell-language-server
         pkgs.haskellPackages.fourmolu_0_12_0_0
+        pkgs.poetry
       ];
 
       packages = {
@@ -70,7 +71,7 @@
           inherit (settingsNix) haskell python;
           extra = {
             "haskell.plugin.fourmolu.config.external" = true;
-            "python.defaultInterpreterPath" = ".venv/bin/python";
+            "python.defaultInterpreterPath" = ".venv/bin/python3";
             "latex-workshop.latex.tools" = [
               {
                 "name" = "latexmk";
