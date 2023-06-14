@@ -80,30 +80,30 @@ library:
 # so that the converter can be built without building the chapters
 executables:
   chapter3-1:
-    main: Chapters/Chapter3/Intro/Main.hs
+    main: Chapters/Chapter3/Intro.hs
     dependencies:
       - clerk
       - text
   chapter4-1:
-    main: Chapters/Chapter4/Example1/Main.hs
+    main: Chapters/Chapter4/Example1.hs
     dependencies:
       - clerk
       - text
   chapter4-2:
-    main: Chapters/Chapter4/Example2/Main.hs
+    main: Chapters/Chapter4/Example2.hs
     dependencies:
       - clerk
       - text
       - microlens
   chapter4-3:
-    main: Chapters/Chapter4/Example3/Main.hs
+    main: Chapters/Chapter4/Example3.hs
     dependencies:
       - clerk
       - text
       - microlens
       - xlsx
   chapter4-4:
-    main: Chapters/Chapter4/Example4/Main.hs
+    main: Chapters/Chapter4/Example4.hs
     dependencies:
       - clerk
       - text
