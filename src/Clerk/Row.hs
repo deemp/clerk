@@ -19,7 +19,7 @@ import Lens.Micro
 
 -- Row ---------
 
--- | Format a single cell based on its coordinates, index in an input list, and data
+-- | Format a single cell based on its coordinates, index in an input list, and data.
 type FormatCell = forall a b. (ToCoords a, ToCellData b) => InputIndex -> a -> b -> Row X.FormattedCell
 
 -- | Template of a cell with content, style, column properties

@@ -15,24 +15,34 @@ import Data.List (zipWith4)
 import qualified Data.Map as Map
 import Data.Maybe (maybeToList)
 import Lens.Micro
+import Data.Bifunctor (Bifunctor(..))
 
 type RenderTemplate input output = ToCellData output => RowState -> InputIndex -> input -> Template input output -> Sheet Transform
-type RenderInputs input output a = ToCellData output => [input] -> RowIO input output a -> Sheet (Transform, a)
+type RenderInputs input output a = ToCellData output => [input] -> (input -> RowIO input output a) -> Sheet (Transform, a)
 
--- | Render inputs starting at given coords and using a row. Return the result calculated using the topmost row
-renderInputs :: RowState -> RenderTemplate input output -> RenderInputs input output a
-renderInputs state render inputs f = do
+-- | Render inputs starting at given coords using a function producing a 'RowIO'. Return the results calculated for each row.
+renderInputsFRs :: RowState -> RenderTemplate input output -> ToCellData output => [input] -> (input -> RowIO input output a) -> Sheet (Transform, [a])
+renderInputsFRs state render inputs f = do
   let
     ts =
-      [ (newState, template)
-      | inputIndex <- [0 .. length inputs - 1]
-      , let newState = (state & row +~ fromIntegral inputIndex){_inputIndex = fromIntegral inputIndex}
-            template = execRow f newState
+      [ (newState, template, res)
+      | (inputIndex, input) <- zip [0 :: Int ..] inputs
+      , let
+          newState = (state & row +~ fromIntegral inputIndex){_inputIndex = fromIntegral inputIndex}
+          (res, template) = runRow (f input) newState
       ]
     -- result obtained from the top row
-    rowResult = evalRow f state
-    transform = fold <$> sequenceA (zipWith4 render (fst <$> ts) [0 ..] inputs (snd <$> ts))
-  (,rowResult) <$> transform
+    rowResults = ts ^.. traversed . _3
+    transform = fold <$> sequenceA (zipWith4 render (ts ^.. traversed . _1) [0 ..] inputs (ts ^.. traversed . _2))
+  (,rowResults) <$> transform
+
+-- | Render inputs starting at given coords using a function producing a 'RowIO'. Return the result calculated using the topmost row.
+renderInputsF :: RowState -> RenderTemplate input output -> RenderInputs input output a
+renderInputsF state render inputs f = renderInputsFRs state render inputs f <&> second head
+
+-- | Render inputs starting at given coords and using a 'RowIO'. Return the result calculated using the topmost row.
+renderInputs :: RowState -> RenderTemplate input output -> ToCellData output => [input] -> RowIO input output a -> Sheet (Transform, a)
+renderInputs state render inputs f = renderInputsF state render inputs (const f)
 
 -- | Render a template with a given offset, input index and input
 renderTemplate :: RenderTemplate input output
