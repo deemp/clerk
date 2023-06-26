@@ -48,8 +48,7 @@ with f (RowIO (StateT g)) =
     ( StateT
         ( \x ->
             let WriterT (Identity (a, Template b)) = g x
-             in WriterT (Identity (a, Template $ (
-                \CellTemplate{..} -> CellTemplate{_mkOutput = _mkOutput . f, ..}) <$> b))
+             in WriterT (Identity (a, Template $ (\CellTemplate{..} -> CellTemplate{_mkOutput = _mkOutput . f, ..}) <$> b))
         )
     )
 
@@ -77,7 +76,7 @@ evalRow builder state = fst $ runRow builder state
 -- RowShow ---------
 
 -- | Show in context of a 'Row'
-class Show a => RowShow a where
+class RowShow a where
   rowShow :: a -> Row T.Text
 
 instance RowShow Coords where
@@ -150,7 +149,7 @@ instance Default CellData where
   def = CellEmpty
 
 -- | Something that can be turned into 'CellData' in a `Row` context
-class Show a => ToCellData a where
+class ToCellData a where
   toCellData :: a -> Row CellData
 
 instance ToCellData T.Text where
@@ -178,7 +177,12 @@ instance ToCellData CellData where
   toCellData = pure
 
 instance ToCellData InputIndex where
+  toCellData :: InputIndex -> Row CellData
   toCellData (InputIndex i) = toCellData i
+
+instance {-# OVERLAPPABLE #-} RowShow a => ToCellData a where
+  toCellData :: a -> Row CellData
+  toCellData a = CellValue . X.CellText <$> rowShow a
 
 instance Show (Expr a) => ToCellData (Expr a) where
   toCellData :: Expr a -> Row CellData
@@ -192,7 +196,7 @@ instance Show (Expr a) => ToCellData (Expr a) where
           , X._cellfExpression = X.NormalFormula $ X.Formula e
           }
 
-instance (Show (Formula a), Show (Expr a)) => ToCellData (Formula a) where
+instance Show (Expr a) => ToCellData (Formula a) where
   toCellData :: Formula a -> Row CellData
   toCellData (Formula e) = toCellData e
 
