@@ -1,6 +1,8 @@
+{-# LANGUAGE OverloadedRecordDot #-}
+
 module Clerk.Coordinates where
 
-import Codec.Xlsx (ColumnIndex, RowIndex)
+import Codec.Xlsx (ColumnIndex (..), RowIndex (..))
 import qualified Codec.Xlsx as X
 import Data.Char (chr, isAlpha, isUpper, ord)
 import Data.Default (Default (def))
@@ -33,7 +35,16 @@ row = lens getter setter
   getter :: a -> RowIndex
   getter (toCoords -> Coords{_row}) = _row
   setter :: a -> RowIndex -> a
-  setter (toCoords -> Coords{_row, _col, ..}) f = fromCoords $ Coords{_row = f, _col, ..}
+  setter (toCoords -> Coords{_row, ..}) f = fromCoords $ Coords{_row = f, ..}
+
+-- | A lens for @RowIndex@ as an @Int@
+rowI :: forall a. CoordsLike a => Lens' a Int
+rowI = lens getter setter
+ where
+  getter :: a -> Int
+  getter (toCoords -> Coords{_row}) = _row.unRowIndex
+  setter :: a -> Int -> a
+  setter (toCoords -> Coords{_row, ..}) f = fromCoords $ Coords{_row = RowIndex f, ..}
 
 -- | A lens for @ColumnIndex@
 col :: forall a. CoordsLike a => Lens' a ColumnIndex
@@ -42,7 +53,16 @@ col = lens getter setter
   getter :: a -> ColumnIndex
   getter (toCoords -> Coords{_col}) = _col
   setter :: a -> ColumnIndex -> a
-  setter (toCoords -> Coords{_row, _col, ..}) f = fromCoords $ Coords{_row, _col = f, ..}
+  setter (toCoords -> Coords{_col, ..}) f = fromCoords $ Coords{_col = f, ..}
+
+-- | A lens for @ColumnIndex@ as an @Int@
+colI :: forall a. CoordsLike a => Lens' a Int
+colI = lens getter setter
+ where
+  getter :: a -> Int
+  getter (toCoords -> Coords{_col}) = _col.unColumnIndex
+  setter :: a -> Int -> a
+  setter (toCoords -> Coords{_col, ..}) f = fromCoords $ Coords{_col = ColumnIndex f, ..}
 
 -- | Convertible to 'Coords'
 class ToCoords a where
