@@ -145,6 +145,8 @@ I'll need several language extensions.
 
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds #-}
 
 LIMA_ENABLE -->
 
@@ -224,7 +226,7 @@ As I don't need any info about these cells, I use the `Row ()` type.
 mkTable :: [(Ref Int, Ref Int)] -> Sheet ()
 mkTable cs =
   forM_ cs $ \(r, c) -> do
-    coords <- mkCoords (c ^. col) (r ^. row)
+    coords <- mkCoords' (c ^. col) (r ^. row)
     place coords ((columnF_ blank (const (r .* c))) :: Row ())
 ```
 
@@ -235,7 +237,7 @@ Now, I combine all functions.
 ```haskell
 sheet :: Sheet ()
 sheet = do
-  start <- mkCoords 2 2
+  start <- mkCoords @"B2"
   let numbers = [1 .. 9]
   cs <- mkHorizontal start numbers
   rs <- mkVertical start numbers
@@ -456,7 +458,7 @@ At last, I combine all rows.
 ```haskell
 sheet :: Sheet ()
 sheet = do
-  start <- mkCoords 2 2
+  start <- mkCoords @"B2"
   (constantsHeaderTL, constantsHeaderTopRight) <- place start constantsHeader
   (gasTopLeft, gas) <- placeIn (constantsHeaderTL & row +~ 2) constants.gasConstant constant
   (nMolesTopLeft, nMoles) <- placeIn (gasTopLeft & row +~ 1) constants.numberOfMoles constant
@@ -532,10 +534,10 @@ main = writeXlsx "example4.xlsx" [("List 1", sheet 9 15)]
 colFormula :: ToCellData output => output -> RowI input (Ref a)
 colFormula = columnF blank . const
 
-colIndex :: InputIndex -> RowIO input CellData ()
+colIndex :: InputIndex -> RowI input ()
 colIndex = void . colFormula
 
-index :: RowO CellData InputIndex
+index :: Row InputIndex
 index = gets ((+ 1) . _inputIndex)
 
 row0 :: Int -> Int -> Row (Ref Int, Ref Int)
@@ -563,7 +565,7 @@ row3 (a, b) = do
 
 sheet :: Int -> Int -> Sheet ()
 sheet a b = do
-  start <- mkRef' @"A1"
+  start <- mkRef @"A1"
   s1 <- place start (row0 a b)
   placeIxsFs_ start [1 :: Int .. 6] (cycle [row1, row3]) s1
   pure ()
