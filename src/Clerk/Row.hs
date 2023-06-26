@@ -91,17 +91,17 @@ instance Show (Expr t) => RowShow (Expr t) where
   rowShow (EBinaryOperation{..}) =
     showBinaryOperation _argLeft _argRight $
       case _binaryOperator of
-        OpAdd -> "+"
-        OpSubtract -> "-"
-        OpMultiply -> "*"
-        OpDivide -> "/"
-        OpPower -> "^"
+        OpADD -> "+"
+        OpMINUS -> "-"
+        OpPRODUCT -> "*"
+        OpDIVIDE -> "/"
+        OpEXP -> "^"
         OpLT -> "<"
         OpGT -> ">"
-        OpLEQ -> "<="
-        OpGEQ -> ">="
+        OpLTE -> "<="
+        OpGTE -> ">="
         OpEQ -> "="
-        OpNEQ -> "<>"
+        OpNE -> "<>"
   rowShow (ERef (Ref e)) = rowShow e
   rowShow (ERange (Ref c1) (Ref c2)) = do
     d1 <- rowShow c1
@@ -112,7 +112,7 @@ instance Show (Expr t) => RowShow (Expr t) where
     pure $ (n & _functionName) <> "(" <> T.intercalate "," d1 <> ")"
   rowShow (EUnaryOperation{..}) =
     case _unaryOperator of
-      OpNeg -> rowShow _arg
+      OpUMINUS -> rowShow _arg
   rowShow EValue{..} = pure $ T.pack $ show (EValue{..})
 
 instance Show (Expr t) => RowShow (Formula t) where

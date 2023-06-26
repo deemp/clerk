@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
+
 module Clerk.Operators where
 
 import Clerk.Expression (BinaryOperator (..), Expr (..))
@@ -30,43 +31,43 @@ type NumOperator a b c d e = (ToFormula (d a), ToFormula (e b)) => d a -> e b ->
 
 -- | Construct an addition expression like @A1 + B1@
 (.+) :: Num a => NumOperator a a a d e
-(.+) = mkNumOp2 OpAdd
+(.+) = mkNumOp2 OpADD
 
 infixl 6 .+
 
 -- | Construct a subtraction expression like @A1 - B1@
 (.-) :: Num a => NumOperator a a a d e
-(.-) = mkNumOp2 OpSubtract
+(.-) = mkNumOp2 OpMINUS
 
 infixl 6 .-
 
 -- | Construct a division expression like @A1 / B1@
 (./) :: Fractional a => NumOperator a a a d e
-(./) = mkNumOp2 OpDivide
+(./) = mkNumOp2 OpDIVIDE
 
 infixl 7 ./
 
 -- | Construct a multiplication expression like @A1 * B1@
 (.*) :: Num a => NumOperator a a a d e
-(.*) = mkNumOp2 OpMultiply
+(.*) = mkNumOp2 OpPRODUCT
 
 infixl 6 .*
 
 -- | Construct an exponentiation expression like @A1 ^ B1@
 (.^) :: (Num a, Integral b) => NumOperator a b a d e
-(.^) = mkNumOp2 OpPower
+(.^) = mkNumOp2 OpEXP
 
 infixr 8 .^
 
 -- | Construct an exponentiation expression like @A1 ^ B1@ with 'Fractional' base
 (.^^) :: (Fractional a, Integral b) => NumOperator a b a d e
-(.^^) = mkNumOp2 OpPower
+(.^^) = mkNumOp2 OpEXP
 
 infixr 8 .^^
 
 -- | Construct an exponentiation expression like @A1 ^ B1@ with 'Floating' base
-(.**) :: (Floating a) => NumOperator a a a d e
-(.**) = mkNumOp2 OpPower
+(.**) :: Floating a => NumOperator a a a d e
+(.**) = mkNumOp2 OpEXP
 
 infixr 8 .**
 
@@ -89,13 +90,13 @@ infix 4 .>
 
 -- | Construct a @less-than-or-equal-to@ expression like @A1 <= B1@
 (.<=) :: BoolOperator a b c
-(.<=) = mkBoolOp2 OpLEQ
+(.<=) = mkBoolOp2 OpLTE
 
 infix 4 .<=
 
 -- | Construct a @greater-than-or-equal-to@ expression like @A1 <= B1@
 (.>=) :: BoolOperator a b c
-(.>=) = mkBoolOp2 OpGEQ
+(.>=) = mkBoolOp2 OpGTE
 
 infix 4 .>=
 
@@ -107,6 +108,6 @@ infix 4 .=
 
 -- | Construct a @not-equal-to@ expression like @A1 <> B1@
 (.<>) :: BoolOperator a b c
-(.<>) = mkBoolOp2 OpNEQ
+(.<>) = mkBoolOp2 OpNE
 
 infix 4 .<>

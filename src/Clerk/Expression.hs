@@ -19,20 +19,20 @@ data Expr t
   | EUnaryOperation {_unaryOperator :: UnaryOperator, _arg :: Expr t}
 
 data BinaryOperator
-  = OpAdd
-  | OpSubtract
-  | OpMultiply
-  | OpDivide
-  | OpPower
+  = OpADD
+  | OpMINUS
+  | OpPRODUCT
+  | OpDIVIDE
+  | OpEXP
   | OpLT
   | OpGT
-  | OpLEQ
-  | OpGEQ
+  | OpLTE
+  | OpGTE
   | OpEQ
-  | OpNEQ
+  | OpNE
 
 data UnaryOperator
-  = OpNeg
+  = OpUMINUS
 
 instance UnsafeChangeType Expr where
   unsafeChangeType :: Expr b -> Expr c
