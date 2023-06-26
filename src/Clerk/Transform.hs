@@ -6,7 +6,7 @@ import qualified Codec.Xlsx.Formatted as X
 import Data.Default (Default (..))
 import Data.Function ((&))
 import qualified Data.Map as Map
-import Lens.Micro ((%~), (?~))
+import Lens.Micro (non, (%~))
 
 -- | Map of coordinates to cell formatting
 type FormattedMap = Map.Map (X.RowIndex, X.ColumnIndex) X.FormattedCell
@@ -44,7 +44,9 @@ infixl 5 .&
 -- | Get a 'FCTransform' with a given horizontal alignment in a cell
 horizontalAlignment :: X.CellHorizontalAlignment -> FCTransform
 horizontalAlignment alignment fc =
-  fc
-    & X.formattedFormat
-      %~ X.formatAlignment
-      ?~ (X.def & X.alignmentHorizontal ?~ alignment)
+  fc & X.formattedFormat . X.formatAlignment . non X.def . X.alignmentHorizontal %~ const (Just alignment)
+
+-- | Get a 'FCTransform' with a given vertical alignment in a cell
+verticalAlignment :: X.CellVerticalAlignment -> FCTransform
+verticalAlignment alignment fc =
+  fc & X.formattedFormat . X.formatAlignment . non X.def . X.alignmentVertical %~ const (Just alignment)
