@@ -8,8 +8,9 @@ import Codec.Xlsx (RowIndex (unRowIndex))
 import qualified Codec.Xlsx as X
 import qualified Codec.Xlsx.Formatted as X
 import Control.Monad
-import Control.Monad.State (MonadState (get), StateT, evalStateT)
-import Control.Monad.Trans.Writer (Writer, runWriter)
+import Control.Monad.Identity
+import Control.Monad.State (MonadState (get), StateT (StateT), evalStateT)
+import Control.Monad.Trans.Writer (Writer, WriterT (WriterT), runWriter)
 import Control.Monad.Writer.Class (MonadWriter)
 import Data.Default (Default (def))
 import Data.Text (Text)
@@ -40,6 +41,17 @@ newtype RowIO input output a = RowIO
   {_rowIO :: StateT RowState (Writer (Template input output)) a}
   deriving (Generic)
   deriving newtype (Functor, Applicative, Monad, MonadState RowState, MonadWriter (Template input output))
+
+with :: (input' -> input) -> RowIO input output a -> RowIO input' output a
+with f (RowIO (StateT g)) =
+  RowIO
+    ( StateT
+        ( \x ->
+            let WriterT (Identity (a, Template b)) = g x
+             in WriterT (Identity (a, Template $ (
+                \CellTemplate{..} -> CellTemplate{_mkOutput = _mkOutput . f, ..}) <$> b))
+        )
+    )
 
 -- | Row with a default 'CellData' output
 type RowI input a = RowIO input CellData a
