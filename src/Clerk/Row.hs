@@ -36,7 +36,7 @@ newtype Template input output = Template [CellTemplate input output]
 type RowState = Coords
 
 -- | A monad for describing a horizontal block of data - a @row@
-newtype RowIO input output a = Row
+newtype RowIO input output a = RowIO
   {_rowIO :: StateT RowState (Writer (Template input output)) a}
   deriving (Generic)
   deriving newtype (Functor, Applicative, Monad, MonadState RowState, MonadWriter (Template input output))
