@@ -17,14 +17,14 @@ import Clerk.Sheet
 import Control.Monad
 import Control.Monad.RWS (MonadWriter (tell))
 
--- | Starting at a given coordinate, place a list of inputs according to a row builder and return a result
+-- | Starting at a given coordinate, place a list of inputs according to a row builder and return a list of results
 placeInsFRs :: (ToCellData output, ToCoords c) => c -> [input] -> (input -> RowIO input output a) -> Sheet [a]
 placeInsFRs (toCoords -> state) inputs mkRow = do
   transformResult <- renderInputsFRs state renderTemplate inputs mkRow
   tell (fst transformResult)
   pure (snd transformResult)
 
--- | Starting at a given coordinate, place a list of inputs according to a row builder and return a result
+-- | Starting at a given coordinate, convert a list of inputs into row builders and return a result
 placeInsF :: (ToCellData output, ToCoords c) => c -> [input] -> (input -> RowIO input output a) -> Sheet a
 placeInsF (toCoords -> state) inputs mkRow = do
   transformResult <- renderInputsF state renderTemplate inputs mkRow
@@ -39,6 +39,7 @@ placeIns state inputs row_ = placeInsF state inputs (const row_)
 placeInsRs :: (ToCellData output, ToCoords c) => c -> [input] -> RowIO input output a -> Sheet [a]
 placeInsRs state inputs row_ = placeInsFRs state inputs (const row_)
 
+-- | Starting at a given coordinate, place a list of inputs according to a row builder
 placeIns_ :: (ToCellData output, ToCoords c) => c -> [input] -> RowIO input output a -> Sheet ()
 placeIns_ state inputs row_ = void $ placeIns state inputs row_
 

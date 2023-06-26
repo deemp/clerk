@@ -11,10 +11,10 @@ import qualified Data.Text as T
 import GHC.Generics (Generic)
 import Lens.Micro (Lens', lens)
 
--- | Index of an input
+-- | Index of an input.
 newtype InputIndex = InputIndex Int deriving newtype (Num, Show, Integral, Enum, Real, Ord, Eq, Default)
 
--- | Coords of a cell
+-- | Coordinates of a cell.
 data Coords = Coords
   { _col :: ColumnIndex
   , _row :: RowIndex
