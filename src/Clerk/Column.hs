@@ -54,6 +54,14 @@ columnWF width fmtCell mkOutput = do
   state_ <- get
   column (Just width) fmtCell (fst . runWriter . flip evalStateT state_ . _rowIO . toCellData . mkOutput)
 
+-- | A column with a given width and cell format. Returns a 'Ref'.
+columnW :: forall a input output. ToCellData output => Double -> (input -> output) -> RowI input (Ref a)
+columnW width = columnWF width blank
+
+-- | A column with a given width and cell format. Returns a 'Ref'.
+columnW_ :: forall input output. ToCellData output => Double -> (input -> output) -> RowI input ()
+columnW_ width mkOutput = void $ columnW width mkOutput
+  
 -- | A column with a given width and cell format. Returns a '()'.
 columnWF_ :: forall input output. ToCellData output => Double -> FormatCell -> (input -> output) -> RowI input ()
 columnWF_ width fmtCell mkOutput = void (columnWF width fmtCell mkOutput)
