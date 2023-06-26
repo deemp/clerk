@@ -122,3 +122,13 @@ executables:
       - xlsx
       - transformers
       - mtl
+  example5:
+    main: Examples/Example5.hs
+    dependencies:
+      - clerk
+      - xlsx
+      - transformers
+      - mtl
+      - time
+      - text
+      - lens

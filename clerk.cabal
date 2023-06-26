@@ -148,6 +148,22 @@ executable example4
     , xlsx
   default-language: Haskell2010
 
+executable example5
+  main-is: Examples/Example5.hs
+  other-modules:
+      Paths_clerk
+  ghc-options: -Wall -Wno-unticked-promoted-constructors -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-unticked-promoted-constructors -Wredundant-constraints -Wunused-packages
+  build-depends:
+      base >=4.9 && <5.0
+    , clerk
+    , lens
+    , mtl
+    , text
+    , time
+    , transformers
+    , xlsx
+  default-language: Haskell2010
+
 test-suite docs
   type: exitcode-stdio-1.0
   main-is: test/Docs.hs
