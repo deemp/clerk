@@ -19,13 +19,13 @@
     let
       pkgs = inputs.nixpkgs.legacyPackages.${system};
       inherit (pkgs.lib.attrsets) genAttrs mapAttrs';
-      inherit (inputs.my-codium.functions.${system}) writeSettingsJSON mkCodium;
-      inherit (inputs.drv-tools.functions.${system}) mkShellApps mkBin mkShellApp mapGenAttrs mapStrGenAttrs;
-      inherit (inputs.my-codium.configs.${system}) extensions extensionsCommon settingsNix settingsCommonNix;
-      inherit (inputs.flakes-tools.functions.${system}) mkFlakesTools;
-      inherit (inputs.my-devshell.functions.${system}) mkCommands mkRunCommands mkShell;
-      inherit (inputs.workflows.functions.${system}) writeWorkflow;
-      inherit (inputs.haskell-tools.functions.${system}) toolsGHC;
+      inherit (inputs.my-codium.lib.${system}) writeSettingsJSON mkCodium;
+      inherit (inputs.drv-tools.lib.${system}) mkShellApps mkBin mkShellApp mapGenAttrs mapStrGenAttrs;
+      inherit (inputs.my-codium.lib.${system}) extensions extensionsCommon settingsNix settingsCommonNix;
+      inherit (inputs.flakes-tools.lib.${system}) mkFlakesTools;
+      inherit (inputs.my-devshell.lib.${system}) mkCommands mkRunCommands mkShell;
+      inherit (inputs.workflows.lib.${system}) writeWorkflow;
+      inherit (inputs.haskell-tools.lib.${system}) toolsGHC;
       inherit (inputs) workflows;
 
       packageName = "clerk";
