@@ -190,7 +190,7 @@ At last, I combine all rows.
 
 sheet :: Sheet ()
 sheet = do
-  start <- mkCoords 2 2
+  start <- mkCoords @"B2"
   (constantsHeaderTL, constantsHeaderTopRight) <- place start constantsHeader
   (gasTopLeft, gas) <- placeIn (constantsHeaderTL & row +~ 2) constants.gasConstant constant
   (nMolesTopLeft, nMoles) <- placeIn (gasTopLeft & row +~ 1) constants.numberOfMoles constant

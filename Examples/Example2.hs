@@ -23,6 +23,8 @@ I'll need several language extensions.
 {- LIMA_DISABLE -}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant bracket" #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds #-}
 {- LIMA_ENABLE -}
 {- FOURMOLU_ENABLE -}
 
@@ -101,7 +103,7 @@ As I don't need any info about these cells, I use the `Row ()` type.
 mkTable :: [(Ref Int, Ref Int)] -> Sheet ()
 mkTable cs =
   forM_ cs $ \(r, c) -> do
-    coords <- mkCoords (c ^. col) (r ^. row)
+    coords <- mkCoords' (c ^. col) (r ^. row)
     place coords ((columnF_ blank (const (r .* c))) :: Row ())
 
 {-
@@ -112,7 +114,7 @@ Now, I combine all functions.
 
 sheet :: Sheet ()
 sheet = do
-  start <- mkCoords 2 2
+  start <- mkCoords @"B2"
   let numbers = [1 .. 9]
   cs <- mkHorizontal start numbers
   rs <- mkVertical start numbers

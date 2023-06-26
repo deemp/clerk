@@ -12,10 +12,10 @@ main = writeXlsx "example4.xlsx" [("List 1", sheet 9 15)]
 colFormula :: ToCellData output => output -> RowI input (Ref a)
 colFormula = columnF blank . const
 
-colIndex :: InputIndex -> RowIO input CellData ()
+colIndex :: InputIndex -> RowI input ()
 colIndex = void . colFormula
 
-index :: RowO CellData InputIndex
+index :: Row InputIndex
 index = gets ((+ 1) . _inputIndex)
 
 row0 :: Int -> Int -> Row (Ref Int, Ref Int)
@@ -43,7 +43,7 @@ row3 (a, b) = do
 
 sheet :: Int -> Int -> Sheet ()
 sheet a b = do
-  start <- mkRef' @"A1"
+  start <- mkRef @"A1"
   s1 <- place start (row0 a b)
   placeIxsFs_ start [1 :: Int .. 6] (cycle [row1, row3]) s1
   pure ()

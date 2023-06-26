@@ -54,7 +54,7 @@ renderTemplate leftCell inputIndex input (Template cells) = do
             CellTemplate{..} = cellTemplate
             cellCol = leftCell ^. col + columnIndex
           -- TODO it typechecks now, but is this correct?
-          cellCoords <- mkCoords cellCol (leftCell ^. row)
+          cellCoords <- mkCoords' cellCol (leftCell ^. row)
           let cellData_ = toCellData (_mkOutput input) & _rowIO & flip evalStateT cellCoords & runWriter & fst
               cell = _fmtCell inputIndex cellCoords cellData_ & _rowIO & flip evalStateT cellCoords & runWriter & fst
               _wsTransform
@@ -62,7 +62,7 @@ renderTemplate leftCell inputIndex input (Template cells) = do
                 -- new properties precede old properties
                 | inputIndex == 0 = X.wsColumnsProperties %~ (maybeToList _columnsProperties ++)
                 | otherwise = id
-          newCoords <- mkCoords cellCol (leftCell ^. row)
+          newCoords <- mkCoords' cellCol (leftCell ^. row)
           let _fmTransform = Map.insert (fromCoords newCoords) cell
           pure def{_fmTransform, _wsTransform}
       )
