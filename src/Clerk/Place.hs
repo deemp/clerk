@@ -35,6 +35,10 @@ placeInsF (toCoords -> state) inputs mkRow = do
 placeIns :: (ToCellData output, ToCoords c) => c -> [input] -> RowIO input output a -> Sheet a
 placeIns state inputs row_ = placeInsF state inputs (const row_)
 
+-- | Starting at a given coordinate, place a list of inputs according to a row builder and return a list of results
+placeInsRs :: (ToCellData output, ToCoords c) => c -> [input] -> RowIO input output a -> Sheet [a]
+placeInsRs state inputs row_ = placeInsFRs state inputs (const row_)
+
 placeIns_ :: (ToCellData output, ToCoords c) => c -> [input] -> RowIO input output a -> Sheet ()
 placeIns_ state inputs row_ = void $ placeIns state inputs row_
 
